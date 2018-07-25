@@ -32,8 +32,6 @@ TARGETS=("$@")
 if [ "${#TARGETS}" -lt 1 ]; then
     TARGETS=(
         src/NetworkManager
-        src/nm-iface-helper
-        src/dhcp/nm-dhcp-helper
         clients/nm-online
         clients/cli/nmcli
         clients/tui/nmtui

@@ -184,11 +184,9 @@ endif
 add_project_arguments(common_flags, language: 'c')
 add_project_link_arguments(common_ldflags, language: 'c')
 
-linker_script_binary   = join_paths(meson.source_root(), 'linker-script-binary.ver')
 linker_script_devices  = join_paths(meson.source_root(), 'linker-script-devices.ver')
 linker_script_settings = join_paths(meson.source_root(), 'linker-script-settings.ver')
 
-ldflags_linker_script_binary   = [ '-Wl,--version-script,@0@'.format(linker_script_binary) ]
 ldflags_linker_script_devices  = [ '-Wl,--version-script,@0@'.format(linker_script_devices) ]
 ldflags_linker_script_settings = [ '-Wl,--version-script,@0@'.format(linker_script_settings) ]
 
