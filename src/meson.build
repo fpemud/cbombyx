@@ -191,8 +191,6 @@ network_manager = executable(
   c_args: cflags,
   link_with: libnetwork_manager,
   link_args: ldflags,
-  #FIXME
-  #link_depends: linker_script,
   install: true,
   install_dir: nm_sbindir
 )
