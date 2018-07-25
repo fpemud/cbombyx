@@ -1,0 +1,6 @@
+{
+global:
+	byx_device_factory_create;
+local:
+	*;
+};
