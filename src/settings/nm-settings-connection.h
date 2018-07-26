@@ -198,8 +198,6 @@ NMSettingsConnectionCallId *nm_settings_connection_get_secrets (NMSettingsConnec
 void nm_settings_connection_cancel_secrets (NMSettingsConnection *self,
                                             NMSettingsConnectionCallId *call_id);
 
-void nm_settings_connection_recheck_visibility (NMSettingsConnection *self);
-
 gboolean nm_settings_connection_check_permission (NMSettingsConnection *self,
                                                   const char *permission);
 

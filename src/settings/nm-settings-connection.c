@@ -70,8 +70,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
 typedef struct _NMSettingsConnectionPrivate {
 
 	NMAgentManager *agent_mgr;
-	NMSessionMonitor *session_monitor;
-	gulong session_changed_id;
 
 	NMSettingsConnectionIntFlags flags:5;
 
@@ -309,62 +307,6 @@ find_secret (NMConnection *self,
 	dummy = for_each_secret (self, secrets, FALSE, find_secret_for_each_func, &data);
 	g_variant_unref (dummy);
 	return data.found;
-}
-
-/*****************************************************************************/
-
-static void
-set_visible (NMSettingsConnection *self, gboolean new_visible)
-{
-	nm_settings_connection_set_flags (self,
-	                                  NM_SETTINGS_CONNECTION_INT_FLAGS_VISIBLE,
-	                                  new_visible);
-}
-
-void
-nm_settings_connection_recheck_visibility (NMSettingsConnection *self)
-{
-	NMSettingsConnectionPrivate *priv;
-	NMSettingConnection *s_con;
-	guint32 num, i;
-
-	g_return_if_fail (NM_IS_SETTINGS_CONNECTION (self));
-
-	priv = NM_SETTINGS_CONNECTION_GET_PRIVATE (self);
-
-	s_con = nm_connection_get_setting_connection (NM_CONNECTION (self));
-	g_assert (s_con);
-
-	/* Check every user in the ACL for a session */
-	num = nm_setting_connection_get_num_permissions (s_con);
-	if (num == 0) {
-		/* Visible to all */
-		set_visible (self, TRUE);
-		return;
-	}
-
-	for (i = 0; i < num; i++) {
-		const char *user;
-		uid_t uid;
-
-		if (!nm_setting_connection_get_permission (s_con, i, NULL, &user, NULL))
-			continue;
-		if (!nm_session_monitor_user_to_uid (user, &uid))
-			continue;
-		if (!nm_session_monitor_session_exists (priv->session_monitor, uid, FALSE))
-			continue;
-
-		set_visible (self, TRUE);
-		return;
-	}
-
-	set_visible (self, FALSE);
-}
-
-static void
-session_changed_cb (NMSessionMonitor *self, gpointer user_data)
-{
-	nm_settings_connection_recheck_visibility (NM_SETTINGS_CONNECTION (user_data));
 }
 
 /*****************************************************************************/
@@ -709,8 +651,6 @@ nm_settings_connection_update (NMSettingsConnection *self,
 			(void) nm_connection_update_secrets (NM_CONNECTION (self), NULL, con_agent_secrets, NULL);
 	}
 
-	nm_settings_connection_recheck_visibility (self);
-
 	if (   replaced
 	    && persist_mode == NM_SETTINGS_CONNECTION_PERSIST_MODE_KEEP)
 		set_persist_mode (self, NM_SETTINGS_CONNECTION_PERSIST_MODE_UNSAVED);
@@ -796,8 +736,6 @@ nm_settings_connection_delete (NMSettingsConnection *self,
 
 	if (!_delete (self, error))
 		return FALSE;
-
-	set_visible (self, FALSE);
 
 	/* Tell agents to remove secrets for this connection */
 	for_agents = nm_simple_connection_new_clone (NM_CONNECTION (self));
@@ -2984,11 +2922,6 @@ nm_settings_connection_init (NMSettingsConnection *self)
 	c_list_init (&priv->call_ids_lst_head);
 	c_list_init (&priv->auth_lst_head);
 
-	priv->session_monitor = g_object_ref (nm_session_monitor_get ());
-	priv->session_changed_id = g_signal_connect (priv->session_monitor,
-	                                             NM_SESSION_MONITOR_CHANGED,
-	                                             G_CALLBACK (session_changed_cb), self);
-
 	priv->agent_mgr = g_object_ref (nm_agent_manager_get ());
 
 	priv->seen_bssids = g_hash_table_new_full (nm_str_hash, g_str_equal, g_free, NULL);
@@ -3039,12 +2972,7 @@ dispose (GObject *object)
 	g_clear_object (&priv->agent_secrets);
 
 	g_clear_pointer (&priv->seen_bssids, g_hash_table_destroy);
-
-	set_visible (self, FALSE);
-
-	nm_clear_g_signal_handler (priv->session_monitor, &priv->session_changed_id);
-	g_clear_object (&priv->session_monitor);
-
+	
 	g_clear_object (&priv->agent_mgr);
 
 	g_clear_pointer (&priv->filename, g_free);

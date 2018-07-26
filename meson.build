@@ -54,15 +54,9 @@ cc = meson.get_compiler('c')
 config_h = configuration_data()
 
 # defines
-set_defines = [
-  ['GETTEXT_PACKAGE', nm_name],
-  ['PACKAGE_STRING', '@0@ @1@'.format(nm_name, nm_version)],
-  ['VERSION', nm_version]
-]
-
-foreach define: set_defines
-  config_h.set_quoted(define[0], define[1])
-endforeach
+config_h.set_quoted('GETTEXT_PACKAGE', nm_name)
+config_h.set_quoted('PACKAGE_STRING', '@0@ @1@'.format(nm_name, nm_version))
+config_h.set_quoted('VERSION', nm_version)
 
 # headers
 use_sys_random = cc.has_function('getrandom', prefix: '#include <sys/random.h>')
@@ -116,7 +110,6 @@ if nm_debug
     '-Wundef',
     '-Wunknown-attributes'
   ]
-
   common_flags += cc.get_supported_arguments(test_cflags)
 endif
 
