@@ -38,8 +38,6 @@ version_header = configure_file(
 
 shared_byx_utils_nm_meta_setting_c = files('nm-meta-setting.c')
 
-shared_nm_test_utils_impl_c = files('nm-test-utils-impl.c')
-
 shared_byx_utils_nm_vpn_plugin_utils_c = files('nm-utils/nm-vpn-plugin-utils.c')
 
 shared_files_libnm_core = files('''

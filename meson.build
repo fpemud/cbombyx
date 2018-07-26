@@ -1,5 +1,5 @@
 project(
-  'NetworkManager', 'c',
+  'Bombyx', 'c',
 # NOTE: When incrementing version also:
 #  - add corresponding NM_VERSION_x_y_z macros in
 #    "shared/nm-version-macros.h.in"
@@ -312,12 +312,6 @@ if dbus_sys_dir == ''
   dbus_sys_dir = dbus_dep.get_pkgconfig_variable('system_bus_services_dir')
 endif
 
-# ModemManager1 with libmm-glib
-enable_modem_manager = get_option('modem_manager')
-if enable_modem_manager
-  mm_glib_dep = dependency('mm-glib', version: '>= 0.7.991')
-endif
-
 config_dns_rc_manager_default = get_option('config_dns_rc_manager_default')
 
 config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_RC_MANAGER', config_dns_rc_manager_default)
@@ -543,7 +537,6 @@ output += '\n'
 output += '  systemd-journald: ' + enable_systemd_journal.to_string() + ' (default: logging.backend=' + config_logging_backend_default + ')\n'
 endif
 output += '\n'
-output += '  modemmanager-1: ' + enable_modem_manager.to_string() + '\n'
 output += '  concheck: ' + enable_concheck.to_string() + '\n'
 output += '  config-dns-rc-manager-default: ' + config_dns_rc_manager_default + '\n'
 output += '\n'

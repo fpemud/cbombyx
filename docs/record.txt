@@ -70,3 +70,4 @@ I don't think so.
    to make it easier to parse through DHCP than just looking at a pile of numbers. If anyone has any 
    better ideas as to why DHCP hostnames would/should be preferable, please comment to explain the 
    benefits; I can’t see the immediate benefit of something like that.
+4. "systemd's transient hostname" is bad, "systemd's pretty hostname" looks good.

@@ -24,10 +24,6 @@
 
 #include "nm-core-types.h"
 
-#ifdef __NM_TEST_UTILS_H__
-#error nm-test-utils.h must be included as last header
-#endif
-
 #define NM_LOG_CONFIG_BACKEND_DEBUG   "debug"
 #define NM_LOG_CONFIG_BACKEND_SYSLOG  "syslog"
 #define NM_LOG_CONFIG_BACKEND_JOURNAL "journal"
