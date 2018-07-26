@@ -203,28 +203,9 @@ else
   distro = 'unknown'
 endif
 
-enable_ifcfg_rh = get_option('ifcfg_rh') or (distro == 'redhat')
-enable_ifupdown = get_option('ifupdown') or (distro == 'debian')
-enable_ibft = get_option('ibft') or enable_ifcfg_rh
-
-config_h.set10('WITH_SETTINGS_PLUGIN_IBFT', enable_ibft)
-
 config_plugins_default = get_option('config_plugins_default')
 if config_plugins_default == ''
   config_plugins = []
-
-  if enable_ifcfg_rh
-    config_plugins += ['ifcfg-rh']
-  endif
-
-  if enable_ifupdown
-    config_plugins += ['ifupdown']
-  endif
-
-  if enable_ibft
-    config_plugins += ['ibft']
-  endif
-
   config_plugins_default = ','.join(config_plugins)
 endif
 config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_PLUGINS', config_plugins_default)
@@ -605,11 +586,6 @@ endif
 output += '\n'
 output += '  modemmanager-1: ' + enable_modem_manager.to_string() + '\n'
 output += '  concheck: ' + enable_concheck.to_string() + '\n'
-output += '\nConfiguration_plugins (main.plugins=' + config_plugins_default + ')\n'
-output += '  ibft: ' + enable_ibft.to_string() + '\n'
-output += '  ifcfg-rh: ' + enable_ifcfg_rh.to_string() + '\n'
-output += '  ifupdown: ' + enable_ifupdown.to_string() + '\n'
-output += '\n'
 output += '  config-dns-rc-manager-default: ' + config_dns_rc_manager_default + '\n'
 output += '\n'
 output += '\nMiscellaneous:\n'

@@ -747,9 +747,6 @@ load_plugins (NMSettings *self, const char **plugins, GError **error)
 	idx_ibft    = byx_utils_strv_find_first ((char **) plugins, -1, "ibft");
 	idx_no_ibft = byx_utils_strv_find_first ((char **) plugins, -1, "no-ibft");
 	has_no_ibft = idx_no_ibft >= 0 && idx_no_ibft > idx_ibft;
-#if WITH_SETTINGS_PLUGIN_IBFT
-	add_ibft = idx_no_ibft < 0 && idx_ibft < 0;
-#endif
 
 	for (iter = plugins; iter && *iter; iter++) {
 		const char *pname = *iter;

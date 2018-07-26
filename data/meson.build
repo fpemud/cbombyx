@@ -3,7 +3,7 @@ data_conf.set('bindir', nm_bindir)
 data_conf.set('libexecdir', nm_libexecdir)
 data_conf.set('sbindir', nm_sbindir)
 data_conf.set('sysconfdir', nm_sysconfdir)
-data_conf.set('DISTRO_NETWORK_SERVICE', (enable_ifcfg_rh ? 'network.service' : ''))
+data_conf.set('DISTRO_NETWORK_SERVICE', ((distro == 'redhat') ? 'network.service' : ''))
 
 server = 'server.conf'
 
