@@ -1,0 +1,10 @@
+networkmanager auto re-enable device if missing firmware appears.
+bombyx doesn't do this.
+udev should re-enable the network device if firmware directory changed.
+bombyx should monitor the device and take action, not monitor the firmware directory.
+
+what should networkmanager do if firmware file content changes?
+bombyx don't care about it, it's the responsibility of udev.
+
+
+

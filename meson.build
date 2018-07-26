@@ -108,27 +108,9 @@ foreach define: set_defines
 endforeach
 
 # headers
-config_h.set10('HAVE_SYS_AUXV_H', cc.has_header('sys/auxv.h'))
-
 use_sys_random = cc.has_function('getrandom', prefix: '#include <sys/random.h>')
 config_h.set10('USE_SYS_RANDOM_H', use_sys_random)
 config_h.set10('HAVE_GETRANDOM', use_sys_random or cc.has_function('getrandom', prefix: '#include <linux/random.h>'))
-
-# functions
-# FIXME secure_getenv check is not useful?
-config_h.set('HAVE_SECURE_GETENV', cc.has_function('secure_getenv'))
-config_h.set('HAVE___SECURE_GETENV', cc.has_function('__secure_getenv'))
-config_h.set10('HAVE_DECL_REALLOCARRAY', cc.has_function('reallocarray', prefix: '#include <malloc.h>'))
-config_h.set10('HAVE_DECL_EXPLICIT_BZERO', cc.has_function('explicit_bzero', prefix: '#include <string.h>'))
-
-# types
-config_h.set('SIZEOF_DEV_T', cc.sizeof('dev_t', prefix: '#include <sys/types.h>'))
-config_h.set('SIZEOF_TIME_T', cc.sizeof('time_t', prefix: '#include <sys/types.h>'))
-config_h.set('SIZEOF_PID_T', cc.sizeof('pid_t', prefix: '#include <sys/types.h>'))
-
-if not cc.has_type('pid_t', prefix: '#include <sys/types.h>')
-  config_h.set('pid_t', 'int')
-endif
 
 # compiler flags
 common_flags = []
@@ -441,10 +423,6 @@ config_h.set_quoted('DNSSEC_TRIGGER_SCRIPT', (dnssec_trigger_script.found() ? dn
 # system CA certificates path
 system_ca_path = get_option('system_ca_path')
 config_h.set_quoted('SYSTEM_CA_PATH', system_ca_path)
-
-# kernel firmware dir
-kernel_firmware_dir = get_option('kernel_firmware_dir')
-config_h.set_quoted('KERNEL_FIRMWARE_DIR', kernel_firmware_dir)
 
 enable_libpsl = get_option('libpsl')
 if enable_libpsl

@@ -7,28 +7,14 @@
 /* Gettext package */
 #mesondefine GETTEXT_PACKAGE
 
-/* Define to 1 if you have the declaration of `reallocarray', and to 0 if
-   you don't. */
-#mesondefine HAVE_DECL_REALLOCARRAY
-
-/* Define to 1 if you have the declaration of `explicit_bzero', and to 0 if
-   you don't. */
-#mesondefine HAVE_DECL_EXPLICIT_BZERO
-
 /* has getrandom */
 #mesondefine HAVE_GETRANDOM
 
 /* Define to 1 if libsystemd is available */
 #mesondefine HAVE_LIBSYSTEMD
 
-/* Define to 1 if you have the `secure_getenv' function. */
-#mesondefine HAVE_SECURE_GETENV
-
 /* Define if you have SELinux support */
 #mesondefine HAVE_SELINUX
-
-/* Define to 1 if you have the <sys/auxv.h> header file. */
-#mesondefine HAVE_SYS_AUXV_H
 
 /* Define if systemd support is available */
 #mesondefine HAVE_SYSTEMD
@@ -36,17 +22,8 @@
 /* Define if you have Linux Wireless Extensions support */
 #mesondefine HAVE_WEXT
 
-/* Define to 1 if you have the `__secure_getenv' function. */
-#mesondefine HAVE___SECURE_GETENV
-
 /* Define to path of iptables binary */
 #mesondefine IPTABLES_PATH
-
-/* Define to path to the Jansson shared library */
-#mesondefine JANSSON_SONAME
-
-/* Define to path of the kernel firmware directory */
-#mesondefine KERNEL_FIRMWARE_DIR
 
 /* Path to netconfig */
 #mesondefine NETCONFIG_PATH
@@ -151,12 +128,6 @@
 /* Define for libnm to prevent GIR from loading libnm-glib */
 #mesondefine WITH_FAKE_TYPELIBS
 
-/* Define if JANSSON is enabled */
-#mesondefine WITH_JANSSON
-
-/* Define if JSON validation in libnm is enabled */
-#mesondefine WITH_JSON_VALIDATION
-
 /* Define if you have libpsl */
 #mesondefine WITH_LIBPSL
 
@@ -165,9 +136,6 @@
 
 /* Define if you have Wi-Fi support */
 #mesondefine WITH_WIFI
-
-/* Define if you have iwd support */
-#mesondefine WITH_IWD
 
 /* Define whether the compiler support gcc __auto_type */
 #mesondefine _NM_CC_SUPPORT_AUTO_TYPE

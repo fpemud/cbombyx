@@ -187,10 +187,6 @@ typedef struct {
 	GSList *auth_chains;
 	GHashTable *sleep_devices;
 
-	/* Firmware dir monitor */
-	GFileMonitor *fw_monitor;
-	guint fw_changed_id;
-
 	guint timestamp_update_id;
 
 	guint devices_inited_id;
@@ -6000,60 +5996,6 @@ byx_manager_stop (ByxManager *self)
 	nm_clear_g_source (&priv->devices_inited_id);
 }
 
-static gboolean
-handle_firmware_changed (gpointer user_data)
-{
-	ByxManager *self = BYX_MANAGER (user_data);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMDevice *device;
-
-	priv->fw_changed_id = 0;
-
-	/* Try to re-enable devices with missing firmware */
-	c_list_for_each_entry (device, &priv->devices_lst_head, devices_lst) {
-		NMDeviceState state = nm_device_get_state (device);
-
-		if (   nm_device_get_firmware_missing (device)
-		    && (state == NM_DEVICE_STATE_UNAVAILABLE)) {
-			_LOG2I (LOGD_CORE, device, "firmware may now be available");
-
-			/* Re-set unavailable state to try bringing the device up again */
-			nm_device_state_changed (device,
-			                         NM_DEVICE_STATE_UNAVAILABLE,
-			                         NM_DEVICE_STATE_REASON_NONE);
-		}
-	}
-
-	return FALSE;
-}
-
-static void
-firmware_dir_changed (GFileMonitor *monitor,
-                      GFile *file,
-                      GFile *other_file,
-                      GFileMonitorEvent event_type,
-                      gpointer user_data)
-{
-	ByxManager *self = BYX_MANAGER (user_data);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-
-	switch (event_type) {
-	case G_FILE_MONITOR_EVENT_CREATED:
-	case G_FILE_MONITOR_EVENT_CHANGED:
-	case G_FILE_MONITOR_EVENT_MOVED:
-	case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
-	case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
-		if (!priv->fw_changed_id) {
-			priv->fw_changed_id = g_timeout_add_seconds (4, handle_firmware_changed, self);
-			_LOGI (LOGD_CORE, "kernel firmware directory '%s' changed",
-			       KERNEL_FIRMWARE_DIR);
-		}
-		break;
-	default:
-		break;
-	}
-}
-
 static void
 connection_metered_changed (GObject *object,
                             NMMetered metered,
@@ -6813,24 +6755,6 @@ byx_manager_init (ByxManager *self)
 	                  G_CALLBACK (auth_mgr_changed),
 	                  self);
 
-	/* Monitor the firmware directory */
-	if (strlen (KERNEL_FIRMWARE_DIR)) {
-		file = g_file_new_for_path (KERNEL_FIRMWARE_DIR "/");
-		priv->fw_monitor = g_file_monitor_directory (file, G_FILE_MONITOR_NONE, NULL, NULL);
-		g_object_unref (file);
-	}
-
-	if (priv->fw_monitor) {
-		g_signal_connect (priv->fw_monitor, "changed",
-		                  G_CALLBACK (firmware_dir_changed),
-		                  self);
-		_LOGI (LOGD_CORE, "monitoring kernel firmware directory '%s'.",
-		             KERNEL_FIRMWARE_DIR);
-	} else {
-		_LOGW (LOGD_CORE, "failed to monitor kernel firmware directory '%s'.",
-		       KERNEL_FIRMWARE_DIR);
-	}
-
 	/* Update timestamps in active connections */
 	priv->timestamp_update_id = g_timeout_add_seconds (300, (GSourceFunc) periodic_update_active_connection_timestamps, self);
 
@@ -7095,15 +7019,6 @@ dispose (GObject *object)
 	if (priv->sleep_monitor) {
 		g_signal_handlers_disconnect_by_func (priv->sleep_monitor, sleeping_cb, self);
 		g_clear_object (&priv->sleep_monitor);
-	}
-
-	if (priv->fw_monitor) {
-		g_signal_handlers_disconnect_by_func (priv->fw_monitor, firmware_dir_changed, self);
-
-		nm_clear_g_source (&priv->fw_changed_id);
-
-		g_file_monitor_cancel (priv->fw_monitor);
-		g_clear_object (&priv->fw_monitor);
 	}
 
 	if (priv->rfkill_mgr) {
