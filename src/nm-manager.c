@@ -56,8 +56,6 @@
 #include "nm-config.h"
 #include "nm-audit-manager.h"
 #include "nm-dbus-compat.h"
-#include "nm-checkpoint.h"
-#include "nm-checkpoint-manager.h"
 #include "nm-dbus-object.h"
 #include "NetworkManagerUtils.h"
 
@@ -137,7 +135,6 @@ NM_GOBJECT_PROPERTIES_DEFINE (ByxManager,
 	PROP_METERED,
 	PROP_GLOBAL_DNS_CONFIGURATION,
 	PROP_ALL_DEVICES,
-	PROP_CHECKPOINTS,
 
 	/* Not exported */
 	PROP_SLEEPING,
@@ -170,8 +167,6 @@ typedef struct {
 	NMRfkillManager *rfkill_mgr;
 
 	CList link_cb_lst;
-
-	NMCheckpointManager *checkpoint_mgr;
 
 	NMSettings *settings;
 
@@ -1088,7 +1083,6 @@ _reload_auth_cb (NMAuthChain *chain,
 	GError *ret_error = NULL;
 	NMAuthCallResult result;
 	guint32 flags;
-	NMAuthSubject *subject;
 	char s_buf[60];
 	NMConfigChangeFlags reload_type = NM_CONFIG_CHANGE_NONE;
 
@@ -1097,44 +1091,31 @@ _reload_auth_cb (NMAuthChain *chain,
 	priv->auth_chains = g_slist_remove (priv->auth_chains, chain);
 	flags = GPOINTER_TO_UINT (nm_auth_chain_get_data (chain, "flags"));
 
-	subject = nm_auth_chain_get_subject (chain);
-
-	result = nm_auth_chain_get_result (chain, NM_AUTH_PERMISSION_RELOAD);
-	if (error) {
-		_LOGD (LOGD_CORE, "Reload request failed: %s", error->message);
-		ret_error = g_error_new (BYX_MANAGER_ERROR,
-		                         BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                         "Reload request failed: %s",
-		                         error->message);
-	} else if (result != NM_AUTH_CALL_RESULT_YES) {
-		ret_error = g_error_new_literal (BYX_MANAGER_ERROR,
-		                                 BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                 "Not authorized to reload configuration");
-	} else {
-		if (NM_FLAGS_ANY (flags, ~BYX_MANAGER_RELOAD_FLAGS_ALL)) {
-			/* invalid flags */
-		} else if (flags == 0)
-			reload_type = NM_CONFIG_CHANGE_CAUSE_SIGHUP;
-		else {
-			if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_CONF))
-				reload_type |= NM_CONFIG_CHANGE_CAUSE_CONF;
-			if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_DNS_RC))
-				reload_type |= NM_CONFIG_CHANGE_CAUSE_DNS_RC;
-			if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_DNS_FULL))
-				reload_type |= NM_CONFIG_CHANGE_CAUSE_DNS_FULL;
-		}
-
-		if (reload_type == NM_CONFIG_CHANGE_NONE) {
-			ret_error = g_error_new_literal (BYX_MANAGER_ERROR,
-			                                 BYX_MANAGER_ERROR_INVALID_ARGUMENTS,
-			                                 "Invalid flags for reload");
-		}
+	if (NM_FLAGS_ANY (flags, ~BYX_MANAGER_RELOAD_FLAGS_ALL)) {
+		/* invalid flags */
+	} else if (flags == 0)
+		reload_type = NM_CONFIG_CHANGE_CAUSE_SIGHUP;
+	else {
+		if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_CONF))
+			reload_type |= NM_CONFIG_CHANGE_CAUSE_CONF;
+		if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_DNS_RC))
+			reload_type |= NM_CONFIG_CHANGE_CAUSE_DNS_RC;
+		if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_DNS_FULL))
+			reload_type |= NM_CONFIG_CHANGE_CAUSE_DNS_FULL;
 	}
 
+	if (reload_type == NM_CONFIG_CHANGE_NONE) {
+		ret_error = g_error_new_literal (BYX_MANAGER_ERROR,
+											BYX_MANAGER_ERROR_INVALID_ARGUMENTS,
+											"Invalid flags for reload");
+	}
+
+#if 0
 	nm_audit_log_control_op (NM_AUDIT_OP_RELOAD,
 	                         nm_sprintf_buf (s_buf, "%u", flags),
 	                         ret_error == NULL, subject,
 	                         ret_error ? ret_error->message : NULL);
+#endif
 
 	if (ret_error) {
 		g_dbus_method_invocation_take_error (context, ret_error);
@@ -5571,95 +5552,6 @@ get_perm_add_result (ByxManager *self, NMAuthChain *chain, GVariantBuilder *resu
 }
 
 static void
-get_permissions_done_cb (NMAuthChain *chain,
-                         GError *error,
-                         GDBusMethodInvocation *context,
-                         gpointer user_data)
-{
-	ByxManager *self = BYX_MANAGER (user_data);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	GError *ret_error;
-	GVariantBuilder results;
-
-	g_assert (context);
-
-	priv->auth_chains = g_slist_remove (priv->auth_chains, chain);
-	if (error) {
-		_LOGD (LOGD_CORE, "Permissions request failed: %s", error->message);
-		ret_error = g_error_new (BYX_MANAGER_ERROR,
-		                         BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                         "Permissions request failed: %s",
-		                         error->message);
-		g_dbus_method_invocation_take_error (context, ret_error);
-	} else {
-		g_variant_builder_init (&results, G_VARIANT_TYPE ("a{ss}"));
-
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_ENABLE_DISABLE_NETWORK);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_SLEEP_WAKE);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_ENABLE_DISABLE_WIFI);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_ENABLE_DISABLE_WWAN);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_ENABLE_DISABLE_WIMAX);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_NETWORK_CONTROL);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_WIFI_SHARE_PROTECTED);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_WIFI_SHARE_OPEN);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_SETTINGS_MODIFY_SYSTEM);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_SETTINGS_MODIFY_OWN);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_SETTINGS_MODIFY_HOSTNAME);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_SETTINGS_MODIFY_GLOBAL_DNS);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_RELOAD);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_CHECKPOINT_ROLLBACK);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_ENABLE_DISABLE_STATISTICS);
-		get_perm_add_result (self, chain, &results, NM_AUTH_PERMISSION_ENABLE_DISABLE_CONNECTIVITY_CHECK);
-
-		g_dbus_method_invocation_return_value (context,
-		                                       g_variant_new ("(a{ss})", &results));
-	}
-
-	nm_auth_chain_destroy (chain);
-}
-
-static void
-impl_manager_get_permissions (ByxDBusObject *obj,
-                              const ByxDBusInterfaceInfoExtended *interface_info,
-                              const NMDBusMethodInfoExtended *method_info,
-                              GDBusConnection *connection,
-                              const char *sender,
-                              GDBusMethodInvocation *invocation,
-                              GVariant *parameters)
-{
-	ByxManager *self = BYX_MANAGER (obj);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMAuthChain *chain;
-
-	chain = nm_auth_chain_new_context (invocation, get_permissions_done_cb, self);
-	if (!chain) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               BYX_MANAGER_ERROR,
-		                                               BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                               "Unable to authenticate request.");
-		return;
-	}
-
-	priv->auth_chains = g_slist_append (priv->auth_chains, chain);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_ENABLE_DISABLE_NETWORK, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_SLEEP_WAKE, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_ENABLE_DISABLE_WIFI, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_ENABLE_DISABLE_WWAN, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_ENABLE_DISABLE_WIMAX, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_NETWORK_CONTROL, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_WIFI_SHARE_PROTECTED, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_WIFI_SHARE_OPEN, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_SETTINGS_MODIFY_SYSTEM, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_SETTINGS_MODIFY_OWN, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_SETTINGS_MODIFY_HOSTNAME, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_SETTINGS_MODIFY_GLOBAL_DNS, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_RELOAD, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_CHECKPOINT_ROLLBACK, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_ENABLE_DISABLE_STATISTICS, FALSE);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_ENABLE_DISABLE_CONNECTIVITY_CHECK, FALSE);
-}
-
-static void
 impl_manager_state (ByxDBusObject *obj,
                     const ByxDBusInterfaceInfoExtended *interface_info,
                     const NMDBusMethodInfoExtended *method_info,
@@ -6196,225 +6088,6 @@ err:
 
 /*****************************************************************************/
 
-static NMCheckpointManager *
-_checkpoint_mgr_get (ByxManager *self, gboolean create_as_needed)
-{
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-
-	if (G_UNLIKELY (!priv->checkpoint_mgr) && create_as_needed)
-		priv->checkpoint_mgr = nm_checkpoint_manager_new (self, obj_properties[PROP_CHECKPOINTS]);
-	return priv->checkpoint_mgr;
-}
-
-static void
-checkpoint_auth_done_cb (NMAuthChain *chain,
-                         GError *auth_error,
-                         GDBusMethodInvocation *context,
-                         gpointer user_data)
-{
-	ByxManager *self = BYX_MANAGER (user_data);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	char *op, *checkpoint_path = NULL, **devices;
-	NMCheckpoint *checkpoint;
-	NMAuthCallResult result;
-	guint32 timeout, flags;
-	GVariant *variant = NULL;
-	GError *error = NULL;
-	const char *arg = NULL;
-	guint32 add_timeout;
-
-	op = nm_auth_chain_get_data (chain, "audit-op");
-	priv->auth_chains = g_slist_remove (priv->auth_chains, chain);
-	result = nm_auth_chain_get_result (chain, NM_AUTH_PERMISSION_CHECKPOINT_ROLLBACK);
-
-	if (NM_IN_STRSET (op, NM_AUDIT_OP_CHECKPOINT_DESTROY,
-	                      NM_AUDIT_OP_CHECKPOINT_ROLLBACK,
-	                      NM_AUDIT_OP_CHECKPOINT_ADJUST_ROLLBACK_TIMEOUT))
-		arg = checkpoint_path = nm_auth_chain_get_data (chain, "checkpoint_path");
-
-	if (auth_error) {
-		error = g_error_new (BYX_MANAGER_ERROR,
-		                     BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                     "checkpoint check request failed: %s",
-		                     auth_error->message);
-	} else if (result != NM_AUTH_CALL_RESULT_YES) {
-		error = g_error_new_literal (BYX_MANAGER_ERROR,
-		                             BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                             "Not authorized to checkpoint/rollback");
-	} else {
-		if (nm_streq0 (op, NM_AUDIT_OP_CHECKPOINT_CREATE)) {
-			timeout = GPOINTER_TO_UINT (nm_auth_chain_get_data (chain, "timeout"));
-			flags = GPOINTER_TO_UINT (nm_auth_chain_get_data (chain, "flags"));
-			devices = nm_auth_chain_get_data (chain, "devices");
-
-			checkpoint = nm_checkpoint_manager_create (_checkpoint_mgr_get (self, TRUE),
-			                                           (const char *const *) devices,
-			                                           timeout,
-			                                           (NMCheckpointCreateFlags) flags,
-			                                           &error);
-			if (checkpoint) {
-				arg = nm_dbus_object_get_path (NM_DBUS_OBJECT (checkpoint));
-				variant = g_variant_new ("(o)", arg);
-			}
-		} else if (nm_streq0 (op, NM_AUDIT_OP_CHECKPOINT_DESTROY)) {
-			nm_checkpoint_manager_destroy (_checkpoint_mgr_get (self, TRUE),
-			                               checkpoint_path, &error);
-		} else if (nm_streq0 (op, NM_AUDIT_OP_CHECKPOINT_ROLLBACK)) {
-			nm_checkpoint_manager_rollback (_checkpoint_mgr_get (self, TRUE),
-			                                checkpoint_path, &variant, &error);
-		} else if (nm_streq0 (op, NM_AUDIT_OP_CHECKPOINT_ADJUST_ROLLBACK_TIMEOUT)) {
-			add_timeout = GPOINTER_TO_UINT (nm_auth_chain_get_data (chain, "add_timeout"));
-			nm_checkpoint_manager_adjust_rollback_timeout (_checkpoint_mgr_get (self, TRUE),
-			                                               checkpoint_path, add_timeout, &error);
-		} else
-			g_return_if_reached ();
-	}
-
-	nm_audit_log_checkpoint_op (op, arg ?: "", !error, nm_auth_chain_get_subject (chain),
-	                            error ? error->message : NULL);
-
-	if (error)
-		g_dbus_method_invocation_take_error (context, error);
-	else
-		g_dbus_method_invocation_return_value (context, variant);
-
-	nm_auth_chain_destroy (chain);
-}
-
-static void
-impl_manager_checkpoint_create (ByxDBusObject *obj,
-                                const ByxDBusInterfaceInfoExtended *interface_info,
-                                const NMDBusMethodInfoExtended *method_info,
-                                GDBusConnection *connection,
-                                const char *sender,
-                                GDBusMethodInvocation *invocation,
-                                GVariant *parameters)
-{
-	ByxManager *self = BYX_MANAGER (obj);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMAuthChain *chain;
-	char **devices;
-	guint32 rollback_timeout;
-	guint32 flags;
-
-	G_STATIC_ASSERT_EXPR (sizeof (flags) <= sizeof (NMCheckpointCreateFlags));
-
-	chain = nm_auth_chain_new_context (invocation, checkpoint_auth_done_cb, self);
-	if (!chain) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               BYX_MANAGER_ERROR,
-		                                               BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                               "Unable to authenticate request.");
-		return;
-	}
-
-	g_variant_get (parameters, "(^aouu)", &devices, &rollback_timeout, &flags);
-
-	priv->auth_chains = g_slist_append (priv->auth_chains, chain);
-	nm_auth_chain_set_data (chain, "audit-op", NM_AUDIT_OP_CHECKPOINT_CREATE, NULL);
-	nm_auth_chain_set_data (chain, "devices", devices, (GDestroyNotify) g_strfreev);
-	nm_auth_chain_set_data (chain, "flags",  GUINT_TO_POINTER (flags), NULL);
-	nm_auth_chain_set_data (chain, "timeout", GUINT_TO_POINTER (rollback_timeout), NULL);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_CHECKPOINT_ROLLBACK, TRUE);
-}
-
-static void
-impl_manager_checkpoint_destroy (ByxDBusObject *obj,
-                                 const ByxDBusInterfaceInfoExtended *interface_info,
-                                 const NMDBusMethodInfoExtended *method_info,
-                                 GDBusConnection *connection,
-                                 const char *sender,
-                                 GDBusMethodInvocation *invocation,
-                                 GVariant *parameters)
-{
-	ByxManager *self = BYX_MANAGER (obj);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMAuthChain *chain;
-	const char *checkpoint_path;
-
-	chain = nm_auth_chain_new_context (invocation, checkpoint_auth_done_cb, self);
-	if (!chain) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               BYX_MANAGER_ERROR,
-		                                               BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                               "Unable to authenticate request.");
-		return;
-	}
-
-	g_variant_get (parameters, "(&o)", &checkpoint_path);
-
-	priv->auth_chains = g_slist_append (priv->auth_chains, chain);
-	nm_auth_chain_set_data (chain, "audit-op", NM_AUDIT_OP_CHECKPOINT_DESTROY, NULL);
-	nm_auth_chain_set_data (chain, "checkpoint_path", g_strdup (checkpoint_path), g_free);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_CHECKPOINT_ROLLBACK, TRUE);
-}
-
-static void
-impl_manager_checkpoint_rollback (ByxDBusObject *obj,
-                                  const ByxDBusInterfaceInfoExtended *interface_info,
-                                  const NMDBusMethodInfoExtended *method_info,
-                                  GDBusConnection *connection,
-                                  const char *sender,
-                                  GDBusMethodInvocation *invocation,
-                                  GVariant *parameters)
-{
-	ByxManager *self = BYX_MANAGER (obj);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMAuthChain *chain;
-	const char *checkpoint_path;
-
-	chain = nm_auth_chain_new_context (invocation, checkpoint_auth_done_cb, self);
-	if (!chain) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               BYX_MANAGER_ERROR,
-		                                               BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                               "Unable to authenticate request.");
-		return;
-	}
-
-	g_variant_get (parameters, "(&o)", &checkpoint_path);
-
-	priv->auth_chains = g_slist_append (priv->auth_chains, chain);
-	nm_auth_chain_set_data (chain, "audit-op", NM_AUDIT_OP_CHECKPOINT_ROLLBACK, NULL);
-	nm_auth_chain_set_data (chain, "checkpoint_path", g_strdup (checkpoint_path), g_free);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_CHECKPOINT_ROLLBACK, TRUE);
-}
-
-static void
-impl_manager_checkpoint_adjust_rollback_timeout (ByxDBusObject *obj,
-                                                 const ByxDBusInterfaceInfoExtended *interface_info,
-                                                 const NMDBusMethodInfoExtended *method_info,
-                                                 GDBusConnection *connection,
-                                                 const char *sender,
-                                                 GDBusMethodInvocation *invocation,
-                                                 GVariant *parameters)
-{
-	ByxManager *self = BYX_MANAGER (obj);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMAuthChain *chain;
-	const char *checkpoint_path;
-	guint32 add_timeout;
-
-	chain = nm_auth_chain_new_context (invocation, checkpoint_auth_done_cb, self);
-	if (!chain) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               BYX_MANAGER_ERROR,
-		                                               BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                               "Unable to authenticate request.");
-		return;
-	}
-
-	g_variant_get (parameters, "(&ou)", &checkpoint_path, &add_timeout);
-
-	priv->auth_chains = g_slist_append (priv->auth_chains, chain);
-	nm_auth_chain_set_data (chain, "audit-op", NM_AUDIT_OP_CHECKPOINT_ADJUST_ROLLBACK_TIMEOUT, NULL);
-	nm_auth_chain_set_data (chain, "checkpoint_path", g_strdup (checkpoint_path), g_free);
-	nm_auth_chain_set_data (chain, "add_timeout", GUINT_TO_POINTER (add_timeout), NULL);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_CHECKPOINT_ROLLBACK, TRUE);
-}
-
-/*****************************************************************************/
-
 static void
 auth_mgr_changed (NMAuthManager *auth_manager, gpointer user_data)
 {
@@ -6852,13 +6525,6 @@ get_property (GObject *object, guint prop_id,
 		                    byx_utils_strv_make_deep_copied (_get_devices_paths (self,
 		                                                                        TRUE)));
 		break;
-	case PROP_CHECKPOINTS:
-		g_value_take_boxed (value,
-		                    priv->checkpoint_mgr
-		                    ? byx_utils_strv_make_deep_copied (nm_checkpoint_manager_get_checkpoint_paths (priv->checkpoint_mgr,
-		                                                                                                  NULL))
-		                    : NULL);
-		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;
@@ -6941,8 +6607,6 @@ dispose (GObject *object)
 	priv->auth_chains = NULL;
 
 	nm_clear_g_source (&priv->devices_inited_id);
-
-	g_clear_pointer (&priv->checkpoint_mgr, nm_checkpoint_manager_free);
 
 	if (priv->concheck_mgr) {
 		g_signal_handlers_disconnect_by_func (priv->concheck_mgr,
@@ -7155,15 +6819,6 @@ static const ByxDBusInterfaceInfoExtended interface_info_manager = {
 			),
 			NM_DEFINE_DBUS_METHOD_INFO_EXTENDED (
 				NM_DEFINE_GDBUS_METHOD_INFO_INIT (
-					"GetPermissions",
-					.out_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("permissions", "a{ss}"),
-					),
-				),
-				.handle = impl_manager_get_permissions,
-			),
-			NM_DEFINE_DBUS_METHOD_INFO_EXTENDED (
-				NM_DEFINE_GDBUS_METHOD_INFO_INIT (
 					"SetLogging",
 					.in_args = NM_DEFINE_GDBUS_ARG_INFOS (
 						NM_DEFINE_GDBUS_ARG_INFO ("level",   "s"),
@@ -7200,51 +6855,6 @@ static const ByxDBusInterfaceInfoExtended interface_info_manager = {
 				),
 				.handle = impl_manager_state,
 			),
-			NM_DEFINE_DBUS_METHOD_INFO_EXTENDED (
-				NM_DEFINE_GDBUS_METHOD_INFO_INIT (
-					"CheckpointCreate",
-					.in_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("devices",          "ao"),
-						NM_DEFINE_GDBUS_ARG_INFO ("rollback_timeout", "u"),
-						NM_DEFINE_GDBUS_ARG_INFO ("flags",            "u"),
-					),
-					.out_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("checkpoint", "o"),
-					),
-				),
-				.handle = impl_manager_checkpoint_create,
-			),
-			NM_DEFINE_DBUS_METHOD_INFO_EXTENDED (
-				NM_DEFINE_GDBUS_METHOD_INFO_INIT (
-					"CheckpointDestroy",
-					.in_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("checkpoint", "o"),
-					),
-				),
-				.handle = impl_manager_checkpoint_destroy,
-			),
-			NM_DEFINE_DBUS_METHOD_INFO_EXTENDED (
-				NM_DEFINE_GDBUS_METHOD_INFO_INIT (
-					"CheckpointRollback",
-					.in_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("checkpoint", "o"),
-					),
-					.out_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("result", "a{su}"),
-					),
-				),
-				.handle = impl_manager_checkpoint_rollback,
-			),
-			NM_DEFINE_DBUS_METHOD_INFO_EXTENDED (
-				NM_DEFINE_GDBUS_METHOD_INFO_INIT (
-					"CheckpointAdjustRollbackTimeout",
-					.in_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("checkpoint", "o"),
-						NM_DEFINE_GDBUS_ARG_INFO ("add_timeout", "u"),
-					),
-				),
-				.handle = impl_manager_checkpoint_adjust_rollback_timeout,
-			),
 		),
 		.signals = NM_DEFINE_GDBUS_SIGNAL_INFOS (
 			&nm_signal_info_property_changed_legacy,
@@ -7256,7 +6866,6 @@ static const ByxDBusInterfaceInfoExtended interface_info_manager = {
 		.properties = NM_DEFINE_GDBUS_PROPERTY_INFOS (
 			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L     ("Devices",                    "ao",    BYX_MANAGER_DEVICES),
 			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L     ("AllDevices",                 "ao",    BYX_MANAGER_ALL_DEVICES),
-			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L     ("Checkpoints",                "ao",    BYX_MANAGER_CHECKPOINTS),
 			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L     ("NetworkingEnabled",          "b",     BYX_MANAGER_NETWORKING_ENABLED),
 			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READWRITABLE_L ("WirelessEnabled",            "b",     BYX_MANAGER_WIRELESS_ENABLED,              NM_AUTH_PERMISSION_ENABLE_DISABLE_WIFI,               NM_AUDIT_OP_RADIO_CONTROL),
 			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L     ("WirelessHardwareEnabled",    "b",     BYX_MANAGER_WIRELESS_HARDWARE_ENABLED),
@@ -7455,12 +7064,6 @@ byx_manager_class_init (ByxManagerClass *manager_class)
 	 **/
 	obj_properties[PROP_ALL_DEVICES] =
 	    g_param_spec_boxed (BYX_MANAGER_ALL_DEVICES, "", "",
-	                        G_TYPE_STRV,
-	                        G_PARAM_READABLE |
-	                        G_PARAM_STATIC_STRINGS);
-
-	obj_properties[PROP_CHECKPOINTS] =
-	    g_param_spec_boxed (BYX_MANAGER_CHECKPOINTS, "", "",
 	                        G_TYPE_STRV,
 	                        G_PARAM_READABLE |
 	                        G_PARAM_STATIC_STRINGS);

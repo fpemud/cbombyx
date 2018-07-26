@@ -88,3 +88,10 @@ Bombyx's architecture should let this happen.
 
 
 
+should NetworkManager support libaudit?
+Yes.
+I have delete the core code, but all the audit point is commented so we can add it back in future.
+it is good for both enterprise and personal usage.
+
+
+

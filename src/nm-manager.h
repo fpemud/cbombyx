@@ -56,7 +56,6 @@
 #define BYX_MANAGER_METERED "metered"
 #define BYX_MANAGER_GLOBAL_DNS_CONFIGURATION "global-dns-configuration"
 #define BYX_MANAGER_ALL_DEVICES "all-devices"
-#define BYX_MANAGER_CHECKPOINTS "checkpoints"
 
 /* Not exported */
 #define BYX_MANAGER_SLEEPING "sleeping"
