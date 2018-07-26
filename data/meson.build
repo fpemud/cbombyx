@@ -38,16 +38,3 @@ if install_systemd_unit_dir
   endforeach
 
 endif
-
-if install_udev_dir
-  data = files(
-    '84-nm-drivers.rules',
-    '85-nm-unmanaged.rules',
-    '90-nm-thunderbolt.rules'
-  )
-
-  install_data(
-    data,
-    install_dir: join_paths(udev_dir, 'rules.d')
-  )
-endif

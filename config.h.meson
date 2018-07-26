@@ -125,9 +125,6 @@
 /* Define if you have libpsl */
 #mesondefine WITH_LIBPSL
 
-/* Define if you have Wi-Fi support */
-#mesondefine WITH_WIFI
-
 /* Define whether the compiler support gcc __auto_type */
 #mesondefine _NM_CC_SUPPORT_AUTO_TYPE
 

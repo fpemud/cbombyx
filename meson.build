@@ -212,42 +212,11 @@ config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_PLUGINS', config_plugins_default)
 
 config_h.set_quoted('NM_DIST_VERSION', dist_version)
 
-enable_wifi = get_option('wifi')
-config_h.set10('WITH_WIFI', enable_wifi)
-
-# Checks for libdl - on certain platforms its part of libc
-dl_dep = cc.find_library('dl')
-'''
-dl_deps = []
-
-dl_dep = cc.find_library('dl')
-if dl_dep.found() and cc.has_function('dlopen')
-  dl_deps += dl_dep
-else
-  dl_dep = dependency('dl', required: false)
-  if dl_dep.found() and cc.has_function('dlopen', dependencies: dl_dep)
-    dl_deps += dl_dep
-  else
-    dld_dep = dependency('dld', required: false)
-    if dld_dep.found() and cc.has_function('dlopen', dependencies: dld_dep)
-      dl_deps += dld_dep
-    endif
-  endif
-endif
-'''
-
 # introspection support
 enable_introspection = get_option('introspection')
 if enable_introspection
   gir_dep = dependency('gobject-introspection-1.0', version: '>= 0.9.6', required: false)
   assert(gir_dep.found(), 'introspection support was requested, but the gobject-introspection library is not available. Use -Dintrospection=false to build without it.')
-endif
-
-udev_dir = get_option('udev_dir')
-install_udev_dir = (udev_dir != 'no')
-
-if install_udev_dir and udev_dir == ''
-  udev_dir = dependency('udev').get_pkgconfig_variable('udevdir')
 endif
 
 systemd_system_unit_dir = get_option('systemdsystemunitdir')
