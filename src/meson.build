@@ -132,10 +132,6 @@ if enable_concheck
   deps += libcurl_dep
 endif
 
-if enable_libaudit
-  deps += libaudit_dep
-endif
-
 if enable_libpsl
   deps += libpsl_dep
 endif

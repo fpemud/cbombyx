@@ -190,22 +190,6 @@ libudev_dep = dependency('libudev', version: '>= 175')
 dbus_dep = dependency('dbus-1', version: '>= 1.1')
 libndp_dep = dependency('libndp')
 
-jansson_dep = dependency('jansson', version: '>= 2.5', required: false)
-config_h.set10('WITH_JANSSON', jansson_dep.found())
-
-if jansson_dep.found()
-  jansson_libdir = jansson_dep.get_pkgconfig_variable('libdir')
-  res = run_command(find_program('eu-readelf', 'readelf'), '-d', join_paths(jansson_libdir, 'libjansson.so'))
-  jansson_soname = ''
-  foreach line: res.stdout().split('\n')
-    if line.strip().contains('SONAME')
-       jansson_soname = line.split('[')[1].split(']')[0]
-    endif
-  endforeach
-  assert(jansson_soname != '', 'Unable to determine Jansson SONAME')
-  config_h.set_quoted('JANSSON_SONAME', jansson_soname)
-endif
-
 libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
 config_h.set10('HAVE_LIBSYSTEMD', libsystemd_dep.found())
 
@@ -377,31 +361,6 @@ if enable_selinux
   assert(selinux_dep.found(), 'You must have libselinux installed to build. Use -Dselinux=false to disable it')
 endif
 config_h.set10('HAVE_SELINUX', enable_selinux)
-
-# libaudit support
-libaudit = get_option('libaudit')
-enable_libaudit = libaudit.contains('yes')
-if enable_libaudit
-  libaudit_dep = dependency('audit', required: false)
-  assert(libaudit_dep.found(), 'You must have libaudit installed to build. Use -Dlibaudit=false to disable it')
-endif
-config_default_logging_audit = (libaudit == 'yes').to_string()
-config_h.set_quoted('NM_CONFIG_DEFAULT_LOGGING_AUDIT', config_default_logging_audit)
-config_h.set10('HAVE_LIBAUDIT', enable_libaudit)
-
-enable_json_validation = get_option('json_validation')
-if enable_json_validation
-  assert(jansson_dep.found(), 'jansson is needed for team configuration validation. Use -Djson_validation=false to disable it')
-endif
-config_h.set10('WITH_JSON_VALIDATION', enable_json_validation)
-
-# polkit
-polkit = get_option('polkit')
-
-config_default_main_auth_polkit = (polkit == 'yes').to_string()
-config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_AUTH_POLKIT', config_default_main_auth_polkit)
-
-enable_modify_system = get_option('modify_system')
 
 # crypto
 crypto = get_option('crypto')
@@ -694,7 +653,6 @@ output += '\n'
 output += '  selinux: ' + enable_selinux.to_string() + '\n'
 output += '  systemd-journald: ' + enable_systemd_journal.to_string() + ' (default: logging.backend=' + config_logging_backend_default + ')\n'
 output += '  hostname persist: ' + hostname_persist + '\n'
-output += '  libaudit: ' + enable_libaudit.to_string() + ' (default: logging.audit=' + config_default_logging_audit + ')\n'
 endif
 output += '\n'
 output += '  modemmanager-1: ' + enable_modem_manager.to_string() + '\n'
@@ -733,7 +691,6 @@ output += '\n'
 output += '  code coverage: ' + get_option('b_coverage').to_string() + '\n'
 output += '  LTO: ' + get_option('b_lto').to_string() + '\n'
 output += '  Linker garbage collection: ' + enable_ld_gc.to_string() + '\n'
-output += '  JSON validation for libnm: ' + enable_json_validation.to_string () + '\n'
 output += '  sanitizers: ' + get_option('b_sanitize') + '\n'
 output += '  Mozilla Public Suffix List: ' + enable_libpsl.to_string() + '\n'
 message(output)

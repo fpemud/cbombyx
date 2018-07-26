@@ -4,7 +4,6 @@ data_conf.set('libexecdir', nm_libexecdir)
 data_conf.set('sbindir', nm_sbindir)
 data_conf.set('sysconfdir', nm_sysconfdir)
 data_conf.set('DISTRO_NETWORK_SERVICE', (enable_ifcfg_rh ? 'network.service' : ''))
-data_conf.set('NM_MODIFY_SYSTEM_POLICY', (enable_modify_system ? 'yes' : 'auth_admin_keep'))
 
 server = 'server.conf'
 
