@@ -25,9 +25,6 @@
 /* Define to path of iptables binary */
 #mesondefine IPTABLES_PATH
 
-/* Path to netconfig */
-#mesondefine NETCONFIG_PATH
-
 /* Default configuration option for logging.backend */
 #mesondefine NM_CONFIG_DEFAULT_LOGGING_BACKEND
 
@@ -51,9 +48,6 @@
 
 /* Define to the full name and version of this package. */
 #mesondefine PACKAGE_STRING
-
-/* Path to resolvconf */
-#mesondefine RESOLVCONF_PATH
 
 /* Define to 1 if libelogin is available */
 #mesondefine SESSION_TRACKING_ELOGIND

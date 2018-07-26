@@ -376,37 +376,7 @@ if enable_modem_manager
   mm_glib_dep = dependency('mm-glib', version: '>= 0.7.991')
 endif
 
-# resolvconf and netconfig support
-locations = get_option('resolvconf')
-enable_resolvconf = (locations != ['no'])
-if enable_resolvconf
-  resolvconf = find_program(locations, required: false)
-  enable_resolvconf = resolvconf.found()
-
-  if enable_resolvconf
-    config_h.set_quoted('RESOLVCONF_PATH', resolvconf.path())
-  endif
-endif
-
-locations = get_option('netconfig')
-enable_netconfig = (locations != ['no'])
-if enable_netconfig
-  netconfig = find_program(locations, required: false)
-  enable_netconfig = netconfig.found()
-
-  if enable_netconfig
-    config_h.set_quoted('NETCONFIG_PATH', netconfig.path())
-  endif
-endif
-
 config_dns_rc_manager_default = get_option('config_dns_rc_manager_default')
-if config_dns_rc_manager_default == 'resolvconf' and not enable_resolvconf
-  error(config_dns_rc_manager_default + ' has not been enabled. Please don\'t disable it or use another configuration option for main.rc-manager setting')
-endif
-
-if config_dns_rc_manager_default == 'netconfig' and not enable_netconfig
-  error(config_dns_rc_manager_default + ' has not been enabled. Please don\'t disable it or use another configuration option for main.rc-manager setting')
-endif
 
 config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_RC_MANAGER', config_dns_rc_manager_default)
 
@@ -639,16 +609,6 @@ output += '\nConfiguration_plugins (main.plugins=' + config_plugins_default + ')
 output += '  ibft: ' + enable_ibft.to_string() + '\n'
 output += '  ifcfg-rh: ' + enable_ifcfg_rh.to_string() + '\n'
 output += '  ifupdown: ' + enable_ifupdown.to_string() + '\n'
-output += '\nHandlers for /etc/resolv.conf:\n'
-output += '  resolvconf: ' + enable_resolvconf.to_string()
-if enable_resolvconf
-  output += ' ' + resolvconf.path()
-endif
-output += '\n'
-output += '  netconfig: ' + enable_netconfig.to_string()
-if enable_netconfig
-  output += ' ' + netconfig.path()
-endif
 output += '\n'
 output += '  config-dns-rc-manager-default: ' + config_dns_rc_manager_default + '\n'
 output += '\n'

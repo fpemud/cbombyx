@@ -110,10 +110,6 @@ void nm_dns_manager_set_hostname         (NMDnsManager *self,
  *   by symlinking it to the run state directory.
  * @NM_DNS_MANAGER_RESOLV_CONF_MAN_FILE: Like SYMLINK, but instead of
  *   symlinking /etc/resolv.conf, write it as a file.
- * @NM_DNS_MANAGER_RESOLV_CONF_MAN_RESOLVCONF: NM is managing resolv.conf
-     through resolvconf
- * @NM_DNS_MANAGER_RESOLV_CONF_MAN_NETCONFIG: NM is managing resolv.conf
-     through netconfig
  *
  * NMDnsManager's management of resolv.conf
  */
@@ -123,8 +119,6 @@ typedef enum {
 	NM_DNS_MANAGER_RESOLV_CONF_MAN_IMMUTABLE,
 	NM_DNS_MANAGER_RESOLV_CONF_MAN_SYMLINK,
 	NM_DNS_MANAGER_RESOLV_CONF_MAN_FILE,
-	NM_DNS_MANAGER_RESOLV_CONF_MAN_RESOLVCONF,
-	NM_DNS_MANAGER_RESOLV_CONF_MAN_NETCONFIG,
 } NMDnsManagerResolvConfManager;
 
 void nm_dns_manager_stop (NMDnsManager *self);

@@ -57,14 +57,6 @@
 
 #define HASH_LEN 20
 
-#ifndef RESOLVCONF_PATH
-#define RESOLVCONF_PATH "/sbin/resolvconf"
-#endif
-
-#ifndef NETCONFIG_PATH
-#define NETCONFIG_PATH "/sbin/netconfig"
-#endif
-
 #define PLUGIN_RATELIMIT_INTERVAL    30
 #define PLUGIN_RATELIMIT_BURST       5
 #define PLUGIN_RATELIMIT_DELAY       300
@@ -205,8 +197,6 @@ NM_UTILS_LOOKUP_STR_DEFINE_STATIC (_rc_manager_to_string, NMDnsManagerResolvConf
 	NM_UTILS_LOOKUP_STR_ITEM (NM_DNS_MANAGER_RESOLV_CONF_MAN_IMMUTABLE,      "immutable"),
 	NM_UTILS_LOOKUP_STR_ITEM (NM_DNS_MANAGER_RESOLV_CONF_MAN_SYMLINK,        "symlink"),
 	NM_UTILS_LOOKUP_STR_ITEM (NM_DNS_MANAGER_RESOLV_CONF_MAN_FILE,           "file"),
-	NM_UTILS_LOOKUP_STR_ITEM (NM_DNS_MANAGER_RESOLV_CONF_MAN_RESOLVCONF,     "resolvconf"),
-	NM_UTILS_LOOKUP_STR_ITEM (NM_DNS_MANAGER_RESOLV_CONF_MAN_NETCONFIG,      "netconfig"),
 );
 
 NM_UTILS_LOOKUP_STR_DEFINE_STATIC (_config_type_to_string, NMDnsIPConfigType,
@@ -481,106 +471,6 @@ merge_one_ip_config (NMResolvConfData *rc,
 	}
 }
 
-static GPid
-run_netconfig (NMDnsManager *self, GError **error, gint *stdin_fd)
-{
-	char *argv[5];
-	gs_free char *tmp = NULL;
-	GPid pid = -1;
-
-	argv[0] = NETCONFIG_PATH;
-	argv[1] = "modify";
-	argv[2] = "--service";
-	argv[3] = "NetworkManager";
-	argv[4] = NULL;
-
-	_LOGD ("spawning '%s'",
-	       (tmp = g_strjoinv (" ", argv)));
-
-	if (!g_spawn_async_with_pipes (NULL, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL,
-	                               NULL, &pid, stdin_fd, NULL, NULL, error))
-		return -1;
-
-	return pid;
-}
-
-static void
-netconfig_construct_str (NMDnsManager *self, GString *str, const char *key, const char *value)
-{
-	if (value) {
-		_LOGD ("writing to netconfig: %s='%s'", key, value);
-		g_string_append_printf (str, "%s='%s'\n", key, value);
-	}
-}
-
-static void
-netconfig_construct_strv (NMDnsManager *self, GString *str, const char *key, const char *const*values)
-{
-	if (values) {
-		gs_free char *value = NULL;
-
-		value = g_strjoinv (" ", (char **) values);
-		netconfig_construct_str (self, str, key, value);
-	}
-}
-
-static SpawnResult
-dispatch_netconfig (NMDnsManager *self,
-                    const char *const*searches,
-                    const char *const*nameservers,
-                    const char *nis_domain,
-                    const char *const*nis_servers,
-                    GError **error)
-{
-	GPid pid;
-	gint fd;
-	int status;
-	gssize l;
-	nm_auto_free_gstring GString *str = NULL;
-
-	pid = run_netconfig (self, error, &fd);
-	if (pid <= 0)
-		return SR_NOTFOUND;
-
-	str = g_string_new ("");
-
-	/* NM is writing already-merged DNS information to netconfig, so it
-	 * does not apply to a specific network interface.
-	 */
-	netconfig_construct_str (self, str, "INTERFACE", "NetworkManager");
-	netconfig_construct_strv (self, str, "DNSSEARCH", searches);
-	netconfig_construct_strv (self, str, "DNSSERVERS", nameservers);
-	netconfig_construct_str (self, str, "NISDOMAIN", nis_domain);
-	netconfig_construct_strv (self, str, "NISSERVERS", nis_servers);
-
-again:
-	l = write (fd, str->str, str->len);
-	if (l == -1)  {
-		if (errno == EINTR)
-			goto again;
-	}
-
-	nm_close (fd);
-
-	/* Wait until the process exits */
-	if (!byx_utils_kill_child_sync (pid, 0, LOGD_DNS, "netconfig", &status, 1000, 0)) {
-		int errsv = errno;
-
-		g_set_error (error, BYX_MANAGER_ERROR, BYX_MANAGER_ERROR_FAILED,
-		             "Error waiting for netconfig to exit: %s",
-		             strerror (errsv));
-		return SR_ERROR;
-	}
-	if (!WIFEXITED (status) || WEXITSTATUS (status) != EXIT_SUCCESS) {
-		g_set_error (error, BYX_MANAGER_ERROR, BYX_MANAGER_ERROR_FAILED,
-		             "Error calling netconfig: %s %d",
-		             WIFEXITED (status) ? "exited with status" : (WIFSIGNALED (status) ? "exited with signal" : "exited with unknown reason"),
-		             WIFEXITED (status) ? WEXITSTATUS (status) : (WIFSIGNALED (status) ? WTERMSIG (status) : status));
-		return SR_ERROR;
-	}
-	return SR_SUCCESS;
-}
-
 static char *
 create_resolv_conf (char **searches,
                     char **nameservers,
@@ -663,78 +553,6 @@ write_resolv_conf (FILE *f,
 
 	content = create_resolv_conf (searches, nameservers, options);
 	return write_resolv_conf_contents (f, content, error);
-}
-
-static SpawnResult
-dispatch_resolvconf (NMDnsManager *self,
-                     char **searches,
-                     char **nameservers,
-                     char **options,
-                     GError **error)
-{
-	gs_free char *cmd = NULL;
-	FILE *f;
-	gboolean success = FALSE;
-	int errnosv, err;
-	char *argv[] = { RESOLVCONF_PATH, "-d", "NetworkManager", NULL };
-	int status;
-
-	if (!g_file_test (RESOLVCONF_PATH, G_FILE_TEST_IS_EXECUTABLE)) {
-		g_set_error_literal (error,
-		                     BYX_MANAGER_ERROR,
-		                     BYX_MANAGER_ERROR_FAILED,
-		                     RESOLVCONF_PATH " is not executable");
-		return SR_NOTFOUND;
-	}
-
-	if (!searches && !nameservers) {
-		_LOGI ("Removing DNS information from %s", RESOLVCONF_PATH);
-
-		if (!g_spawn_sync ("/", argv, NULL, 0, NULL, NULL, NULL, NULL, &status, error))
-			return SR_ERROR;
-
-		if (status != 0) {
-			g_set_error (error,
-			             BYX_MANAGER_ERROR,
-			             BYX_MANAGER_ERROR_FAILED,
-			             "%s returned error code",
-			             RESOLVCONF_PATH);
-			return SR_ERROR;
-		}
-
-		return SR_SUCCESS;
-	}
-
-	_LOGI ("Writing DNS information to %s", RESOLVCONF_PATH);
-
-	cmd = g_strconcat (RESOLVCONF_PATH, " -a ", "NetworkManager", NULL);
-	if ((f = popen (cmd, "w")) == NULL) {
-		g_set_error (error,
-		             BYX_MANAGER_ERROR,
-		             BYX_MANAGER_ERROR_FAILED,
-		             "Could not write to %s: %s",
-		             RESOLVCONF_PATH,
-		             g_strerror (errno));
-		return SR_ERROR;
-	}
-
-	success = write_resolv_conf (f, searches, nameservers, options, error);
-	err = pclose (f);
-	if (err < 0) {
-		errnosv = errno;
-		g_clear_error (error);
-		g_set_error (error, G_IO_ERROR, g_io_error_from_errno (errnosv),
-		             "Failed to close pipe to resolvconf: %d", errnosv);
-		return SR_ERROR;
-	} else if (err > 0) {
-		_LOGW ("resolvconf failed with status %d", err);
-		g_clear_error (error);
-		g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-		             "resolvconf failed with status %d", err);
-		return SR_ERROR;
-	}
-
-	return success ? SR_SUCCESS : SR_ERROR;
 }
 
 static const char *
@@ -1454,17 +1272,6 @@ update_dns (NMDnsManager *self,
 			if (!nameservers && !options)
 				priv->dns_touched = FALSE;
 			break;
-		case NM_DNS_MANAGER_RESOLV_CONF_MAN_RESOLVCONF:
-			result = dispatch_resolvconf (self, searches, nameservers, options, error);
-			break;
-		case NM_DNS_MANAGER_RESOLV_CONF_MAN_NETCONFIG:
-			result = dispatch_netconfig (self,
-			                             (const char *const*) searches,
-			                             (const char *const*) nameservers,
-			                             nis_domain,
-			                             (const char *const*) nis_servers,
-			                             error);
-			break;
 		default:
 			g_assert_not_reached ();
 		}
@@ -1825,8 +1632,6 @@ _check_resconf_immutable (NMDnsManagerResolvConfManager rc_manager)
 				nm_assert_not_reached ();
 				/* fall through */
 			case NM_DNS_MANAGER_RESOLV_CONF_MAN_FILE:
-			case NM_DNS_MANAGER_RESOLV_CONF_MAN_RESOLVCONF:
-			case NM_DNS_MANAGER_RESOLV_CONF_MAN_NETCONFIG:
 				break;
 			}
 		}
@@ -1941,10 +1746,6 @@ again:
 			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_SYMLINK;
 		else if (nm_streq (man, "file"))
 			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_FILE;
-		else if (nm_streq (man, "resolvconf"))
-			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_RESOLVCONF;
-		else if (nm_streq (man, "netconfig"))
-			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_NETCONFIG;
 		else if (nm_streq (man, "unmanaged"))
 			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_UNMANAGED;
 
