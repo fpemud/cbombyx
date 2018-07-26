@@ -871,8 +871,7 @@ auto_activate_device (NMPolicy *self,
 			continue;
 
 		permission = byx_utils_get_shared_wifi_permission (NM_CONNECTION (candidate));
-		if (   permission
-		    && !nm_settings_connection_check_permission (candidate, permission))
+		if (permission)
 			continue;
 
 		if (nm_device_can_auto_connect (device, (NMConnection *) candidate, &specific_object)) {

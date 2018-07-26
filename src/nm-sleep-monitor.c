@@ -49,21 +49,9 @@
 #define _NMLOG_PREFIX_NAME              "sleep-monitor-el"
 #endif
 
-#elif defined(SUSPEND_RESUME_CONSOLEKIT)
-
-/* ConsoleKit2 has added the same suspend/resume DBUS API that Systemd
- * uses. http://consolekit2.github.io/ConsoleKit2/#Manager.Inhibit
- */
-
-#define SUSPEND_DBUS_NAME               "org.freedesktop.ConsoleKit"
-#define SUSPEND_DBUS_PATH               "/org/freedesktop/ConsoleKit/Manager"
-#define SUSPEND_DBUS_INTERFACE          "org.freedesktop.ConsoleKit.Manager"
-#define USE_UPOWER                      0
-#define _NMLOG_PREFIX_NAME              "sleep-monitor-ck"
-
 #else
 
-#error define one of SUSPEND_RESUME_SYSTEMD, SUSPEND_RESUME_ELOGIND, SUSPEND_RESUME_CONSOLEKIT, or SUSPEND_RESUME_UPOWER
+#error define one of SUSPEND_RESUME_SYSTEMD, SUSPEND_RESUME_ELOGIND, or SUSPEND_RESUME_UPOWER
 
 #endif
 
