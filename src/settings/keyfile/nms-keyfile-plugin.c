@@ -19,7 +19,7 @@
  * Copyright (C) 2008 - 2013 Red Hat, Inc.
  */
 
-#include "nm-default.h"
+#include "byx-default.h"
 
 #include "nms-keyfile-plugin.h"
 

@@ -1,11 +1,9 @@
 src_inc = include_directories('.')
 
 install_data(
-  'org.freedesktop.NetworkManager.conf',
+  'org.freedesktop.Bombyx.conf',
   install_dir: dbus_conf_dir
 )
-
-subdir('systemd')
 
 core_plugins = []
 

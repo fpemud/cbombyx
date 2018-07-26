@@ -3,11 +3,11 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 libgnome_serverdir=@libexecdir@
-plugindir=@libdir@/NetworkManager
-configdir=@sysconfdir@/NetworkManager
+plugindir=@libdir@/bombyx
+configdir=@sysconfdir@/bombyx
 
-Name: NetworkManager
+Name: bombyx
 Description: System for maintaining active network connection
 Requires:
 Version: @VERSION@
-Cflags: -I${includedir}/NetworkManager
+Cflags: -I${includedir}/bombyx

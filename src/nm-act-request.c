@@ -19,7 +19,7 @@
  * Copyright (C) 2007 - 2008 Novell, Inc.
  */
 
-#include "nm-default.h"
+#include "byx-default.h"
 
 #include "nm-act-request.h"
 

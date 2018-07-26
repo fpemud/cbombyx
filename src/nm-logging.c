@@ -19,7 +19,7 @@
  * Copyright (C) 2006 - 2008 Novell, Inc.
  */
 
-#include "nm-default.h"
+#include "byx-default.h"
 
 #include <dlfcn.h>
 #include <syslog.h>

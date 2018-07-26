@@ -18,7 +18,7 @@
  * (C) Copyright 2010 Red Hat, Inc.
  */
 
-#include "nm-default.h"
+#include "byx-default.h"
 
 #include "nms-keyfile-utils.h"
 

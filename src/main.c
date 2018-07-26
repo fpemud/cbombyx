@@ -20,7 +20,7 @@
  * Copyright (C) 2005 - 2008 Novell, Inc.
  */
 
-#include "nm-default.h"
+#include "byx-default.h"
 
 #include <getopt.h>
 #include <locale.h>

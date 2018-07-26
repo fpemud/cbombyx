@@ -20,7 +20,7 @@
  * Copyright (C) 2011 Intel Corporation. All rights reserved.
  */
 
-#include "nm-default.h"
+#include "byx-default.h"
 
 #include "nm-wifi-utils-nl80211.h"
 
