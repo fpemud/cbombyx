@@ -77,11 +77,13 @@ I don't think so.
 
 
 should Bombyx hide connection from some of the users?
+should Bombyx do permission management for connections?
 No.
-Networkmanager do this because user can create connection, so the creator may want to hide it from others.
+Networkmanager do this because user can create connection, so the creator may want to hide/disable it from others.
 All the connections in Bombyx can be viewed as created by root, like packages.
 So they should be visible to all users.
-
+If you really need to do this, you should do it in filesystem level. how do you hide files from users? how do you restrict file access?
+Bombyx's architecture should let this happen.
 
 
 
