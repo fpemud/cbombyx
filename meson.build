@@ -1,58 +1,44 @@
-project(
-  'Bombyx', 'c',
-# NOTE: When incrementing version also:
-#  - add corresponding NM_VERSION_x_y_z macros in
-#    "shared/nm-version-macros.h.in"
-#  - update number in configure.ac
-  version: '1.13.1',
-  license: 'GPL2+',
-  default_options: [
-    'buildtype=debugoptimized',
-    'c_std=gnu99'
-  ],
-  meson_version: '>= 0.44.0'
+project('Bombyx', 'c',
+                version: '1.13.1',
+                license: 'GPL2+',
+        default_options: [
+          'buildtype=debugoptimized',
+          'c_std=gnu99'
+        ],
+          meson_version: '>= 0.44.0'
 )
 
 nm_name = meson.project_name()
 
 nm_version = meson.project_version()
-version_array = nm_version.split('.')
-nm_major_version = version_array[0].to_int()
-nm_minor_version = version_array[1].to_int()
-nm_micro_version = version_array[2].to_int()
+byx_major_version = nm_version.split('.')[0].to_int()
+byx_minor_version = nm_version.split('.')[1].to_int()
+byx_micro_version = nm_version.split('.')[2].to_int()
 
-nm_id_prefix = 'NM'
+byx_gir_version = '1.0'
 
-nm_gir_version = '1.0'
-
-# Distribution version string
-dist_version = get_option('dist_version')
-if dist_version == ''
-  dist_version = nm_version
-endif
-
-nm_prefix = get_option('prefix')
-nm_bindir = join_paths(nm_prefix, get_option('bindir'))
-nm_datadir = join_paths(nm_prefix, get_option('datadir'))
-nm_includedir = join_paths(nm_prefix, get_option('includedir'))
-nm_libdir = join_paths(nm_prefix, get_option('libdir'))
-nm_libexecdir = join_paths(nm_prefix, get_option('libexecdir'))
-nm_localedir = join_paths(nm_prefix, get_option('localedir'))
-nm_localstatedir = join_paths(nm_prefix, get_option('localstatedir'))
-nm_mandir = join_paths(nm_prefix, get_option('mandir'))
+byx_prefix = get_option('prefix')
+nm_bindir = join_paths(byx_prefix, get_option('bindir'))
+nm_datadir = join_paths(byx_prefix, get_option('datadir'))
+nm_includedir = join_paths(byx_prefix, get_option('includedir'))
+nm_libdir = join_paths(byx_prefix, get_option('libdir'))
+nm_libexecdir = join_paths(byx_prefix, get_option('libexecdir'))
+nm_localedir = join_paths(byx_prefix, get_option('localedir'))
+nm_localstatedir = join_paths(byx_prefix, get_option('localstatedir'))
+nm_mandir = join_paths(byx_prefix, get_option('mandir'))
 nm_runstatedir = join_paths(nm_localstatedir, 'run')
-nm_sbindir = join_paths(nm_prefix, get_option('sbindir'))
-nm_sysconfdir = join_paths(nm_prefix, get_option('sysconfdir'))
+nm_sbindir = join_paths(byx_prefix, get_option('sbindir'))
+nm_sysconfdir = join_paths(byx_prefix, get_option('sysconfdir'))
 
 nm_pkgsbindir = join_paths(nm_sbindir, nm_name)
 nm_pkgconfdir = join_paths(nm_sysconfdir, nm_name)
 nm_pkgdatadir = join_paths(nm_datadir, nm_name)
 nm_pkgincludedir = join_paths(nm_includedir, nm_name)
-nm_pkglibdir = join_paths(nm_prefix, 'lib', nm_name)
+nm_pkglibdir = join_paths(byx_prefix, 'lib', nm_name)
 nm_pkgrundir = join_paths(nm_runstatedir, nm_name)
 nm_pkgstatedir = join_paths(nm_localstatedir, nm_name)
 nm_vpndir = join_paths(nm_libdir, nm_name)
-nm_plugindir = join_paths(nm_libdir, nm_name, dist_version)
+nm_plugindir = join_paths(nm_libdir, nm_name, nm_version)
 
 nm_build_cflags = [
   '-DNM_BUILD_SRCDIR="@0@"'.format(meson.source_root()),
@@ -60,35 +46,6 @@ nm_build_cflags = [
 ]
 
 libnm_name = 'libnm'
-
-current = 1
-revision = 0
-age = 1
-libnm_version = '@0@.@1@.@2@'.format(current - age, age, revision)
-
-libnm_pkgincludedir = join_paths(nm_includedir, libnm_name)
-
-libnm_util_name = 'libnm-util'
-
-current = 9
-revision = 0
-age = 7
-libnm_util_version = '@0@.@1@.@2@'.format(current - age, age, revision)
-
-libnm_glib_name = 'libnm-glib'
-libnm_glib_vpn_name = libnm_glib_name + '-vpn'
-
-current = 13
-revision = 0
-age = 9
-libnm_glib_version = '@0@.@1@.@2@'.format(current - age, age, revision)
-
-libnm_glib_pkgincludedir = join_paths(nm_includedir, libnm_glib_name)
-
-current = 3
-revision = 0
-age = 2
-libnm_glib_vpn_version = '@0@.@1@.@2@'.format(current - age, age, revision)
 
 nm_debug = get_option('buildtype').contains('debug')
 
@@ -209,8 +166,6 @@ if config_plugins_default == ''
   config_plugins_default = ','.join(config_plugins)
 endif
 config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_PLUGINS', config_plugins_default)
-
-config_h.set_quoted('NM_DIST_VERSION', dist_version)
 
 # introspection support
 enable_introspection = get_option('introspection')
@@ -519,8 +474,8 @@ meson.add_install_script(
 )
 
 output = '\nSystem paths:\n'
-output += '  prefix: ' + nm_prefix + '\n'
-output += '  exec_prefix: ' + nm_prefix + '\n'
+output += '  prefix: ' + byx_prefix + '\n'
+output += '  exec_prefix: ' + byx_prefix + '\n'
 output += '  systemdunitdir: ' + systemd_system_unit_dir + '\n'
 output += '  nmbinary: ' + nm_pkgsbindir + '\n'
 output += '  nmconfdir: ' + nm_pkgconfdir + '\n'

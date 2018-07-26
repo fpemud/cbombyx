@@ -37,9 +37,6 @@
 /* Default value for main.rc-manager setting */
 #mesondefine NM_CONFIG_DEFAULT_MAIN_RC_MANAGER
 
-/* Define the distribution version string */
-#mesondefine NM_DIST_VERSION
-
 /* Define if more asserts are enabled */
 #mesondefine NM_MORE_ASSERTS
 

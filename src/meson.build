@@ -18,7 +18,7 @@ nm_dep = declare_dependency(
 )
 
 cflags = nm_cflags + [
-  '-DPREFIX="@0@"'.format(nm_prefix),
+  '-DPREFIX="@0@"'.format(byx_prefix),
   '-DBINDIR="@0@"'.format(nm_bindir),
   '-DDATADIR="@0@"'.format(nm_datadir),
   '-DLIBEXECDIR="@0@"'.format(nm_libexecdir),

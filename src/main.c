@@ -53,10 +53,6 @@
 #include "systemd/nm-sd.h"
 #include "nm-netns.h"
 
-#if !defined(NM_DIST_VERSION)
-# define NM_DIST_VERSION VERSION
-#endif
-
 #define BYX_DEFAULT_PID_FILE          NMRUNDIR "/bombyx.pid"
 #define BYX_DEFAULT_SYSTEM_STATE_FILE NMSTATEDIR "/bombyx.state"
 
@@ -254,7 +250,7 @@ main (int argc, char *argv[])
 		_set_g_fatal_warnings ();
 
 	if (global_opt.show_version) {
-		fprintf (stdout, NM_DIST_VERSION "\n");
+		fprintf (stdout, VERSION "\n");
 		exit (0);
 	}
 
@@ -356,7 +352,7 @@ main (int argc, char *argv[])
 		byx_logging_syslog_openlog (v, nm_config_get_is_debug (config));
 	}
 
-	byx_log_info (LOGD_CORE, "NetworkManager (version " NM_DIST_VERSION ") is starting... (%s)",
+	byx_log_info (LOGD_CORE, "NetworkManager (version " VERSION ") is starting... (%s)",
 	              nm_config_get_first_start (config) ? "for the first time" : "after a restart");
 
 	byx_log_info (LOGD_CORE, "Read config: %s", nm_config_data_get_config_description (nm_config_get_data (config)));

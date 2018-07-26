@@ -9,7 +9,6 @@ option('dnsmasq', type: 'array', value: ['dnsmasq', '/sbin/dnsmasq', '/usr/sbin/
 option('dnssec_trigger', type: 'array', value: ['dnssec-trigger-script', '/usr/local/libexec/dnssec-trigger-script', '/usr/local/lib/dnssec-trigger-script', '/usr/local/lib/dnssec-trigger/dnssec-trigger-script', '/usr/libexec/dnssec-trigger-script', '/usr/lib/dnssec-trigger-script', '/usr/lib/dnssec-trigger/dnssec-trigger-script'], description: 'path to unbound dnssec-trigger-script')
 
 # platform
-option('dist_version', type: 'string', value: '', description: 'Define the NM\'s distribution version string')
 option('consolekit', type: 'boolean', value: true, description: 'Support consolekit session tracking')
 option('session_tracking', type: 'combo', choices: ['systemd', 'elogind', 'no'], value: 'systemd', description: 'Compatibility option to choose one session tracking module')
 option('suspend_resume', type: 'boolean', value: true, description: 'Build NetworkManager with specific suspend/resume support')
