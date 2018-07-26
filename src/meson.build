@@ -136,10 +136,6 @@ if enable_libpsl
   deps += libpsl_dep
 endif
 
-if enable_session_tracking
-  deps += logind_dep
-endif
-
 libnetwork_manager = static_library(
   nm_name,
   sources: sources,

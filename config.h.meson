@@ -46,12 +46,6 @@
 /* Define to the full name and version of this package. */
 #mesondefine PACKAGE_STRING
 
-/* Define to 1 if libelogin is available */
-#mesondefine SESSION_TRACKING_ELOGIND
-
-/* Define to 1 if libsystemd-login is available */
-#mesondefine SESSION_TRACKING_SYSTEMD
-
 /* The size of `dev_t', as computed by sizeof. */
 #mesondefine SIZEOF_DEV_T
 

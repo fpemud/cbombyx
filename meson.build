@@ -188,28 +188,6 @@ if config_logging_backend_default == 'default'
 endif
 config_h.set_quoted('NM_CONFIG_DEFAULT_LOGGING_BACKEND', config_logging_backend_default)
 
-session_tracking = get_option('session_tracking')
-session_trackers = []
-enable_session_tracking = (session_tracking != 'no')
-
-if enable_session_tracking
-  if session_tracking == 'systemd'
-    logind_dep = libsystemd_dep
-    if not logind_dep.found()
-      logind_dep = dependency('libsystemd-login', required: false)
-      assert(logind_dep.found(), 'You must have libsystemd or libsystemd-login installed to build with systemd-logind support')
-    endif
-    session_trackers += 'systemd-logind'
-    config_h.set('SESSION_TRACKING_SYSTEMD', true)
-  else
-    logind_dep = libelogind_dep
-    assert(logind_dep.found() and libelogind_dep.version().version_compare('>= 229'), 'You must have libelogind installed to build with elogind support.')
-    session_trackers += 'elogind'
-    config_h.set('SESSION_TRACKING_ELOGIND', true)
-  endif
-
-endif
-
 enable_suspend_resume = get_option('suspend_resume')
 suspend_resume = ''
 
@@ -479,7 +457,6 @@ output += '  nmrundir: ' + nm_pkgrundir + '\n'
 output += '  nmvpndir: ' + nm_vpndir + '\n'
 output += '  nmplugindir: ' + nm_plugindir + '\n'
 output += '\nPlatform:\n'
-output += '  session tracking: ' + ','.join(session_trackers) + '\n'
 output += '  suspend/resume: ' + suspend_resume + '\n'
 output += '\n'
 output += '  systemd-journald: ' + enable_systemd_journal.to_string() + ' (default: logging.backend=' + config_logging_backend_default + ')\n'
