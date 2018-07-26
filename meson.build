@@ -286,14 +286,6 @@ if enable_suspend_resume
   endif
 endif
 
-# SELinux support
-enable_selinux = get_option('selinux')
-if enable_selinux
-  selinux_dep = dependency('libselinux', required: false)
-  assert(selinux_dep.found(), 'You must have libselinux installed to build. Use -Dselinux=false to disable it')
-endif
-config_h.set10('HAVE_SELINUX', enable_selinux)
-
 # crypto
 crypto = get_option('crypto')
 if crypto == 'nss'
@@ -548,9 +540,7 @@ output += '\nPlatform:\n'
 output += '  session tracking: ' + ','.join(session_trackers) + '\n'
 output += '  suspend/resume: ' + suspend_resume + '\n'
 output += '\n'
-output += '  selinux: ' + enable_selinux.to_string() + '\n'
 output += '  systemd-journald: ' + enable_systemd_journal.to_string() + ' (default: logging.backend=' + config_logging_backend_default + ')\n'
-output += '  hostname persist: ' + hostname_persist + '\n'
 endif
 output += '\n'
 output += '  modemmanager-1: ' + enable_modem_manager.to_string() + '\n'

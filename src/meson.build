@@ -136,10 +136,6 @@ if enable_libpsl
   deps += libpsl_dep
 endif
 
-if enable_selinux
-  deps += selinux_dep
-endif
-
 if enable_session_tracking
   deps += logind_dep
 endif

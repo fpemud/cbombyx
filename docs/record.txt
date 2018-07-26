@@ -53,3 +53,20 @@ LABEL="nm_unmanaged_end"
 
 
 
+NetworkManager can detect hostname change.
+bombyx can't do this.
+It may be a disadvantage, but I think it is the final decision, because:
+1. there're many program can't do this, like bash which shows hostname in the commmand prompt
+2. it is too complicated to do it generally, for example we need to have daemon systemd-hostnamed.
+
+should Bombyx get hostname from network(for example via DHCP)?
+should Bombyx support systemd's transient hostname?
+should Bombyx looks for hostname by reverse DNS?
+I don't think so.
+1. I can't find a normal scene this is useful.
+2. changing the hostname at runtime may confuse the graphical desktop or other applications.
+3. The whole hostname via DHCP seems like an option one would setup for extremely non-permanent devices
+   that one would not want to routinely access or check on remotely in any way. Just assign a hostname 
+   to make it easier to parse through DHCP than just looking at a pile of numbers. If anyone has any 
+   better ideas as to why DHCP hostnames would/should be preferable, please comment to explain the 
+   benefits; I can’t see the immediate benefit of something like that.

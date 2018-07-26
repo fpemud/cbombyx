@@ -34,10 +34,6 @@
 #include <gmodule.h>
 #include <pwd.h>
 
-#if HAVE_SELINUX
-#include <selinux/selinux.h>
-#endif
-
 #include "nm-common-macros.h"
 #include "nm-dbus-interface.h"
 #include "nm-connection.h"
@@ -95,7 +91,6 @@ static NM_CACHED_QUARK_FCN ("default-wired-device", _default_wired_device_quark)
 
 NM_GOBJECT_PROPERTIES_DEFINE (NMSettings,
 	PROP_UNMANAGED_SPECS,
-	PROP_HOSTNAME,
 	PROP_CAN_MODIFY,
 	PROP_CONNECTIONS,
 	PROP_STARTUP_COMPLETE,
@@ -1513,93 +1508,6 @@ impl_settings_reload_connections (ByxDBusObject *obj,
 
 /*****************************************************************************/
 
-static void
-pk_hostname_cb (NMAuthChain *chain,
-                GError *chain_error,
-                GDBusMethodInvocation *context,
-                gpointer user_data)
-{
-	NMSettings *self = NM_SETTINGS (user_data);
-	NMSettingsPrivate *priv = NM_SETTINGS_GET_PRIVATE (self);
-	NMAuthCallResult result;
-	GError *error = NULL;
-	const char *hostname;
-
-	g_assert (context);
-
-	priv->auths = g_slist_remove (priv->auths, chain);
-
-	result = nm_auth_chain_get_result (chain, NM_AUTH_PERMISSION_SETTINGS_MODIFY_HOSTNAME);
-
-	/* If our NMSettingsConnection is already gone, do nothing */
-	if (chain_error) {
-		error = g_error_new (NM_SETTINGS_ERROR,
-		                     NM_SETTINGS_ERROR_FAILED,
-		                     "Error checking authorization: %s",
-		                     chain_error->message);
-	} else if (result != NM_AUTH_CALL_RESULT_YES) {
-		error = g_error_new_literal (NM_SETTINGS_ERROR,
-		                             NM_SETTINGS_ERROR_PERMISSION_DENIED,
-		                             "Insufficient privileges.");
-	} else {
-		hostname = nm_auth_chain_get_data (chain, "hostname");
-
-		if (!nm_hostname_manager_write_hostname (priv->hostname_manager, hostname)) {
-			error = g_error_new_literal (NM_SETTINGS_ERROR,
-			                             NM_SETTINGS_ERROR_FAILED,
-			                             "Saving the hostname failed.");
-		}
-	}
-
-	if (error)
-		g_dbus_method_invocation_take_error (context, error);
-	else
-		g_dbus_method_invocation_return_value (context, NULL);
-
-	nm_auth_chain_destroy (chain);
-}
-
-static void
-impl_settings_save_hostname (ByxDBusObject *obj,
-                             const ByxDBusInterfaceInfoExtended *interface_info,
-                             const NMDBusMethodInfoExtended *method_info,
-                             GDBusConnection *connection,
-                             const char *sender,
-                             GDBusMethodInvocation *invocation,
-                             GVariant *parameters)
-{
-	NMSettings *self = NM_SETTINGS (obj);
-	NMSettingsPrivate *priv = NM_SETTINGS_GET_PRIVATE (self);
-	NMAuthChain *chain;
-	const char *hostname;
-
-	g_variant_get (parameters, "(&s)", &hostname);
-
-	/* Minimal validation of the hostname */
-	if (!nm_hostname_manager_validate_hostname (hostname)) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               NM_SETTINGS_ERROR,
-		                                               NM_SETTINGS_ERROR_INVALID_HOSTNAME,
-		                                               "The hostname was too long or contained invalid characters.");
-		return;
-	}
-
-	chain = nm_auth_chain_new_context (invocation, pk_hostname_cb, self);
-	if (!chain) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               NM_SETTINGS_ERROR,
-		                                               NM_SETTINGS_ERROR_PERMISSION_DENIED,
-		                                               "Unable to authenticate the request.");
-		return;
-	}
-
-	priv->auths = g_slist_append (priv->auths, chain);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_SETTINGS_MODIFY_HOSTNAME, TRUE);
-	nm_auth_chain_set_data (chain, "hostname", g_strdup (hostname), g_free);
-}
-
-/*****************************************************************************/
-
 static gboolean
 have_connection_for_device (NMSettings *self, NMDevice *device)
 {
@@ -1794,16 +1702,6 @@ nm_settings_get_startup_complete (NMSettings *self)
 
 /*****************************************************************************/
 
-static void
-_hostname_changed_cb (NMHostnameManager *hostname_manager,
-                      GParamSpec *pspec,
-                      gpointer user_data)
-{
-	_notify (user_data, PROP_HOSTNAME);
-}
-
-/*****************************************************************************/
-
 gboolean
 nm_settings_start (NMSettings *self, GError **error)
 {
@@ -1820,14 +1718,6 @@ nm_settings_start (NMSettings *self, GError **error)
 
 	load_connections (self);
 	check_startup_complete (self);
-
-	priv->hostname_manager = g_object_ref (nm_hostname_manager_get ());
-	g_signal_connect (priv->hostname_manager,
-	                  "notify::"NM_HOSTNAME_MANAGER_HOSTNAME,
-	                  G_CALLBACK (_hostname_changed_cb),
-	                  self);
-	if (nm_hostname_manager_get_hostname (priv->hostname_manager))
-		_notify (self, PROP_HOSTNAME);
 
 	return TRUE;
 }
@@ -1854,12 +1744,6 @@ get_property (GObject *object, guint prop_id,
 			strvs[i++] = g_strdup (iter->data);
 		strvs[i] = NULL;
 		g_value_take_boxed (value, strvs);
-		break;
-	case PROP_HOSTNAME:
-		g_value_set_string (value,
-		                    priv->hostname_manager
-		                      ? nm_hostname_manager_get_hostname (priv->hostname_manager)
-		                      : NULL);
 		break;
 	case PROP_CAN_MODIFY:
 		g_value_set_boolean (value, !!get_plugin (self, TRUE));
@@ -1910,13 +1794,6 @@ dispose (GObject *object)
 
 	g_slist_free_full (priv->auths, (GDestroyNotify) nm_auth_chain_destroy);
 	priv->auths = NULL;
-
-	if (priv->hostname_manager) {
-		g_signal_handlers_disconnect_by_func (priv->hostname_manager,
-		                                      G_CALLBACK (_hostname_changed_cb),
-		                                      self);
-		g_clear_object (&priv->hostname_manager);
-	}
 
 	G_OBJECT_CLASS (nm_settings_parent_class)->dispose (object);
 }
@@ -2028,15 +1905,6 @@ static const ByxDBusInterfaceInfoExtended interface_info_settings = {
 				),
 				.handle = impl_settings_reload_connections,
 			),
-			NM_DEFINE_DBUS_METHOD_INFO_EXTENDED (
-				NM_DEFINE_GDBUS_METHOD_INFO_INIT (
-					"SaveHostname",
-					.in_args = NM_DEFINE_GDBUS_ARG_INFOS (
-						NM_DEFINE_GDBUS_ARG_INFO ("hostname", "s"),
-					),
-				),
-				.handle = impl_settings_save_hostname,
-			),
 		),
 		.signals = NM_DEFINE_GDBUS_SIGNAL_INFOS (
 			&nm_signal_info_property_changed_legacy,
@@ -2045,7 +1913,6 @@ static const ByxDBusInterfaceInfoExtended interface_info_settings = {
 		),
 		.properties = NM_DEFINE_GDBUS_PROPERTY_INFOS (
 			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L ("Connections", "ao", NM_SETTINGS_CONNECTIONS),
-			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L ("Hostname",    "s",  NM_SETTINGS_HOSTNAME),
 			NM_DEFINE_DBUS_PROPERTY_INFO_EXTENDED_READABLE_L ("CanModify",   "b",  NM_SETTINGS_CAN_MODIFY),
 		),
 	),
@@ -2070,12 +1937,6 @@ nm_settings_class_init (NMSettingsClass *class)
 	                        G_TYPE_STRV,
 	                        G_PARAM_READABLE |
 	                        G_PARAM_STATIC_STRINGS);
-
-	obj_properties[PROP_HOSTNAME] =
-	    g_param_spec_string (NM_SETTINGS_HOSTNAME, "", "",
-	                         NULL,
-	                         G_PARAM_READABLE |
-	                         G_PARAM_STATIC_STRINGS);
 
 	obj_properties[PROP_CAN_MODIFY] =
 	    g_param_spec_boolean (NM_SETTINGS_CAN_MODIFY, "", "",

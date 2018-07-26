@@ -576,12 +576,6 @@ constructed (GObject *object)
 	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE ((NMSKeyfilePlugin *) object);
 
 	G_OBJECT_CLASS (nms_keyfile_plugin_parent_class)->constructed (object);
-
-	if (nm_config_data_has_value (nm_config_get_data_orig (priv->config),
-	                              NM_CONFIG_KEYFILE_GROUP_KEYFILE,
-	                              NM_CONFIG_KEYFILE_KEY_KEYFILE_HOSTNAME,
-	                              NM_CONFIG_GET_VALUE_RAW))
-		_LOGW ("'hostname' option is deprecated and has no effect");
 }
 
 NMSKeyfilePlugin *

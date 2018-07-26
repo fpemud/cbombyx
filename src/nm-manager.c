@@ -2106,19 +2106,6 @@ system_unmanaged_devices_changed_cb (NMSettings *settings,
 		nm_device_set_unmanaged_by_user_settings (device);
 }
 
-static void
-hostname_changed_cb (NMHostnameManager *hostname_manager,
-                     GParamSpec *pspec,
-                     ByxManager *self)
-{
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	const char *hostname;
-
-	hostname = nm_hostname_manager_get_hostname (priv->hostname_manager);
-
-	nm_dhcp_manager_set_default_hostname (nm_dhcp_manager_get (), hostname);
-}
-
 /*****************************************************************************/
 /* General ByxManager stuff                                         */
 /*****************************************************************************/
@@ -5933,7 +5920,6 @@ byx_manager_start (ByxManager *self, GError **error)
 	       priv->net_enabled ? "enabled" : "disabled");
 
 	system_unmanaged_devices_changed_cb (priv->settings, NULL, self);
-	hostname_changed_cb (priv->hostname_manager, NULL, self);
 
 	/* Start device factories */
 	byx_device_factory_manager_load_factories (_register_device_factory, self);
@@ -6654,10 +6640,6 @@ constructed (GObject *object)
 	                  G_CALLBACK (connection_updated_cb), self);
 	g_signal_connect (priv->settings, NM_SETTINGS_SIGNAL_CONNECTION_FLAGS_CHANGED, G_CALLBACK (connection_flags_changed), self);
 
-	priv->hostname_manager = g_object_ref (nm_hostname_manager_get ());
-	g_signal_connect (priv->hostname_manager, "notify::" NM_HOSTNAME_MANAGER_HOSTNAME,
-	                  G_CALLBACK (hostname_changed_cb), self);
-
 	/*
 	 * Do not delete existing virtual devices to keep connectivity up.
 	 * Virtual devices are reused when NetworkManager is restarted.
@@ -7004,11 +6986,6 @@ dispose (GObject *object)
 		g_signal_handlers_disconnect_by_func (priv->settings, connection_updated_cb, self);
 		g_signal_handlers_disconnect_by_func (priv->settings, connection_flags_changed, self);
 		g_clear_object (&priv->settings);
-	}
-
-	if (priv->hostname_manager) {
-		g_signal_handlers_disconnect_by_func (priv->hostname_manager, hostname_changed_cb, self);
-		g_clear_object (&priv->hostname_manager);
 	}
 
 	g_clear_object (&priv->service_manager);
