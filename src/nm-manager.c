@@ -66,7 +66,7 @@ typedef struct {
 	gboolean sw_enabled;
 	gboolean hw_enabled;
 	RfKillType rtype;
-	NMConfigRunStatePropertyType key;
+	ByxConfigRunStatePropertyType key;
 	const char *desc;
 	const char *prop;
 	const char *hw_prop;
@@ -155,7 +155,7 @@ typedef struct {
 	CList devices_lst_head;
 
 	NMState state;
-	NMConfig *config;
+	ByxConfig *config;
 	NMConnectivity *concheck_mgr;
 	NMPolicy *policy;
 	NMHostnameManager *hostname_manager;
@@ -619,7 +619,7 @@ _device_route_metric_get (ByxManager *self,
 
 	if (G_UNLIKELY (!priv->device_route_metrics)) {
 		const GHashTable *h;
-		const NMConfigDeviceStateData *device_state;
+		const ByxConfigDeviceStateData *device_state;
 
 		priv->device_route_metrics = g_hash_table_new_full (_device_route_metric_data_by_ifindex_hash,
 		                                                    _device_route_metric_data_by_ifindex_equal,
@@ -628,7 +628,7 @@ _device_route_metric_get (ByxManager *self,
 		cleaned = TRUE;
 
 		/* we need to pre-populate the cache for all (still existing) devices from the state-file */
-		h = nm_config_device_state_get_all (priv->config);
+		h = byx_config_device_state_get_all (priv->config);
 		if (!h)
 			goto initited;
 
@@ -1057,13 +1057,13 @@ active_connection_get_by_path (ByxManager *self, const char *path)
 /*****************************************************************************/
 
 static void
-_config_changed_cb (NMConfig *config, NMConfigData *config_data, NMConfigChangeFlags changes, NMConfigData *old_data, ByxManager *self)
+_config_changed_cb (ByxConfig *config, ByxConfigData *config_data, ByxConfigChangeFlags changes, ByxConfigData *old_data, ByxManager *self)
 {
 	g_object_freeze_notify (G_OBJECT (self));
 
-	if (NM_FLAGS_HAS (changes, NM_CONFIG_CHANGE_GLOBAL_DNS_CONFIG))
+	if (NM_FLAGS_HAS (changes, BYX_CONFIG_CHANGE_GLOBAL_DNS_CONFIG))
 		_notify (self, PROP_GLOBAL_DNS_CONFIGURATION);
-	if ((!nm_config_data_get_connectivity_uri (config_data)) != (!nm_config_data_get_connectivity_uri (old_data)))
+	if ((!byx_config_data_get_connectivity_uri (config_data)) != (!byx_config_data_get_connectivity_uri (old_data)))
 		_notify (self, PROP_CONNECTIVITY_CHECK_AVAILABLE);
 
 	g_object_thaw_notify (G_OBJECT (self));
@@ -1082,7 +1082,7 @@ impl_manager_reload (ByxDBusObject *obj,
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
 	NMAuthChain *chain;
 	guint32 flags;
-	NMConfigChangeFlags reload_type = NM_CONFIG_CHANGE_NONE;
+	ByxConfigChangeFlags reload_type = BYX_CONFIG_CHANGE_NONE;
 	GError *ret_error = NULL;
 	char s_buf[60];
 
@@ -1091,17 +1091,17 @@ impl_manager_reload (ByxDBusObject *obj,
 	if (NM_FLAGS_ANY (flags, ~BYX_MANAGER_RELOAD_FLAGS_ALL)) {
 		/* invalid flags */
 	} else if (flags == 0)
-		reload_type = NM_CONFIG_CHANGE_CAUSE_SIGHUP;
+		reload_type = BYX_CONFIG_CHANGE_CAUSE_SIGHUP;
 	else {
 		if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_CONF))
-			reload_type |= NM_CONFIG_CHANGE_CAUSE_CONF;
+			reload_type |= BYX_CONFIG_CHANGE_CAUSE_CONF;
 		if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_DNS_RC))
-			reload_type |= NM_CONFIG_CHANGE_CAUSE_DNS_RC;
+			reload_type |= BYX_CONFIG_CHANGE_CAUSE_DNS_RC;
 		if (NM_FLAGS_HAS (flags, BYX_MANAGER_RELOAD_FLAGS_DNS_FULL))
-			reload_type |= NM_CONFIG_CHANGE_CAUSE_DNS_FULL;
+			reload_type |= BYX_CONFIG_CHANGE_CAUSE_DNS_FULL;
 	}
 
-	if (reload_type == NM_CONFIG_CHANGE_NONE) {
+	if (reload_type == BYX_CONFIG_CHANGE_NONE) {
 		ret_error = g_error_new_literal (BYX_MANAGER_ERROR,
 										 BYX_MANAGER_ERROR_INVALID_ARGUMENTS,
 										 "Invalid flags for reload");
@@ -1119,7 +1119,7 @@ impl_manager_reload (ByxDBusObject *obj,
 		return
 	}
 
-	nm_config_reload (priv->config, reload_type);
+	byx_config_reload (priv->config, reload_type);
 	g_dbus_method_invocation_return_value (invocation, NULL);
 
 out:
@@ -1463,7 +1463,7 @@ check_if_startup_complete (ByxManager *self)
 
 	_notify (self, PROP_STARTUP);
 
-	if (nm_config_get_configure_and_quit (priv->config))
+	if (byx_config_get_configure_and_quit (priv->config))
 		g_signal_emit (self, signals[CONFIGURE_QUIT], 0);
 }
 
@@ -1542,7 +1542,7 @@ remove_device (ByxManager *self,
 				nm_device_sys_iface_state_set (device, NM_DEVICE_SYS_IFACE_STATE_REMOVED);
 				nm_device_set_unmanaged_by_flags (device, NM_UNMANAGED_PLATFORM_INIT, TRUE, NM_DEVICE_STATE_REASON_REMOVED);
 			}
-		} else if (quitting && nm_config_get_configure_and_quit (priv->config)) {
+		} else if (quitting && byx_config_get_configure_and_quit (priv->config)) {
 			nm_device_spawn_iface_helper (device);
 		}
 	}
@@ -2840,7 +2840,7 @@ platform_link_added (ByxManager *self,
                      int ifindex,
                      const NMPlatformLink *plink,
                      gboolean guess_assume,
-                     const NMConfigDeviceStateData *dev_state)
+                     const ByxConfigDeviceStateData *dev_state)
 {
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
 	ByxDeviceFactory *factory;
@@ -2931,13 +2931,13 @@ platform_link_added (ByxManager *self,
 
 		if (dev_state) {
 			switch (dev_state->managed) {
-			case NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED:
+			case BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED:
 				unmanaged_user_explicit = NM_UNMAN_FLAG_OP_SET_MANAGED;
 				break;
-			case NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED:
+			case BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED:
 				unmanaged_user_explicit = NM_UNMAN_FLAG_OP_SET_UNMANAGED;
 				break;
-			case NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN:
+			case BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN:
 				break;
 			}
 		}
@@ -3050,19 +3050,19 @@ platform_query_devices (ByxManager *self)
 	gboolean guess_assume;
 	gs_free char *order = NULL;
 
-	guess_assume = nm_config_get_first_start (nm_config_get ());
-	order = nm_config_data_get_value (NM_CONFIG_GET_DATA,
-	                                  NM_CONFIG_KEYFILE_GROUP_MAIN,
-	                                  NM_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER,
-	                                  NM_CONFIG_GET_VALUE_STRIP);
+	guess_assume = byx_config_get_first_start (byx_config_get ());
+	order = byx_config_data_get_value (BYX_CONFIG_GET_DATA,
+	                                  BYX_CONFIG_KEYFILE_GROUP_MAIN,
+	                                  BYX_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER,
+	                                  BYX_CONFIG_GET_VALUE_STRIP);
 	links = nm_platform_link_get_all (priv->platform, !nm_streq0 (order, "index"));
 	if (!links)
 		return;
 	for (i = 0; i < links->len; i++) {
 		const NMPlatformLink *link = NMP_OBJECT_CAST_LINK (links->pdata[i]);
-		const NMConfigDeviceStateData *dev_state;
+		const ByxConfigDeviceStateData *dev_state;
 
-		dev_state = nm_config_device_state_get (priv->config, link->ifindex);
+		dev_state = byx_config_device_state_get (priv->config, link->ifindex);
 		platform_link_added (self,
 		                     link->ifindex,
 		                     link,
@@ -3670,7 +3670,7 @@ should_connect_slaves (NMConnection *connection, NMDevice *device)
 		goto out;
 
 	/* Check configuration default for autoconnect-slaves property */
-	value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+	value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 	                                               "connection.autoconnect-slaves", device);
 	if (value)
 		autoconnect_slaves = _byx_utils_ascii_str_to_int64 (value, 10, 0, 1, -1);
@@ -3719,10 +3719,10 @@ autoconnect_slaves (ByxManager *self,
 		if (n_slaves > 1) {
 			gs_free char *value = NULL;
 
-			value = nm_config_data_get_value (NM_CONFIG_GET_DATA,
-			                                  NM_CONFIG_KEYFILE_GROUP_MAIN,
-			                                  NM_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER,
-			                                  NM_CONFIG_GET_VALUE_STRIP);
+			value = byx_config_data_get_value (BYX_CONFIG_GET_DATA,
+			                                  BYX_CONFIG_KEYFILE_GROUP_MAIN,
+			                                  BYX_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER,
+			                                  BYX_CONFIG_GET_VALUE_STRIP);
 			g_qsort_with_data (slaves, n_slaves, sizeof (slaves[0]),
 			                   compare_slaves,
 			                   GINT_TO_POINTER (!nm_streq0 (value, "index")));
@@ -5324,8 +5324,8 @@ _internal_enable (ByxManager *self, gboolean enable)
 {
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
 
-	nm_config_state_set (priv->config, TRUE, FALSE,
-	                     NM_CONFIG_STATE_PROPERTY_NETWORKING_ENABLED, enable);
+	byx_config_state_set (priv->config, TRUE, FALSE,
+	                     BYX_CONFIG_STATE_PROPERTY_NETWORKING_ENABLED, enable);
 
 	_LOGI (LOGD_SUSPEND, "%s requested (sleeping: %s  enabled: %s)",
 	       enable ? "enable" : "disable",
@@ -5907,7 +5907,7 @@ _dbus_set_property_auth_cb (NMAuthChain *chain,
 	    && nm_streq (property_info->property_name, BYX_MANAGER_GLOBAL_DNS_CONFIGURATION)) {
 		const NMGlobalDnsConfig *global_dns;
 
-		global_dns = nm_config_data_get_global_dns_config (nm_config_get_data (priv->config));
+		global_dns = byx_config_data_get_global_dns_config (byx_config_get_data (priv->config));
 		if (   global_dns
 		    && !nm_global_dns_config_is_internal (global_dns)) {
 			error_name = NM_PERM_DENIED_ERROR;
@@ -6075,7 +6075,7 @@ manager_radio_user_toggled (ByxManager *self,
 	}
 
 	/* Update enabled key in state file */
-	nm_config_state_set (priv->config, TRUE, FALSE,
+	byx_config_state_set (priv->config, TRUE, FALSE,
 	                     rstate->key, enabled);
 
 	/* When the user toggles the radio, their request should override any
@@ -6190,7 +6190,7 @@ constructed (GObject *object)
 {
 	ByxManager *self = BYX_MANAGER (object);
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	const NMConfigState *state;
+	const ByxConfigState *state;
 
 	G_OBJECT_CLASS (byx_manager_parent_class)->constructed (object);
 
@@ -6223,13 +6223,13 @@ constructed (GObject *object)
 	g_signal_connect (priv->policy, "notify::" NM_POLICY_ACTIVATING_IP6_DEVICE,
 	                  G_CALLBACK (policy_activating_device_changed), self);
 
-	priv->config = g_object_ref (nm_config_get ());
+	priv->config = g_object_ref (byx_config_get ());
 	g_signal_connect (G_OBJECT (priv->config),
-	                  NM_CONFIG_SIGNAL_CONFIG_CHANGED,
+	                  BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
 	                  G_CALLBACK (_config_changed_cb),
 	                  self);
 
-	state = nm_config_state_get (priv->config);
+	state = byx_config_state_get (priv->config);
 
 	priv->net_enabled = state->net_enabled;
 
@@ -6271,14 +6271,14 @@ byx_manager_init (ByxManager *self)
 	memset (priv->radio_states, 0, sizeof (priv->radio_states));
 
 	priv->radio_states[RFKILL_TYPE_WLAN].user_enabled = TRUE;
-	priv->radio_states[RFKILL_TYPE_WLAN].key = NM_CONFIG_STATE_PROPERTY_WIFI_ENABLED;
+	priv->radio_states[RFKILL_TYPE_WLAN].key = BYX_CONFIG_STATE_PROPERTY_WIFI_ENABLED;
 	priv->radio_states[RFKILL_TYPE_WLAN].prop = BYX_MANAGER_WIRELESS_ENABLED;
 	priv->radio_states[RFKILL_TYPE_WLAN].hw_prop = BYX_MANAGER_WIRELESS_HARDWARE_ENABLED;
 	priv->radio_states[RFKILL_TYPE_WLAN].desc = "WiFi";
 	priv->radio_states[RFKILL_TYPE_WLAN].rtype = RFKILL_TYPE_WLAN;
 
 	priv->radio_states[RFKILL_TYPE_WWAN].user_enabled = TRUE;
-	priv->radio_states[RFKILL_TYPE_WWAN].key = NM_CONFIG_STATE_PROPERTY_WWAN_ENABLED;
+	priv->radio_states[RFKILL_TYPE_WWAN].key = BYX_CONFIG_STATE_PROPERTY_WWAN_ENABLED;
 	priv->radio_states[RFKILL_TYPE_WWAN].prop = BYX_MANAGER_WWAN_ENABLED;
 	priv->radio_states[RFKILL_TYPE_WWAN].hw_prop = BYX_MANAGER_WWAN_HARDWARE_ENABLED;
 	priv->radio_states[RFKILL_TYPE_WWAN].desc = "WWAN";
@@ -6316,7 +6316,7 @@ get_property (GObject *object, guint prop_id,
 {
 	ByxManager *self = BYX_MANAGER (object);
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMConfigData *config_data;
+	ByxConfigData *config_data;
 	const NMGlobalDnsConfig *dns_config;
 	const char *type;
 	const char *path;
@@ -6374,8 +6374,8 @@ get_property (GObject *object, guint prop_id,
 		g_value_set_uint (value, priv->connectivity_state);
 		break;
 	case PROP_CONNECTIVITY_CHECK_AVAILABLE:
-		config_data = nm_config_get_data (priv->config);
-		g_value_set_boolean (value, nm_config_data_get_connectivity_uri (config_data) != NULL);
+		config_data = byx_config_get_data (priv->config);
+		g_value_set_boolean (value, byx_config_data_get_connectivity_uri (config_data) != NULL);
 		break;
 	case PROP_CONNECTIVITY_CHECK_ENABLED:
 		g_value_set_boolean (value, concheck_enabled (self, NULL));
@@ -6409,8 +6409,8 @@ get_property (GObject *object, guint prop_id,
 		g_value_set_uint (value, priv->metered);
 		break;
 	case PROP_GLOBAL_DNS_CONFIGURATION:
-		config_data = nm_config_get_data (priv->config);
-		dns_config = nm_config_data_get_global_dns_config (config_data);
+		config_data = byx_config_get_data (priv->config);
+		dns_config = byx_config_data_get_global_dns_config (config_data);
 		nm_global_dns_config_to_dbus (dns_config, value);
 		break;
 	case PROP_ALL_DEVICES:
@@ -6448,13 +6448,13 @@ set_property (GObject *object, guint prop_id,
 		/* WIMAX is depreacted. This does nothing. */
 		break;
 	case PROP_CONNECTIVITY_CHECK_ENABLED:
-		nm_config_set_connectivity_check_enabled (priv->config,
+		byx_config_set_connectivity_check_enabled (priv->config,
 		                                          g_value_get_boolean (value));
 		break;
 	case PROP_GLOBAL_DNS_CONFIGURATION:
 		dns_config = nm_global_dns_config_from_dbus (value, &error);
 		if (!error)
-			nm_config_set_global_dns (priv->config, dns_config, &error);
+			byx_config_set_global_dns (priv->config, dns_config, &error);
 
 		nm_global_dns_config_free (dns_config);
 

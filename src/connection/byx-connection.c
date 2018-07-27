@@ -1016,7 +1016,7 @@ init_ip_config_dns_priority (ByxConnection *self, NMIPConfig *config)
 	gs_free char *value = NULL;
 	gint priority;
 
-	value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+	value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 	                                               (nm_ip_config_get_addr_family (config) == AF_INET)
 	                                                 ? "ipv4.dns-priority"
 	                                                 : "ipv6.dns-priority",
@@ -1169,7 +1169,7 @@ _get_stable_id (ByxConnection *self,
 		stable_id = nm_setting_connection_get_stable_id (s_con);
 
 		if (!stable_id) {
-			default_id = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+			default_id = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 			                                                    "connection.stable-id",
 			                                                    self);
 			stable_id = default_id;
@@ -2008,10 +2008,10 @@ byx_connection_get_route_metric (ByxConnection *self,
 		}
 	}
 
-	/* use the current NMConfigData, which makes this configuration reloadable.
+	/* use the current ByxConfigData, which makes this configuration reloadable.
 	 * Note that that means that the route-metric might change between SIGHUP.
 	 * You must cache the returned value if that is a problem. */
-	value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+	value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 	                                               addr_family == AF_INET ? "ipv4.route-metric" : "ipv6.route-metric", self);
 	if (value) {
 		route_metric = _byx_utils_ascii_str_to_int64 (value, 10, 0, G_MAXUINT32, -1);
@@ -2043,7 +2043,7 @@ _get_mdns (ByxConnection *self)
 	if (mdns == NM_SETTING_CONNECTION_MDNS_DEFAULT) {
 		gs_free char *value = NULL;
 
-		value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+		value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                               "connection.mdns",
 		                                               self);
 		mdns = _byx_utils_ascii_str_to_int64 (value,
@@ -2098,7 +2098,7 @@ byx_connection_get_route_table (ByxConnection *self,
 		if (route_table == 0) {
 			gs_free char *value = NULL;
 
-			value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+			value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 			                                               addr_family == AF_INET
 			                                                 ? "ipv4.route-table"
 			                                                 : "ipv6.route-table",
@@ -3941,8 +3941,8 @@ device_init_sriov_num_vfs (ByxConnection *self)
 
 	if (   priv->ifindex > 0
 	    && byx_connection_has_capability (self, BYX_CONNECTION_CAP_SRIOV)) {
-		value = nm_config_data_get_device_config (NM_CONFIG_GET_DATA,
-		                                          NM_CONFIG_KEYFILE_KEY_DEVICE_SRIOV_NUM_VFS,
+		value = byx_config_data_get_device_config (BYX_CONFIG_GET_DATA,
+		                                          BYX_CONFIG_KEYFILE_KEY_DEVICE_SRIOV_NUM_VFS,
 		                                          self,
 		                                          NULL);
 		num_vfs = _byx_utils_ascii_str_to_int64 (value, 10, 0, G_MAXINT32, -1);
@@ -3954,19 +3954,19 @@ device_init_sriov_num_vfs (ByxConnection *self)
 }
 
 static void
-config_changed (NMConfig *config,
-                NMConfigData *config_data,
-                NMConfigChangeFlags changes,
-                NMConfigData *old_data,
+config_changed (ByxConfig *config,
+                ByxConfigData *config_data,
+                ByxConfigChangeFlags changes,
+                ByxConfigData *old_data,
                 ByxConnection *self)
 {
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 
 	if (   priv->state <= BYX_CONNECTION_STATE_DISCONNECTED
 	    || priv->state > BYX_CONNECTION_STATE_ACTIVATED)
-		priv->ignore_carrier = nm_config_data_get_ignore_carrier (config_data, self);
+		priv->ignore_carrier = byx_config_data_get_ignore_carrier (config_data, self);
 
-	if (NM_FLAGS_HAS (changes, NM_CONFIG_CHANGE_VALUES))
+	if (NM_FLAGS_HAS (changes, BYX_CONFIG_CHANGE_VALUES))
 		device_init_sriov_num_vfs (self);
 }
 
@@ -4007,7 +4007,7 @@ realize_start_setup (ByxConnection *self,
 	ByxConnectionClass *klass;
 	static guint32 id = 0;
 	ByxConnectionCapabilities capabilities = 0;
-	NMConfig *config;
+	ByxConfig *config;
 	guint real_rate;
 
 	/* plink is a NMPlatformLink type, however, we require it to come from the platform
@@ -4100,11 +4100,11 @@ realize_start_setup (ByxConnection *self,
 	byx_connection_update_permanent_hw_address (self, FALSE);
 
 	/* Note: initial hardware address must be read before calling get_ignore_carrier() */
-	config = nm_config_get ();
-	priv->ignore_carrier = nm_config_data_get_ignore_carrier (nm_config_get_data (config), self);
+	config = byx_config_get ();
+	priv->ignore_carrier = byx_config_data_get_ignore_carrier (byx_config_get_data (config), self);
 	if (!priv->config_changed_id) {
 		priv->config_changed_id = g_signal_connect (config,
-		                                            NM_CONFIG_SIGNAL_CONFIG_CHANGED,
+		                                            BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
 		                                            G_CALLBACK (config_changed),
 		                                            self);
 	}
@@ -4314,7 +4314,7 @@ byx_connection_unrealize (ByxConnection *self, gboolean remove_resources, GError
 		priv->capabilities |= BYX_CONNECTION_GET_CLASS (self)->get_generic_capabilities (self);
 	_notify (self, PROP_CAPABILITIES);
 
-	nm_clear_g_signal_handler (nm_config_get (), &priv->config_changed_id);
+	nm_clear_g_signal_handler (byx_config_get (), &priv->config_changed_id);
 
 	priv->real = FALSE;
 	_notify (self, PROP_REAL);
@@ -5301,7 +5301,7 @@ byx_connection_generate_connection (ByxConnection *self,
 	    && g_strcmp0 (ip6_method, NM_SETTING_IP6_CONFIG_METHOD_LINK_LOCAL) == 0
 	    && !nm_setting_connection_get_master (NM_SETTING_CONNECTION (s_con))
 	    && c_list_is_empty (&priv->slaves)
-	    && !nm_config_data_get_assume_ipv6ll_only (NM_CONFIG_GET_DATA, self)) {
+	    && !byx_config_data_get_assume_ipv6ll_only (BYX_CONFIG_GET_DATA, self)) {
 		_LOGD (LOGD_DEVICE, "ignoring generated connection (IPv6LL-only and not in master-slave relationship)");
 		NM_SET_OUT (out_maybe_later, TRUE);
 		g_set_error_literal (error, BYX_CONNECTION_ERROR, BYX_CONNECTION_ERROR_FAILED,
@@ -5842,7 +5842,7 @@ lldp_rx_enabled (ByxConnection *self)
 	if (lldp == NM_SETTING_CONNECTION_LLDP_DEFAULT) {
 		gs_free char *value = NULL;
 
-		value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+		value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                               "connection.lldp",
 		                                               self);
 		lldp = _byx_utils_ascii_str_to_int64 (value, 10,
@@ -6186,7 +6186,7 @@ get_ipv4_dad_timeout (ByxConnection *self)
 		ret = nm_setting_ip_config_get_dad_timeout (s_ip4);
 
 		if (ret < 0) {
-			value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+			value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 			                                               "ipv4.dad-timeout", self);
 			ret = _byx_utils_ascii_str_to_int64 (value, 10, -1,
 			                                    NM_SETTING_IP_CONFIG_DAD_TIMEOUT_MAX,
@@ -7030,7 +7030,7 @@ get_dhcp_timeout (ByxConnection *self, int addr_family)
 	{
 		gs_free char *value = NULL;
 
-		value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+		value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                               addr_family == AF_INET
 		                                                 ? "ipv4.dhcp-timeout"
 		                                                 : "ipv6.dhcp-timeout",
@@ -7080,7 +7080,7 @@ dhcp4_get_client_id (ByxConnection *self,
 	client_id = nm_setting_ip4_config_get_dhcp_client_id (NM_SETTING_IP4_CONFIG (s_ip4));
 
 	if (!client_id) {
-		client_id_default = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+		client_id_default = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                                           "ipv4.dhcp-client-id", self);
 		if (client_id_default && client_id_default[0]) {
 			/* a non-empty client-id is always valid, see nm_dhcp_utils_client_id_string_to_bytes().  */
@@ -7877,7 +7877,7 @@ dhcp6_get_duid (ByxConnection *self, NMConnection *connection, GBytes *hwaddr, g
 	duid = nm_setting_ip6_config_get_dhcp_duid (NM_SETTING_IP6_CONFIG (s_ip6));
 
 	if (!duid) {
-		duid_default = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+		duid_default = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                                      "ipv6.dhcp-duid", self);
 		duid = duid_default;
 		if (!duid)
@@ -8399,7 +8399,7 @@ byx_connection_get_configured_mtu_from_connection_default (ByxConnection *self,
 {
 	gs_free char *str = NULL;
 
-	str = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA, property_name, self);
+	str = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA, property_name, self);
 	return _byx_utils_ascii_str_to_int64 (str, 10, 0, G_MAXUINT32, -1);
 }
 
@@ -9115,7 +9115,7 @@ _ip6_privacy_get (ByxConnection *self)
 		}
 	}
 
-	value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+	value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 	                                               "ipv6.ip6-privacy", self);
 
 	/* 2.) use the default value from the configuration. */
@@ -11908,8 +11908,8 @@ _get_carrier_wait_ms (ByxConnection *self)
 {
 	gs_free char *value = NULL;
 
-	value = nm_config_data_get_device_config (NM_CONFIG_GET_DATA,
-	                                          NM_CONFIG_KEYFILE_KEY_DEVICE_CARRIER_WAIT_TIMEOUT,
+	value = byx_config_data_get_device_config (BYX_CONFIG_GET_DATA,
+	                                          BYX_CONFIG_KEYFILE_KEY_DEVICE_CARRIER_WAIT_TIMEOUT,
 	                                          self,
 	                                          NULL);
 	return _byx_utils_ascii_str_to_int64 (value, 10, 0, G_MAXINT32, CARRIER_WAIT_TIME_MS);
@@ -12871,8 +12871,8 @@ byx_connection_set_unmanaged_by_user_conf (ByxConnection *self)
 	gboolean value;
 	NMUnmanFlagOp set_op;
 
-	value = nm_config_data_get_device_config_boolean (NM_CONFIG_GET_DATA,
-	                                                  NM_CONFIG_KEYFILE_KEY_DEVICE_MANAGED,
+	value = byx_config_data_get_device_config_boolean (BYX_CONFIG_GET_DATA,
+	                                                  BYX_CONFIG_KEYFILE_KEY_DEVICE_MANAGED,
 	                                                  self,
 	                                                  -1,
 	                                                  TRUE);
@@ -13772,10 +13772,10 @@ byx_connection_spawn_iface_helper (ByxConnection *self)
 		g_ptr_array_add (argv, g_strdup_printf ("%d %s", (int) stable_type, stable_id));
 	}
 
-	logging_backend = nm_config_data_get_value (NM_CONFIG_GET_DATA_ORIG,
-	                                            NM_CONFIG_KEYFILE_GROUP_LOGGING,
-	                                            NM_CONFIG_KEYFILE_KEY_LOGGING_BACKEND,
-	                                            NM_CONFIG_GET_VALUE_STRIP | NM_CONFIG_GET_VALUE_NO_EMPTY);
+	logging_backend = byx_config_data_get_value (BYX_CONFIG_GET_DATA_ORIG,
+	                                            BYX_CONFIG_KEYFILE_GROUP_LOGGING,
+	                                            BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND,
+	                                            BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
 	if (logging_backend) {
 		g_ptr_array_add (argv, g_strdup ("--logging-backend"));
 		g_ptr_array_add (argv, logging_backend);
@@ -14188,7 +14188,7 @@ _set_state_full (ByxConnection *self,
 
 		/* We cache the ignore_carrier state to not react on config-reloads while the connection
 		 * is active. But on deactivating, reset the ignore-carrier flag to the current state. */
-		priv->ignore_carrier = nm_config_data_get_ignore_carrier (NM_CONFIG_GET_DATA, self);
+		priv->ignore_carrier = byx_config_data_get_ignore_carrier (BYX_CONFIG_GET_DATA, self);
 
 		if (quitting) {
 			nm_dispatcher_call_device_sync (NM_DISPATCHER_ACTION_PRE_DOWN,
@@ -14437,7 +14437,7 @@ byx_connection_get_state (ByxConnection *self)
 }
 
 /*****************************************************************************/
-/* NMConfigDevice interface related stuff */
+/* ByxConfigDevice interface related stuff */
 
 const char *
 byx_connection_get_hw_address (ByxConnection *self)
@@ -14547,7 +14547,7 @@ byx_connection_update_permanent_hw_address (ByxConnection *self, gboolean force_
 	gboolean success_read;
 	int ifindex;
 	const NMPlatformLink *pllink;
-	const NMConfigDeviceStateData *dev_state;
+	const ByxConfigDeviceStateData *dev_state;
 
 	if (priv->hw_addr_perm) {
 		/* the permanent hardware address is only read once and not
@@ -14607,7 +14607,7 @@ byx_connection_update_permanent_hw_address (ByxConnection *self, gboolean force_
 	/* We also persist our choice of the fake address to the device state
 	 * file to use the same address on restart of NetworkManager.
 	 * First, try to reload the address from the state file. */
-	dev_state = nm_config_device_state_get (nm_config_get (), ifindex);
+	dev_state = byx_config_device_state_get (byx_config_get (), ifindex);
 	if (   dev_state
 	    && dev_state->perm_hw_addr_fake
 	    && byx_utils_hwaddr_aton (dev_state->perm_hw_addr_fake, buf, priv->hw_addr_len)
@@ -14931,7 +14931,7 @@ byx_connection_get_supplicant_timeout (ByxConnection *self)
 			return timeout;
 	}
 
-	value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+	value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 	                                               "802-1x.auth-timeout",
 	                                               self);
 	return _byx_utils_ascii_str_to_int64 (value, 10, 1, G_MAXINT32,
@@ -14960,7 +14960,7 @@ byx_connection_auth_retries_try_next (ByxConnection *self)
 		if (auth_retries == -1) {
 			gs_free char *value = NULL;
 
-			value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+			value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 			                                               "connection.auth-retries",
 			                                               self);
 			auth_retries = _byx_utils_ascii_str_to_int64 (value, 10, -1, G_MAXINT32, -1);
@@ -15167,7 +15167,7 @@ dispose (GObject *object)
 
 	arp_cleanup (self);
 
-	nm_clear_g_signal_handler (nm_config_get (), &priv->config_changed_id);
+	nm_clear_g_signal_handler (byx_config_get (), &priv->config_changed_id);
 
 	dispatcher_cleanup (self);
 

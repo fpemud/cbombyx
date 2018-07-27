@@ -156,7 +156,7 @@ if config_plugins_default == ''
   config_plugins = []
   config_plugins_default = ','.join(config_plugins)
 endif
-config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_PLUGINS', config_plugins_default)
+config_h.set_quoted('BYX_CONFIG_DEFAULT_MAIN_PLUGINS', config_plugins_default)
 
 # introspection support
 enable_introspection = get_option('introspection')
@@ -184,7 +184,7 @@ config_logging_backend_default = get_option('config_logging_backend_default')
 if config_logging_backend_default == 'default'
   config_logging_backend_default = (enable_systemd_journal ? 'journal' : 'syslog')
 endif
-config_h.set_quoted('NM_CONFIG_DEFAULT_LOGGING_BACKEND', config_logging_backend_default)
+config_h.set_quoted('BYX_CONFIG_DEFAULT_LOGGING_BACKEND', config_logging_backend_default)
 
 enable_suspend_resume = get_option('suspend_resume')
 suspend_resume = ''
@@ -232,7 +232,7 @@ endif
 
 config_dns_rc_manager_default = get_option('config_dns_rc_manager_default')
 
-config_h.set_quoted('NM_CONFIG_DEFAULT_MAIN_RC_MANAGER', config_dns_rc_manager_default)
+config_h.set_quoted('BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER', config_dns_rc_manager_default)
 
 # iptables path
 config_h.set_quoted('IPTABLES_PATH', find_program(get_option('iptables')).path())

@@ -217,7 +217,7 @@ gboolean byx_utils_connection_has_default_route (NMConnection *connection,
                                                 gboolean *out_is_never_default);
 
 char *byx_utils_new_vlan_name (const char *parent_iface, guint32 vlan_id);
-
+    
 int byx_utils_cmp_connection_by_autoconnect_priority (NMConnection *a, NMConnection *b);
 
 void byx_utils_log_connection_diff (NMConnection *connection,

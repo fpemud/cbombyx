@@ -52,7 +52,7 @@ typedef struct {
 	GFileMonitor *monitor;
 	gulong monitor_id;
 
-	NMConfig *config;
+	ByxConfig *config;
 } NMSKeyfilePluginPrivate;
 
 struct _NMSKeyfilePlugin {
@@ -335,16 +335,16 @@ dir_changed (GFileMonitor *monitor,
 }
 
 static void
-config_changed_cb (NMConfig *config,
-                   NMConfigData *config_data,
-                   NMConfigChangeFlags changes,
-                   NMConfigData *old_data,
+config_changed_cb (ByxConfig *config,
+                   ByxConfigData *config_data,
+                   ByxConfigChangeFlags changes,
+                   ByxConfigData *old_data,
                    NMSKeyfilePlugin *self)
 {
 	gs_free char *old_value = NULL, *new_value = NULL;
 
-	old_value = nm_config_data_get_value (old_data, NM_CONFIG_KEYFILE_GROUP_KEYFILE, NM_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES, NM_CONFIG_GET_VALUE_TYPE_SPEC);
-	new_value = nm_config_data_get_value (config_data, NM_CONFIG_KEYFILE_GROUP_KEYFILE, NM_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES, NM_CONFIG_GET_VALUE_TYPE_SPEC);
+	old_value = byx_config_data_get_value (old_data, BYX_CONFIG_KEYFILE_GROUP_KEYFILE, BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
+	new_value = byx_config_data_get_value (config_data, BYX_CONFIG_KEYFILE_GROUP_KEYFILE, BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
 
 	if (g_strcmp0 (old_value, new_value) != 0)
 		g_signal_emit_by_name (self, NM_SETTINGS_PLUGIN_UNMANAGED_SPECS_CHANGED);
@@ -357,7 +357,7 @@ setup_monitoring (NMSettingsPlugin *config)
 	GFile *file;
 	GFileMonitor *monitor;
 
-	if (nm_config_get_monitor_connection_files (priv->config)) {
+	if (byx_config_get_monitor_connection_files (priv->config)) {
 		file = g_file_new_for_path (nms_keyfile_utils_get_path ());
 		monitor = g_file_monitor_directory (file, G_FILE_MONITOR_NONE, NULL, NULL);
 		g_object_unref (file);
@@ -369,7 +369,7 @@ setup_monitoring (NMSettingsPlugin *config)
 	}
 
 	g_signal_connect (G_OBJECT (priv->config),
-	                  NM_CONFIG_SIGNAL_CONFIG_CHANGED,
+	                  BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
 	                  G_CALLBACK (config_changed_cb),
 	                  config);
 }
@@ -552,10 +552,10 @@ get_unmanaged_specs (NMSettingsPlugin *config)
 	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE ((NMSKeyfilePlugin *) config);
 	gs_free char *value = NULL;
 
-	value = nm_config_data_get_value (nm_config_get_data (priv->config),
-	                                  NM_CONFIG_KEYFILE_GROUP_KEYFILE,
-	                                  NM_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES,
-	                                  NM_CONFIG_GET_VALUE_TYPE_SPEC);
+	value = byx_config_data_get_value (byx_config_get_data (priv->config),
+	                                  BYX_CONFIG_KEYFILE_GROUP_KEYFILE,
+	                                  BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES,
+	                                  BYX_CONFIG_GET_VALUE_TYPE_SPEC);
 	return nm_match_spec_split (value);
 }
 
@@ -566,7 +566,7 @@ nms_keyfile_plugin_init (NMSKeyfilePlugin *plugin)
 {
 	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE (plugin);
 
-	priv->config = g_object_ref (nm_config_get ());
+	priv->config = g_object_ref (byx_config_get ());
 	priv->connections = g_hash_table_new_full (nm_str_hash, g_str_equal, g_free, g_object_unref);
 }
 

@@ -85,7 +85,7 @@ _set_g_fatal_warnings (void)
 }
 
 static void
-_init_nm_debug (NMConfig *config)
+_init_nm_debug (ByxConfig *config)
 {
 	gs_free char *debug = NULL;
 	enum {
@@ -99,9 +99,9 @@ _init_nm_debug (NMConfig *config)
 	guint flags;
 	const char *env = getenv ("NM_DEBUG");
 
-	debug = nm_config_data_get_value (nm_config_get_data_orig (config),
-	                                  NM_CONFIG_KEYFILE_GROUP_MAIN,
-	                                  NM_CONFIG_KEYFILE_KEY_MAIN_DEBUG,
+	debug = byx_config_data_get_value (byx_config_get_data_orig (config),
+	                                  BYX_CONFIG_KEYFILE_GROUP_MAIN,
+	                                  BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG,
 	                                  BYX_MANAGER_RELOAD_FLAGS_NONE);
 
 	flags  = byx_utils_parse_debug_string (env, keys, G_N_ELEMENTS (keys));
@@ -127,17 +127,17 @@ _init_nm_debug (NMConfig *config)
 void
 nm_main_config_reload (int signal)
 {
-	NMConfigChangeFlags reload_flags;
+	ByxConfigChangeFlags reload_flags;
 
 	switch (signal) {
 	case SIGHUP:
-		reload_flags = NM_CONFIG_CHANGE_CAUSE_SIGHUP;
+		reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGHUP;
 		break;
 	case SIGUSR1:
-		reload_flags = NM_CONFIG_CHANGE_CAUSE_SIGUSR1;
+		reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR1;
 		break;
 	case SIGUSR2:
-		reload_flags = NM_CONFIG_CHANGE_CAUSE_SIGUSR2;
+		reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR2;
 		break;
 	default:
 		g_return_if_reached ();
@@ -146,12 +146,12 @@ nm_main_config_reload (int signal)
 	byx_log_info (LOGD_CORE, "reload configuration (signal %s)...", strsignal (signal));
 
 	/* The signal handler thread is only installed after
-	 * creating NMConfig instance, and on shut down we
+	 * creating ByxConfig instance, and on shut down we
 	 * no longer run the mainloop (to reach this point).
 	 *
-	 * Hence, a NMConfig singleton instance must always be
+	 * Hence, a ByxConfig singleton instance must always be
 	 * available. */
-	nm_config_reload (nm_config_get (), reload_flags);
+	byx_config_reload (byx_config_get (), reload_flags);
 }
 
 static void
@@ -163,28 +163,28 @@ manager_configure_quit (ByxManager *manager, gpointer user_data)
 }
 
 static int
-print_config (NMConfigCmdLineOptions *config_cli)
+print_config (ByxConfigCmdLineOptions *config_cli)
 {
-	gs_unref_object NMConfig *config = NULL;
+	gs_unref_object ByxConfig *config = NULL;
 	gs_free_error GError *error = NULL;
-	NMConfigData *config_data;
+	ByxConfigData *config_data;
 
 	byx_logging_setup ("OFF", "ALL", NULL, NULL);
 
-	config = nm_config_new (config_cli, CONFIG_ATOMIC_SECTION_PREFIXES, &error);
+	config = byx_config_new (config_cli, CONFIG_ATOMIC_SECTION_PREFIXES, &error);
 	if (config == NULL) {
 		fprintf (stderr, _("Failed to read configuration: %s\n"), error->message);
 		return 7;
 	}
 
-	config_data = nm_config_get_data (config);
-	fprintf (stdout, "# NetworkManager configuration: %s\n", nm_config_data_get_config_description (config_data));
-	nm_config_data_log (config_data, "", "", stdout);
+	config_data = byx_config_get_data (config);
+	fprintf (stdout, "# NetworkManager configuration: %s\n", byx_config_data_get_config_description (config_data));
+	byx_config_data_log (config_data, "", "", stdout);
 	return 0;
 }
 
 static void
-do_early_setup (int *argc, char **argv[], NMConfigCmdLineOptions *config_cli)
+do_early_setup (int *argc, char **argv[], ByxConfigCmdLineOptions *config_cli)
 {
 	GOptionEntry options[] = {
 		{ "version", 'V', 0, G_OPTION_ARG_NONE, &global_opt.show_version, N_("Print NetworkManager version and exit"), NULL },
@@ -204,7 +204,7 @@ do_early_setup (int *argc, char **argv[], NMConfigCmdLineOptions *config_cli)
 	                                argc,
 	                                argv,
 	                                options,
-	                                (void (*)(gpointer, GOptionContext *)) nm_config_cmd_line_options_add_to_entries,
+	                                (void (*)(gpointer, GOptionContext *)) byx_config_cmd_line_options_add_to_entries,
 	                                config_cli,
 	                                _("NetworkManager monitors all network connections and automatically\nchooses the best connection to use.  It also allows the user to\nspecify wireless access points which wireless cards in the computer\nshould associate with.")))
 		exit (1);
@@ -221,11 +221,11 @@ main (int argc, char *argv[])
 {
 	gboolean success = FALSE;
 	ByxManager *manager = NULL;
-	NMConfig *config;
+	ByxConfig *config;
 	gs_free_error GError *error = NULL;
 	gboolean wrote_pidfile = FALSE;
 	char *bad_domains = NULL;
-	NMConfigCmdLineOptions *config_cli;
+	ByxConfigCmdLineOptions *config_cli;
 	guint sd_id = 0;
 	GError *error_invalid_logging_config = NULL;
 
@@ -240,8 +240,8 @@ main (int argc, char *argv[])
 	main_loop = g_main_loop_new (NULL, FALSE);
 
 	/* we determine a first-start (contrary to a restart during the same boot)
-	 * based on the existence of NM_CONFIG_DEVICE_STATE_DIR directory. */
-	config_cli = nm_config_cmd_line_options_new (!g_file_test (NM_CONFIG_DEVICE_STATE_DIR,
+	 * based on the existence of BYX_CONFIG_DEVICE_STATE_DIR directory. */
+	config_cli = byx_config_cmd_line_options_new (!g_file_test (BYX_CONFIG_DEVICE_STATE_DIR,
 	                                                           G_FILE_TEST_IS_DIR));
 
 	do_early_setup (&argc, &argv, config_cli);
@@ -258,7 +258,7 @@ main (int argc, char *argv[])
 		int result;
 
 		result = print_config (config_cli);
-		nm_config_cmd_line_options_free (config_cli);
+		byx_config_cmd_line_options_free (config_cli);
 		exit (result);
 	}
 
@@ -303,8 +303,8 @@ main (int argc, char *argv[])
 	}
 
 	/* Read the config file and CLI overrides */
-	config = nm_config_setup (config_cli, CONFIG_ATOMIC_SECTION_PREFIXES, &error);
-	nm_config_cmd_line_options_free (config_cli);
+	config = byx_config_setup (config_cli, CONFIG_ATOMIC_SECTION_PREFIXES, &error);
+	byx_config_cmd_line_options_free (config_cli);
 	config_cli = NULL;
 	if (config == NULL) {
 		fprintf (stderr, _("Failed to read configuration: %s\n"), error->message);
@@ -317,8 +317,8 @@ main (int argc, char *argv[])
 	 * specified by commandline.
 	 */
 	if (global_opt.opt_log_level == NULL && global_opt.opt_log_domains == NULL) {
-		if (!byx_logging_setup (nm_config_get_log_level (config),
-		                       nm_config_get_log_domains (config),
+		if (!byx_logging_setup (byx_config_get_log_level (config),
+		                       byx_config_get_log_domains (config),
 		                       &bad_domains,
 		                       &error_invalid_logging_config)) {
 			/* ignore error, and print the failure reason below.
@@ -326,7 +326,7 @@ main (int argc, char *argv[])
 		}
 	}
 
-	if (global_opt.become_daemon && !nm_config_get_is_debug (config)) {
+	if (global_opt.become_daemon && !byx_config_get_is_debug (config)) {
 		if (daemon (0, 0) < 0) {
 			int saved_errno;
 
@@ -345,18 +345,18 @@ main (int argc, char *argv[])
 	{
 		gs_free char *v = NULL;
 
-		v = nm_config_data_get_value (NM_CONFIG_GET_DATA_ORIG,
-		                              NM_CONFIG_KEYFILE_GROUP_LOGGING,
-		                              NM_CONFIG_KEYFILE_KEY_LOGGING_BACKEND,
-		                              NM_CONFIG_GET_VALUE_STRIP | NM_CONFIG_GET_VALUE_NO_EMPTY);
-		byx_logging_syslog_openlog (v, nm_config_get_is_debug (config));
+		v = byx_config_data_get_value (BYX_CONFIG_GET_DATA_ORIG,
+		                              BYX_CONFIG_KEYFILE_GROUP_LOGGING,
+		                              BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND,
+		                              BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
+		byx_logging_syslog_openlog (v, byx_config_get_is_debug (config));
 	}
 
 	byx_log_info (LOGD_CORE, "NetworkManager (version " VERSION ") is starting... (%s)",
-	              nm_config_get_first_start (config) ? "for the first time" : "after a restart");
+	              byx_config_get_first_start (config) ? "for the first time" : "after a restart");
 
-	byx_log_info (LOGD_CORE, "Read config: %s", nm_config_data_get_config_description (nm_config_get_data (config)));
-	nm_config_data_log (nm_config_get_data (config), "CONFIG: ", "  ", NULL);
+	byx_log_info (LOGD_CORE, "Read config: %s", byx_config_data_get_config_description (byx_config_get_data (config)));
+	byx_config_data_log (byx_config_get_data (config), "CONFIG: ", "  ", NULL);
 
 	if (error_invalid_logging_config) {
 		byx_log_warn (LOGD_CORE, "config: invalid logging configuration: %s", error_invalid_logging_config->message);
@@ -372,12 +372,12 @@ main (int argc, char *argv[])
 	}
 
 	/* the first access to State causes the file to be read (and possibly print a warning) */
-	nm_config_state_get (config);
+	byx_config_state_get (config);
 
 	/* Set up platform interaction layer */
 	nm_linux_platform_setup ();
 
-	NM_UTILS_KEEP_ALIVE (config, nm_netns_get (), "NMConfig-depends-on-NMNetns");
+	NM_UTILS_KEEP_ALIVE (config, nm_netns_get (), "ByxConfig-depends-on-NMNetns");
 
 	if (!byx_dbus_manager_acquire_bus (byx_dbus_manager_get ()))
 		goto done_no_manager;
@@ -420,7 +420,7 @@ main (int argc, char *argv[])
 done:
 	byx_manager_stop (manager);
 
-	nm_config_state_set (config, TRUE, TRUE);
+	byx_config_state_set (config, TRUE, TRUE);
 
 	nm_dns_manager_stop (nm_dns_manager_get ());
 

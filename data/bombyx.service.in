@@ -16,7 +16,6 @@ ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target
-Alias=dbus-org.freedesktop.Bombyx.service
 
 # We want to enable bombyx-wait-online.service whenever this service
 # is enabled. bombyx-wait-online.service has

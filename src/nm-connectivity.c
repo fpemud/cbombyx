@@ -94,7 +94,7 @@ typedef struct {
 	char *response;
 	gboolean enabled;
 	guint interval;
-	NMConfig *config;
+	ByxConfig *config;
 #if WITH_CONCHECK
 	struct {
 		CURLM *curl_mhandle;
@@ -231,7 +231,7 @@ cb_data_free (NMConnectivityCheckHandle *cb_data,
 static const char *
 _check_handle_get_response (NMConnectivityCheckHandle *cb_data)
 {
-	return cb_data->concheck.response ?: NM_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE;
+	return cb_data->concheck.response ?: BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE;
 }
 
 static void
@@ -554,7 +554,7 @@ nm_connectivity_get_interval (NMConnectivity *self)
 }
 
 static void
-update_config (NMConnectivity *self, NMConfigData *config_data)
+update_config (NMConnectivity *self, ByxConfigData *config_data)
 {
 	NMConnectivityPrivate *priv = NM_CONNECTIVITY_GET_PRIVATE (self);
 	const char *uri, *response;
@@ -563,7 +563,7 @@ update_config (NMConnectivity *self, NMConfigData *config_data)
 	gboolean changed = FALSE;
 
 	/* Set the URI. */
-	uri = nm_config_data_get_connectivity_uri (config_data);
+	uri = byx_config_data_get_connectivity_uri (config_data);
 	if (uri && !*uri)
 		uri = NULL;
 	changed = g_strcmp0 (uri, priv->uri) != 0;
@@ -589,7 +589,7 @@ update_config (NMConnectivity *self, NMConfigData *config_data)
 	}
 
 	/* Set the interval. */
-	interval = nm_config_data_get_connectivity_interval (config_data);
+	interval = byx_config_data_get_connectivity_interval (config_data);
 	interval = MIN (interval, (7 * 24 * 3600));
 	if (priv->interval != interval) {
 		priv->interval = interval;
@@ -603,7 +603,7 @@ update_config (NMConnectivity *self, NMConfigData *config_data)
 	if (   priv->uri
 	    && priv->interval
 	    && priv->concheck.curl_mhandle)
-		enabled = nm_config_data_get_connectivity_enabled (config_data);
+		enabled = byx_config_data_get_connectivity_enabled (config_data);
 #endif
 
 	if (priv->enabled != enabled) {
@@ -612,9 +612,9 @@ update_config (NMConnectivity *self, NMConfigData *config_data)
 	}
 
 	/* Set the response. */
-	response = nm_config_data_get_connectivity_response (config_data);
+	response = byx_config_data_get_connectivity_response (config_data);
 	if (!nm_streq0 (response, priv->response)) {
-		/* a response %NULL means, NM_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE. Any other response
+		/* a response %NULL means, BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE. Any other response
 		 * (including "") is accepted. */
 		g_free (priv->response);
 		priv->response = g_strdup (response);
@@ -626,10 +626,10 @@ update_config (NMConnectivity *self, NMConfigData *config_data)
 }
 
 static void
-config_changed_cb (NMConfig *config,
-                   NMConfigData *config_data,
-                   NMConfigChangeFlags changes,
-                   NMConfigData *old_data,
+config_changed_cb (ByxConfig *config,
+                   ByxConfigData *config_data,
+                   ByxConfigChangeFlags changes,
+                   ByxConfigData *old_data,
                    NMConnectivity *self)
 {
 	update_config (self, config_data);
@@ -644,9 +644,9 @@ nm_connectivity_init (NMConnectivity *self)
 
 	c_list_init (&priv->handles_lst_head);
 
-	priv->config = g_object_ref (nm_config_get ());
+	priv->config = g_object_ref (byx_config_get ());
 	g_signal_connect (G_OBJECT (priv->config),
-	                  NM_CONFIG_SIGNAL_CONFIG_CHANGED,
+	                  BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
 	                  G_CALLBACK (config_changed_cb),
 	                  self);
 
@@ -665,7 +665,7 @@ nm_connectivity_init (NMConnectivity *self)
 	}
 #endif
 
-	update_config (self, nm_config_get_data (priv->config));
+	update_config (self, byx_config_get_data (priv->config));
 }
 
 static void

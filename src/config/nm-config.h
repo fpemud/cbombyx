@@ -19,84 +19,84 @@
  * Copyright (C) 2013 Thomas Bechtold <thomasbechtold@jpberlin.de>
  */
 
-#ifndef __NETWORKMANAGER_CONFIG_H__
-#define __NETWORKMANAGER_CONFIG_H__
+#ifndef __BYX_CONFIG_H__
+#define __BYX_CONFIG_H__
 
 #include "nm-config-data.h"
 
-#define NM_TYPE_CONFIG            (nm_config_get_type ())
-#define NM_CONFIG(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), NM_TYPE_CONFIG, NMConfig))
-#define NM_CONFIG_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  NM_TYPE_CONFIG, NMConfigClass))
-#define NM_IS_CONFIG(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), NM_TYPE_CONFIG))
-#define NM_IS_CONFIG_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  NM_TYPE_CONFIG))
-#define NM_CONFIG_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  NM_TYPE_CONFIG, NMConfigClass))
+#define BYX_TYPE_CONFIG            (byx_config_get_type ())
+#define BYX_CONFIG(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_CONFIG, ByxConfig))
+#define BYX_CONFIG_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  BYX_TYPE_CONFIG, ByxConfigClass))
+#define BYX_IS_CONFIG(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), BYX_TYPE_CONFIG))
+#define BYX_IS_CONFIG_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  BYX_TYPE_CONFIG))
+#define BYX_CONFIG_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  BYX_TYPE_CONFIG, ByxConfigClass))
 
 /* Properties */
-#define NM_CONFIG_CMD_LINE_OPTIONS                  "cmd-line-options"
-#define NM_CONFIG_ATOMIC_SECTION_PREFIXES           "atomic-section-prefixes"
+#define BYX_CONFIG_CMD_LINE_OPTIONS                  "cmd-line-options"
+#define BYX_CONFIG_ATOMIC_SECTION_PREFIXES           "atomic-section-prefixes"
 
 /* Signals */
-#define NM_CONFIG_SIGNAL_CONFIG_CHANGED             "config-changed"
+#define BYX_CONFIG_SIGNAL_CONFIG_CHANGED             "config-changed"
 
-#define NM_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL 300
-#define NM_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE "NetworkManager is online" /* NOT LOCALIZED */
+#define BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL 300
+#define BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE "NetworkManager is online" /* NOT LOCALIZED */
 
-#define NM_CONFIG_KEYFILE_LIST_SEPARATOR ','
+#define BYX_CONFIG_KEYFILE_LIST_SEPARATOR ','
 
-#define NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN                ".intern."
-#define NM_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION            "connection"
-#define NM_CONFIG_KEYFILE_GROUPPREFIX_DEVICE                "device"
-#define NM_CONFIG_KEYFILE_GROUPPREFIX_GLOBAL_DNS_DOMAIN     "global-dns-domain-"
-#define NM_CONFIG_KEYFILE_GROUPPREFIX_TEST_APPEND_STRINGLIST ".test-append-stringlist"
+#define BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN                ".intern."
+#define BYX_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION            "connection"
+#define BYX_CONFIG_KEYFILE_GROUPPREFIX_DEVICE                "device"
+#define BYX_CONFIG_KEYFILE_GROUPPREFIX_GLOBAL_DNS_DOMAIN     "global-dns-domain-"
+#define BYX_CONFIG_KEYFILE_GROUPPREFIX_TEST_APPEND_STRINGLIST ".test-append-stringlist"
 
-#define NM_CONFIG_KEYFILE_GROUP_MAIN                        "main"
-#define NM_CONFIG_KEYFILE_GROUP_LOGGING                     "logging"
-#define NM_CONFIG_KEYFILE_GROUP_CONNECTIVITY                "connectivity"
-#define NM_CONFIG_KEYFILE_GROUP_GLOBAL_DNS                  "global-dns"
-#define NM_CONFIG_KEYFILE_GROUP_CONFIG                      ".config"
+#define BYX_CONFIG_KEYFILE_GROUP_MAIN                        "main"
+#define BYX_CONFIG_KEYFILE_GROUP_LOGGING                     "logging"
+#define BYX_CONFIG_KEYFILE_GROUP_CONNECTIVITY                "connectivity"
+#define BYX_CONFIG_KEYFILE_GROUP_GLOBAL_DNS                  "global-dns"
+#define BYX_CONFIG_KEYFILE_GROUP_CONFIG                      ".config"
 
-#define NM_CONFIG_KEYFILE_GROUP_KEYFILE                     "keyfile"
+#define BYX_CONFIG_KEYFILE_GROUP_KEYFILE                     "keyfile"
 
-#define NM_CONFIG_KEYFILE_KEY_MAIN_AUTH_POLKIT              "auth-polkit"
-#define NM_CONFIG_KEYFILE_KEY_MAIN_AUTOCONNECT_RETRIES_DEFAULT "autoconnect-retries-default"
-#define NM_CONFIG_KEYFILE_KEY_MAIN_DHCP                     "dhcp"
-#define NM_CONFIG_KEYFILE_KEY_MAIN_DEBUG                    "debug"
-#define NM_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER             "slaves-order"
-#define NM_CONFIG_KEYFILE_KEY_LOGGING_BACKEND               "backend"
-#define NM_CONFIG_KEYFILE_KEY_CONFIG_ENABLE                 "enable"
-#define NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS            ".was"
-#define NM_CONFIG_KEYFILE_KEY_KEYFILE_PATH                  "path"
-#define NM_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES     "unmanaged-devices"
-#define NM_CONFIG_KEYFILE_KEY_IFNET_AUTO_REFRESH            "auto_refresh"
-#define NM_CONFIG_KEYFILE_KEY_IFNET_MANAGED                 "managed"
-#define NM_CONFIG_KEYFILE_KEY_IFUPDOWN_MANAGED              "managed"
-#define NM_CONFIG_KEYFILE_KEY_AUDIT                         "audit"
+#define BYX_CONFIG_KEYFILE_KEY_MAIN_AUTH_POLKIT              "auth-polkit"
+#define BYX_CONFIG_KEYFILE_KEY_MAIN_AUTOCONNECT_RETRIES_DEFAULT "autoconnect-retries-default"
+#define BYX_CONFIG_KEYFILE_KEY_MAIN_DHCP                     "dhcp"
+#define BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG                    "debug"
+#define BYX_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER             "slaves-order"
+#define BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND               "backend"
+#define BYX_CONFIG_KEYFILE_KEY_CONFIG_ENABLE                 "enable"
+#define BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS            ".was"
+#define BYX_CONFIG_KEYFILE_KEY_KEYFILE_PATH                  "path"
+#define BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES     "unmanaged-devices"
+#define BYX_CONFIG_KEYFILE_KEY_IFNET_AUTO_REFRESH            "auto_refresh"
+#define BYX_CONFIG_KEYFILE_KEY_IFNET_MANAGED                 "managed"
+#define BYX_CONFIG_KEYFILE_KEY_IFUPDOWN_MANAGED              "managed"
+#define BYX_CONFIG_KEYFILE_KEY_AUDIT                         "audit"
 
-#define NM_CONFIG_KEYFILE_KEY_DEVICE_MANAGED                "managed"
-#define NM_CONFIG_KEYFILE_KEY_DEVICE_IGNORE_CARRIER         "ignore-carrier"
-#define NM_CONFIG_KEYFILE_KEY_DEVICE_SRIOV_NUM_VFS          "sriov-num-vfs"
-#define NM_CONFIG_KEYFILE_KEY_DEVICE_WIFI_BACKEND           "wifi.backend"
-#define NM_CONFIG_KEYFILE_KEY_DEVICE_WIFI_SCAN_RAND_MAC_ADDRESS "wifi.scan-rand-mac-address"
-#define NM_CONFIG_KEYFILE_KEY_DEVICE_CARRIER_WAIT_TIMEOUT   "carrier-wait-timeout"
+#define BYX_CONFIG_KEYFILE_KEY_DEVICE_MANAGED                "managed"
+#define BYX_CONFIG_KEYFILE_KEY_DEVICE_IGNORE_CARRIER         "ignore-carrier"
+#define BYX_CONFIG_KEYFILE_KEY_DEVICE_SRIOV_NUM_VFS          "sriov-num-vfs"
+#define BYX_CONFIG_KEYFILE_KEY_DEVICE_WIFI_BACKEND           "wifi.backend"
+#define BYX_CONFIG_KEYFILE_KEY_DEVICE_WIFI_SCAN_RAND_MAC_ADDRESS "wifi.scan-rand-mac-address"
+#define BYX_CONFIG_KEYFILE_KEY_DEVICE_CARRIER_WAIT_TIMEOUT   "carrier-wait-timeout"
 
-#define NM_CONFIG_KEYFILE_KEYPREFIX_WAS                     ".was."
-#define NM_CONFIG_KEYFILE_KEYPREFIX_SET                     ".set."
+#define BYX_CONFIG_KEYFILE_KEYPREFIX_WAS                     ".was."
+#define BYX_CONFIG_KEYFILE_KEYPREFIX_SET                     ".set."
 
-#define NM_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS \
-	NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN NM_CONFIG_KEYFILE_GROUP_GLOBAL_DNS
-#define NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN \
-	NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN NM_CONFIG_KEYFILE_GROUPPREFIX_GLOBAL_DNS_DOMAIN
+#define BYX_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS \
+	BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN BYX_CONFIG_KEYFILE_GROUP_GLOBAL_DNS
+#define BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN \
+	BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN BYX_CONFIG_KEYFILE_GROUPPREFIX_GLOBAL_DNS_DOMAIN
 
-typedef struct NMConfigCmdLineOptions NMConfigCmdLineOptions;
+typedef struct ByxConfigCmdLineOptions ByxConfigCmdLineOptions;
 
 typedef enum {
-	NM_CONFIG_STATE_PROPERTY_NONE,
+	BYX_CONFIG_STATE_PROPERTY_NONE,
 
 	/* 1 set-argument: (gboolean enabled) */
-	NM_CONFIG_STATE_PROPERTY_NETWORKING_ENABLED,
-	NM_CONFIG_STATE_PROPERTY_WIFI_ENABLED,
-	NM_CONFIG_STATE_PROPERTY_WWAN_ENABLED,
-} NMConfigRunStatePropertyType;
+	BYX_CONFIG_STATE_PROPERTY_NETWORKING_ENABLED,
+	BYX_CONFIG_STATE_PROPERTY_WIFI_ENABLED,
+	BYX_CONFIG_STATE_PROPERTY_WWAN_ENABLED,
+} ByxConfigRunStatePropertyType;
 
 typedef struct {
 	bool net_enabled;
@@ -105,109 +105,109 @@ typedef struct {
 
 	/* Whether the runstate is modified and not saved to disk. */
 	bool dirty;
-} NMConfigState;
+} ByxConfigState;
 
-typedef struct _NMConfigClass NMConfigClass;
+typedef struct _ByxConfigClass ByxConfigClass;
 
-GType nm_config_get_type (void);
+GType byx_config_get_type (void);
 
-NMConfig *nm_config_get (void);
+ByxConfig *byx_config_get (void);
 
-const char *nm_config_change_flags_to_string (NMConfigChangeFlags flags, char *buf, gsize len);
+const char *byx_config_change_flags_to_string (ByxConfigChangeFlags flags, char *buf, gsize len);
 
-NMConfigData *nm_config_get_data (NMConfig *config);
-NMConfigData *nm_config_get_data_orig (NMConfig *config);
+ByxConfigData *byx_config_get_data (ByxConfig *config);
+ByxConfigData *byx_config_get_data_orig (ByxConfig *config);
 
-#define NM_CONFIG_GET_DATA      (nm_config_get_data (nm_config_get ()))
-#define NM_CONFIG_GET_DATA_ORIG (nm_config_get_data_orig (nm_config_get ()))
+#define BYX_CONFIG_GET_DATA      (byx_config_get_data (byx_config_get ()))
+#define BYX_CONFIG_GET_DATA_ORIG (byx_config_get_data_orig (byx_config_get ()))
 
-gboolean nm_config_get_monitor_connection_files (NMConfig *config);
-const char *nm_config_get_log_level (NMConfig *config);
-const char *nm_config_get_log_domains (NMConfig *config);
-gboolean nm_config_get_configure_and_quit (NMConfig *config);
-gboolean nm_config_get_is_debug (NMConfig *config);
+gboolean byx_config_get_monitor_connection_files (ByxConfig *config);
+const char *byx_config_get_log_level (ByxConfig *config);
+const char *byx_config_get_log_domains (ByxConfig *config);
+gboolean byx_config_get_configure_and_quit (ByxConfig *config);
+gboolean byx_config_get_is_debug (ByxConfig *config);
 
-gboolean nm_config_get_first_start (NMConfig *config);
+gboolean byx_config_get_first_start (ByxConfig *config);
 
-void nm_config_set_values (NMConfig *self,
+void byx_config_set_values (ByxConfig *self,
                            GKeyFile *keyfile_intern_new,
                            gboolean allow_write,
                            gboolean force_rewrite);
 
 /* for main.c only */
-NMConfigCmdLineOptions *nm_config_cmd_line_options_new (gboolean first_start);
-void                    nm_config_cmd_line_options_free (NMConfigCmdLineOptions *cli);
-void                    nm_config_cmd_line_options_add_to_entries (NMConfigCmdLineOptions *cli,
+ByxConfigCmdLineOptions *byx_config_cmd_line_options_new (gboolean first_start);
+void                    byx_config_cmd_line_options_free (ByxConfigCmdLineOptions *cli);
+void                    byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli,
                                                                    GOptionContext *opt_ctx);
 
-gboolean nm_config_get_no_auto_default_for_device (NMConfig *config, NMDevice *device);
-void nm_config_set_no_auto_default_for_device  (NMConfig *config, NMDevice *device);
+gboolean byx_config_get_no_auto_default_for_device (ByxConfig *config, NMDevice *device);
+void byx_config_set_no_auto_default_for_device  (ByxConfig *config, NMDevice *device);
 
-NMConfig *nm_config_new (const NMConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error);
-NMConfig *nm_config_setup (const NMConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error);
-void nm_config_reload (NMConfig *config, NMConfigChangeFlags reload_flags);
+ByxConfig *byx_config_new (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error);
+ByxConfig *byx_config_setup (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error);
+void byx_config_reload (ByxConfig *config, ByxConfigChangeFlags reload_flags);
 
-const NMConfigState *nm_config_state_get (NMConfig *config);
+const ByxConfigState *byx_config_state_get (ByxConfig *config);
 
-void _nm_config_state_set (NMConfig *config,
+void _byx_config_state_set (ByxConfig *config,
                            gboolean allow_persist,
                            gboolean force_persist,
                            ...);
-#define nm_config_state_set(config, allow_persist, force_persist, ...) \
-    _nm_config_state_set (config, allow_persist, force_persist, ##__VA_ARGS__, 0)
+#define byx_config_state_set(config, allow_persist, force_persist, ...) \
+    _byx_config_state_set (config, allow_persist, force_persist, ##__VA_ARGS__, 0)
 
-gint nm_config_parse_boolean (const char *str, gint default_value);
+gint byx_config_parse_boolean (const char *str, gint default_value);
 
-GKeyFile *nm_config_create_keyfile (void);
-gint nm_config_keyfile_get_boolean (const GKeyFile *keyfile,
+GKeyFile *byx_config_create_keyfile (void);
+gint byx_config_keyfile_get_boolean (const GKeyFile *keyfile,
                                     const char *section,
                                     const char *key,
                                     gint default_value);
-gint64 nm_config_keyfile_get_int64 (const GKeyFile *keyfile,
+gint64 byx_config_keyfile_get_int64 (const GKeyFile *keyfile,
                                     const char *section,
                                     const char *key,
                                     guint base,
                                     gint64 min,
                                     gint64 max,
                                     gint64 fallback);
-char *nm_config_keyfile_get_value (const GKeyFile *keyfile,
+char *byx_config_keyfile_get_value (const GKeyFile *keyfile,
                                    const char *section,
                                    const char *key,
-                                   NMConfigGetValueFlags flags);
-void nm_config_keyfile_set_string_list (GKeyFile *keyfile,
+                                   ByxConfigGetValueFlags flags);
+void byx_config_keyfile_set_string_list (GKeyFile *keyfile,
                                         const char *group,
                                         const char *key,
                                         const char *const* strv,
                                         gssize len);
-gboolean nm_config_keyfile_has_global_dns_config (GKeyFile *keyfile, gboolean internal);
+gboolean byx_config_keyfile_has_global_dns_config (GKeyFile *keyfile, gboolean internal);
 
-GSList *nm_config_get_match_spec (const GKeyFile *keyfile, const char *group, const char *key, gboolean *out_has_key);
+GSList *byx_config_get_match_spec (const GKeyFile *keyfile, const char *group, const char *key, gboolean *out_has_key);
 
-void _nm_config_sort_groups (char **groups, gsize ngroups);
+void _byx_config_sort_groups (char **groups, gsize ngroups);
 
-gboolean nm_config_set_global_dns (NMConfig *self, NMGlobalDnsConfig *global_dns, GError **error);
+gboolean byx_config_set_global_dns (ByxConfig *self, NMGlobalDnsConfig *global_dns, GError **error);
 
-void nm_config_set_connectivity_check_enabled (NMConfig *self, gboolean enabled);
+void byx_config_set_connectivity_check_enabled (ByxConfig *self, gboolean enabled);
 
 /* internal defines ... */
-extern guint _nm_config_match_nm_version;
-extern char *_nm_config_match_env;
+extern guint _byx_config_match_nm_version;
+extern char *_byx_config_match_env;
 
 /*****************************************************************************/
 
-#define NM_CONFIG_DEVICE_STATE_DIR ""NMRUNDIR"/devices"
+#define BYX_CONFIG_DEVICE_STATE_DIR ""NMRUNDIR"/devices"
 
-#define NM_CONFIG_DEFAULT_MAIN_AUTH_POLKIT_BOOL     (nm_streq (""NM_CONFIG_DEFAULT_MAIN_AUTH_POLKIT, "true"))
+#define BYX_CONFIG_DEFAULT_MAIN_AUTH_POLKIT_BOOL     (nm_streq (""BYX_CONFIG_DEFAULT_MAIN_AUTH_POLKIT, "true"))
 
 typedef enum {
-	NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN   = -1,
-	NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED = 0,
-	NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED   = 1,
-} NMConfigDeviceStateManagedType;
+	BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN   = -1,
+	BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED = 0,
+	BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED   = 1,
+} ByxConfigDeviceStateManagedType;
 
-struct _NMConfigDeviceStateData {
+struct _ByxConfigDeviceStateData {
 	int ifindex;
-	NMConfigDeviceStateManagedType managed;
+	ByxConfigDeviceStateManagedType managed;
 
 	/* a value of zero means that no metric is set. */
 	guint32 route_metric_default_aspired;
@@ -224,13 +224,13 @@ struct _NMConfigDeviceStateData {
 	int nm_owned:3;
 };
 
-NMConfigDeviceStateData *nm_config_device_state_load (int ifindex);
-GHashTable *nm_config_device_state_load_all (void);
+ByxConfigDeviceStateData *byx_config_device_state_load (int ifindex);
+GHashTable *byx_config_device_state_load_all (void);
 
-const GHashTable *nm_config_device_state_get_all (NMConfig *self);
-const NMConfigDeviceStateData *nm_config_device_state_get (NMConfig *self,
+const GHashTable *byx_config_device_state_get_all (ByxConfig *self);
+const ByxConfigDeviceStateData *byx_config_device_state_get (ByxConfig *self,
                                                            int ifindex);
 
 /*****************************************************************************/
 
-#endif /* __NETWORKMANAGER_CONFIG_H__ */
+#endif /* __BYX_CONFIG_H__ */

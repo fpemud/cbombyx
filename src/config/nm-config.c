@@ -43,7 +43,7 @@
 
 /*****************************************************************************/
 
-struct NMConfigCmdLineOptions {
+struct ByxConfigCmdLineOptions {
 	char *config_main_file;
 	char *intern_config_file;
 	char *config_dir;
@@ -62,7 +62,7 @@ struct NMConfigCmdLineOptions {
 	char *connectivity_response;
 
 	/* @first_start is not provided by command line. It is a convenient hack
-	 * to pass in an argument to NMConfig. This makes NMConfigCmdLineOptions a
+	 * to pass in an argument to ByxConfig. This makes ByxConfigCmdLineOptions a
 	 * misnomer.
 	 *
 	 * It is true, if NM is started the first time -- contrary to a restart
@@ -72,7 +72,7 @@ struct NMConfigCmdLineOptions {
 };
 
 typedef struct {
-	NMConfigState p;
+	ByxConfigState p;
 } State;
 
 /*****************************************************************************/
@@ -90,10 +90,10 @@ enum {
 static guint signals[LAST_SIGNAL] = { 0 };
 
 typedef struct {
-	NMConfigCmdLineOptions cli;
+	ByxConfigCmdLineOptions cli;
 
-	NMConfigData *config_data;
-	NMConfigData *config_data_orig;
+	ByxConfigData *config_data;
+	ByxConfigData *config_data_orig;
 
 	char *config_dir;
 	char *system_config_dir;
@@ -110,8 +110,8 @@ typedef struct {
 	char **atomic_section_prefixes;
 
 	/* The state. This is actually a mutable data member and it makes sense:
-	 * The regular config is immutable (NMConfigData) and can old be swapped
-	 * as a whole (via nm_config_set_values() or during reload). Thus, it can
+	 * The regular config is immutable (ByxConfigData) and can old be swapped
+	 * as a whole (via byx_config_set_values() or during reload). Thus, it can
 	 * be changed, but it is still immutable and is swapped atomically as a
 	 * whole. Also, we emit a config-changed signal on that occasion.
 	 *
@@ -129,24 +129,24 @@ typedef struct {
 	 * that they are changed outside of NM (at least not while NM is running).
 	 * Hence, we read them once, that's it. */
 	GHashTable *device_states;
-} NMConfigPrivate;
+} ByxConfigPrivate;
 
-struct _NMConfig {
+struct _ByxConfig {
 	GObject parent;
-	NMConfigPrivate _priv;
+	ByxConfigPrivate _priv;
 };
 
-struct _NMConfigClass {
+struct _ByxConfigClass {
 	GObjectClass parent;
 };
 
-static void nm_config_initable_iface_init (GInitableIface *iface);
+static void byx_config_initable_iface_init (GInitableIface *iface);
 
-G_DEFINE_TYPE_WITH_CODE (NMConfig, nm_config, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, nm_config_initable_iface_init);
+G_DEFINE_TYPE_WITH_CODE (ByxConfig, nm_config, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, byx_config_initable_iface_init);
                          )
 
-#define NM_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, NMConfig, NM_IS_CONFIG)
+#define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfig, BYX_IS_CONFIG)
 
 /*****************************************************************************/
 
@@ -155,7 +155,7 @@ G_DEFINE_TYPE_WITH_CODE (NMConfig, nm_config, G_TYPE_OBJECT,
 
 /*****************************************************************************/
 
-static void _set_config_data (NMConfig *self, NMConfigData *new_data, NMConfigChangeFlags reload_flags);
+static void _set_config_data (ByxConfig *self, ByxConfigData *new_data, ByxConfigChangeFlags reload_flags);
 
 /*****************************************************************************/
 
@@ -168,14 +168,14 @@ static void _set_config_data (NMConfig *self, NMConfigData *new_data, NMConfigCh
 /*****************************************************************************/
 
 gint
-nm_config_parse_boolean (const char *str,
+byx_config_parse_boolean (const char *str,
                          gint default_value)
 {
 	return _byx_utils_ascii_str_to_bool (str, default_value);
 }
 
 gint
-nm_config_keyfile_get_boolean (const GKeyFile *keyfile,
+byx_config_keyfile_get_boolean (const GKeyFile *keyfile,
                                const char *section,
                                const char *key,
                                gint default_value)
@@ -187,11 +187,11 @@ nm_config_keyfile_get_boolean (const GKeyFile *keyfile,
 	g_return_val_if_fail (key != NULL, default_value);
 
 	str = g_key_file_get_value ((GKeyFile *) keyfile, section, key, NULL);
-	return nm_config_parse_boolean (str, default_value);
+	return byx_config_parse_boolean (str, default_value);
 }
 
 gint64
-nm_config_keyfile_get_int64 (const GKeyFile *keyfile,
+byx_config_keyfile_get_int64 (const GKeyFile *keyfile,
                              const char *section,
                              const char *key,
                              guint base,
@@ -218,14 +218,14 @@ nm_config_keyfile_get_int64 (const GKeyFile *keyfile,
 }
 
 char *
-nm_config_keyfile_get_value (const GKeyFile *keyfile,
+byx_config_keyfile_get_value (const GKeyFile *keyfile,
                              const char *section,
                              const char *key,
-                             NMConfigGetValueFlags flags)
+                             ByxConfigGetValueFlags flags)
 {
 	char *value;
 
-	if (NM_FLAGS_HAS (flags, NM_CONFIG_GET_VALUE_RAW))
+	if (NM_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_RAW))
 		value = g_key_file_get_value ((GKeyFile *) keyfile, section, key, NULL);
 	else
 		value = g_key_file_get_string ((GKeyFile *) keyfile, section, key, NULL);
@@ -233,10 +233,10 @@ nm_config_keyfile_get_value (const GKeyFile *keyfile,
 	if (!value)
 		return NULL;
 
-	if (NM_FLAGS_HAS (flags, NM_CONFIG_GET_VALUE_STRIP))
+	if (NM_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_STRIP))
 		g_strstrip (value);
 
-	if (   NM_FLAGS_HAS (flags, NM_CONFIG_GET_VALUE_NO_EMPTY)
+	if (   NM_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_NO_EMPTY)
 	    && !*value) {
 		g_free (value);
 		return NULL;
@@ -246,7 +246,7 @@ nm_config_keyfile_get_value (const GKeyFile *keyfile,
 }
 
 void
-nm_config_keyfile_set_string_list (GKeyFile *keyfile,
+byx_config_keyfile_set_string_list (GKeyFile *keyfile,
                                    const char *group,
                                    const char *key,
                                    const char *const* strv,
@@ -268,7 +268,7 @@ nm_config_keyfile_set_string_list (GKeyFile *keyfile,
 		return;
 
 	l = strlen (new_value);
-	if (l > 0 && new_value[l - 1] == NM_CONFIG_KEYFILE_LIST_SEPARATOR) {
+	if (l > 0 && new_value[l - 1] == BYX_CONFIG_KEYFILE_LIST_SEPARATOR) {
 		/* Maybe we should check that value doesn't end with "\\,", i.e.
 		 * with an escaped separator. But the way g_key_file_set_string_list()
 		 * is implemented (currently), it always adds a trailing separator. */
@@ -280,65 +280,65 @@ nm_config_keyfile_set_string_list (GKeyFile *keyfile,
 
 /*****************************************************************************/
 
-NMConfigData *
-nm_config_get_data (NMConfig *config)
+ByxConfigData *
+byx_config_get_data (ByxConfig *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
-	return NM_CONFIG_GET_PRIVATE (config)->config_data;
+	return BYX_CONFIG_GET_PRIVATE (config)->config_data;
 }
 
-/* The NMConfigData instance is reloadable and will be swapped on reload.
- * nm_config_get_data_orig() returns the original configuration, when the NMConfig
+/* The ByxConfigData instance is reloadable and will be swapped on reload.
+ * byx_config_get_data_orig() returns the original configuration, when the ByxConfig
  * instance was created. */
-NMConfigData *
-nm_config_get_data_orig (NMConfig *config)
+ByxConfigData *
+byx_config_get_data_orig (ByxConfig *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
-	return NM_CONFIG_GET_PRIVATE (config)->config_data_orig;
+	return BYX_CONFIG_GET_PRIVATE (config)->config_data_orig;
 }
 
 gboolean
-nm_config_get_monitor_connection_files (NMConfig *config)
+byx_config_get_monitor_connection_files (ByxConfig *config)
 {
 	g_return_val_if_fail (config != NULL, FALSE);
 
-	return NM_CONFIG_GET_PRIVATE (config)->monitor_connection_files;
+	return BYX_CONFIG_GET_PRIVATE (config)->monitor_connection_files;
 }
 
 const char *
-nm_config_get_log_level (NMConfig *config)
+byx_config_get_log_level (ByxConfig *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
-	return NM_CONFIG_GET_PRIVATE (config)->log_level;
+	return BYX_CONFIG_GET_PRIVATE (config)->log_level;
 }
 
 const char *
-nm_config_get_log_domains (NMConfig *config)
+byx_config_get_log_domains (ByxConfig *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
-	return NM_CONFIG_GET_PRIVATE (config)->log_domains;
+	return BYX_CONFIG_GET_PRIVATE (config)->log_domains;
 }
 
 gboolean
-nm_config_get_configure_and_quit (NMConfig *config)
+byx_config_get_configure_and_quit (ByxConfig *config)
 {
-	return NM_CONFIG_GET_PRIVATE (config)->configure_and_quit;
+	return BYX_CONFIG_GET_PRIVATE (config)->configure_and_quit;
 }
 
 gboolean
-nm_config_get_is_debug (NMConfig *config)
+byx_config_get_is_debug (ByxConfig *config)
 {
-	return NM_CONFIG_GET_PRIVATE (config)->cli.is_debug;
+	return BYX_CONFIG_GET_PRIVATE (config)->cli.is_debug;
 }
 
 gboolean
-nm_config_get_first_start (NMConfig *config)
+byx_config_get_first_start (ByxConfig *config)
 {
-	return NM_CONFIG_GET_PRIVATE (config)->cli.first_start;
+	return BYX_CONFIG_GET_PRIVATE (config)->cli.first_start;
 }
 
 /*****************************************************************************/
@@ -390,34 +390,34 @@ no_auto_default_to_file (const char *no_auto_default_file, const char *const*no_
 }
 
 gboolean
-nm_config_get_no_auto_default_for_device (NMConfig *self, NMDevice *device)
+byx_config_get_no_auto_default_for_device (ByxConfig *self, NMDevice *device)
 {
-	g_return_val_if_fail (NM_IS_CONFIG (self), FALSE);
+	g_return_val_if_fail (BYX_IS_CONFIG (self), FALSE);
 
-	return nm_config_data_get_no_auto_default_for_device (NM_CONFIG_GET_PRIVATE (self)->config_data, device);
+	return byx_config_data_get_no_auto_default_for_device (BYX_CONFIG_GET_PRIVATE (self)->config_data, device);
 }
 
 void
-nm_config_set_no_auto_default_for_device (NMConfig *self, NMDevice *device)
+byx_config_set_no_auto_default_for_device (ByxConfig *self, NMDevice *device)
 {
-	NMConfigPrivate *priv;
+	ByxConfigPrivate *priv;
 	GError *error = NULL;
-	NMConfigData *new_data = NULL;
+	ByxConfigData *new_data = NULL;
 	const char *hw_address;
 	const char *const*no_auto_default_current;
 	GPtrArray *no_auto_default_new = NULL;
 	guint i;
 
-	g_return_if_fail (NM_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG (self));
 	g_return_if_fail (NM_IS_DEVICE (device));
 
-	priv = NM_CONFIG_GET_PRIVATE (self);
+	priv = BYX_CONFIG_GET_PRIVATE (self);
 
 	hw_address = nm_device_get_permanent_hw_address (device);
 	if (!hw_address)
 		return;
 
-	no_auto_default_current = nm_config_data_get_no_auto_default (priv->config_data);
+	no_auto_default_current = byx_config_data_get_no_auto_default (priv->config_data);
 
 	if (byx_utils_strv_find_first ((char **) no_auto_default_current, -1, hw_address) >= 0) {
 		/* @hw_address is already blocked. We don't have to update our in-memory representation.
@@ -437,18 +437,18 @@ nm_config_set_no_auto_default_for_device (NMConfig *self, NMDevice *device)
 		g_error_free (error);
 	}
 
-	new_data = nm_config_data_new_update_no_auto_default (priv->config_data, (const char *const*) no_auto_default_new->pdata);
+	new_data = byx_config_data_new_update_no_auto_default (priv->config_data, (const char *const*) no_auto_default_new->pdata);
 
 	/* unref no_auto_default_set here. Note that _set_config_data() probably invalidates the content of the array. */
 	g_ptr_array_unref (no_auto_default_new);
 
-	_set_config_data (self, new_data, NM_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT);
+	_set_config_data (self, new_data, BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT);
 }
 
 /*****************************************************************************/
 
 static void
-_nm_config_cmd_line_options_clear (NMConfigCmdLineOptions *cli)
+_byx_config_cmd_line_options_clear (ByxConfigCmdLineOptions *cli)
 {
 	g_clear_pointer (&cli->config_main_file, g_free);
 	g_clear_pointer (&cli->config_dir, g_free);
@@ -466,13 +466,13 @@ _nm_config_cmd_line_options_clear (NMConfigCmdLineOptions *cli)
 }
 
 static void
-_nm_config_cmd_line_options_copy (const NMConfigCmdLineOptions *cli, NMConfigCmdLineOptions *dst)
+_byx_config_cmd_line_options_copy (const ByxConfigCmdLineOptions *cli, ByxConfigCmdLineOptions *dst)
 {
 	g_return_if_fail (cli);
 	g_return_if_fail (dst);
 	g_return_if_fail (cli != dst);
 
-	_nm_config_cmd_line_options_clear (dst);
+	_byx_config_cmd_line_options_clear (dst);
 	dst->config_dir = g_strdup (cli->config_dir);
 	dst->system_config_dir = g_strdup (cli->system_config_dir);
 	dst->config_main_file = g_strdup (cli->config_main_file);
@@ -488,12 +488,12 @@ _nm_config_cmd_line_options_copy (const NMConfigCmdLineOptions *cli, NMConfigCmd
 	dst->first_start = cli->first_start;
 }
 
-NMConfigCmdLineOptions *
-nm_config_cmd_line_options_new (gboolean first_start)
+ByxConfigCmdLineOptions *
+byx_config_cmd_line_options_new (gboolean first_start)
 {
-	NMConfigCmdLineOptions *cli = g_new0 (NMConfigCmdLineOptions, 1);
+	ByxConfigCmdLineOptions *cli = g_new0 (ByxConfigCmdLineOptions, 1);
 
-	_nm_config_cmd_line_options_clear (cli);
+	_byx_config_cmd_line_options_clear (cli);
 
 	cli->first_start = first_start;
 
@@ -501,16 +501,16 @@ nm_config_cmd_line_options_new (gboolean first_start)
 }
 
 void
-nm_config_cmd_line_options_free (NMConfigCmdLineOptions *cli)
+byx_config_cmd_line_options_free (ByxConfigCmdLineOptions *cli)
 {
 	g_return_if_fail (cli);
 
-	_nm_config_cmd_line_options_clear (cli);
+	_byx_config_cmd_line_options_clear (cli);
 	g_free (cli);
 }
 
 void
-nm_config_cmd_line_options_add_to_entries (NMConfigCmdLineOptions *cli,
+byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli,
                                            GOptionContext *opt_ctx)
 {
 	g_return_if_fail (opt_ctx);
@@ -524,14 +524,14 @@ nm_config_cmd_line_options_add_to_entries (NMConfigCmdLineOptions *cli,
 			{ "intern-config", 0, 0, G_OPTION_ARG_FILENAME, &cli->intern_config_file, N_("Internal config file location"), DEFAULT_INTERN_CONFIG_FILE },
 			{ "state-file", 0, 0, G_OPTION_ARG_FILENAME, &cli->state_file, N_("State file location"), DEFAULT_STATE_FILE },
 			{ "no-auto-default", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_FILENAME, &cli->no_auto_default_file, N_("State file for no-auto-default devices"), DEFAULT_NO_AUTO_DEFAULT_FILE },
-			{ "plugins", 0, 0, G_OPTION_ARG_STRING, &cli->plugins, N_("List of plugins separated by ','"), NM_CONFIG_DEFAULT_MAIN_PLUGINS },
+			{ "plugins", 0, 0, G_OPTION_ARG_STRING, &cli->plugins, N_("List of plugins separated by ','"), BYX_CONFIG_DEFAULT_MAIN_PLUGINS },
 			{ "configure-and-quit", 0, 0, G_OPTION_ARG_NONE, &cli->configure_and_quit, N_("Quit after initial configuration"), NULL },
 			{ "debug", 'd', 0, G_OPTION_ARG_NONE, &cli->is_debug, N_("Don't become a daemon, and log to stderr"), NULL },
 
 				/* These three are hidden for now, and should eventually just go away. */
 			{ "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cli->connectivity_uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
-			{ "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &cli->connectivity_interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (NM_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
-			{ "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cli->connectivity_response, N_("The expected start of the response"), NM_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
+			{ "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &cli->connectivity_interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
+			{ "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cli->connectivity_response, N_("The expected start of the response"), BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
 			{ 0 },
 		};
 
@@ -542,19 +542,19 @@ nm_config_cmd_line_options_add_to_entries (NMConfigCmdLineOptions *cli,
 /*****************************************************************************/
 
 GKeyFile *
-nm_config_create_keyfile ()
+byx_config_create_keyfile ()
 {
 	GKeyFile *keyfile;
 
 	keyfile = g_key_file_new ();
-	g_key_file_set_list_separator (keyfile, NM_CONFIG_KEYFILE_LIST_SEPARATOR);
+	g_key_file_set_list_separator (keyfile, BYX_CONFIG_KEYFILE_LIST_SEPARATOR);
 	return keyfile;
 }
 
 /* this is an external variable, to make loading testable. Other then that,
  * no code is supposed to change this. */
-guint _nm_config_match_nm_version = BYX_VERSION;
-char *_nm_config_match_env = NULL;
+guint _byx_config_match_nm_version = BYX_VERSION;
+char *_byx_config_match_env = NULL;
 
 static gboolean
 ignore_config_snippet (GKeyFile *keyfile, gboolean is_base_config)
@@ -566,27 +566,27 @@ ignore_config_snippet (GKeyFile *keyfile, gboolean is_base_config)
 	if (is_base_config)
 		return FALSE;
 
-	if (!g_key_file_has_key (keyfile, NM_CONFIG_KEYFILE_GROUP_CONFIG, NM_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, NULL))
+	if (!g_key_file_has_key (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONFIG, BYX_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, NULL))
 		return FALSE;
 
 	/* first, let's try to parse the value as plain boolean. If that is possible, we don't treat
 	 * the value as match-spec. */
-	as_bool = nm_config_keyfile_get_boolean (keyfile, NM_CONFIG_KEYFILE_GROUP_CONFIG, NM_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, -1);
+	as_bool = byx_config_keyfile_get_boolean (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONFIG, BYX_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, -1);
 	if (as_bool != -1)
 		return !as_bool;
 
-	if (G_UNLIKELY (!_nm_config_match_env)) {
+	if (G_UNLIKELY (!_byx_config_match_env)) {
 		const char *e;
 
-		e = g_getenv ("NM_CONFIG_ENABLE_TAG");
-		_nm_config_match_env = g_strdup (e ?: "");
+		e = g_getenv ("BYX_CONFIG_ENABLE_TAG");
+		_byx_config_match_env = g_strdup (e ?: "");
 	}
 
 	/* second, interpret the value as match-spec. */
-	specs = nm_config_get_match_spec (keyfile, NM_CONFIG_KEYFILE_GROUP_CONFIG, NM_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, NULL);
+	specs = byx_config_get_match_spec (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONFIG, BYX_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, NULL);
 	match_type = nm_match_spec_config (specs,
-	                                   _nm_config_match_nm_version,
-	                                   _nm_config_match_env);
+	                                   _byx_config_match_nm_version,
+	                                   _byx_config_match_env);
 	g_slist_free_full (specs, g_free);
 
 	return match_type != NM_MATCH_SPEC_MATCH;
@@ -602,8 +602,8 @@ _sort_groups_cmp (const char **pa, const char **pb, gpointer dummy)
 	a = *pa;
 	b = *pb;
 
-	a_is_connection = g_str_has_prefix (a, NM_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION);
-	b_is_connection = g_str_has_prefix (b, NM_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION);
+	a_is_connection = g_str_has_prefix (a, BYX_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION);
+	b_is_connection = g_str_has_prefix (b, BYX_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION);
 
 	if (a_is_connection != b_is_connection) {
 		/* one is a [connection*] entry, the other not. We sort [connection*] entries
@@ -620,8 +620,8 @@ _sort_groups_cmp (const char **pa, const char **pb, gpointer dummy)
 		return pa > pb ? -1 : 1;
 	}
 
-	a_is_device = g_str_has_prefix (a, NM_CONFIG_KEYFILE_GROUPPREFIX_DEVICE);
-	b_is_device = g_str_has_prefix (b, NM_CONFIG_KEYFILE_GROUPPREFIX_DEVICE);
+	a_is_device = g_str_has_prefix (a, BYX_CONFIG_KEYFILE_GROUPPREFIX_DEVICE);
+	b_is_device = g_str_has_prefix (b, BYX_CONFIG_KEYFILE_GROUPPREFIX_DEVICE);
 
 	if (a_is_device != b_is_device) {
 		/* one is a [device*] entry, the other not. We sort [device*] entries
@@ -643,7 +643,7 @@ _sort_groups_cmp (const char **pa, const char **pb, gpointer dummy)
 }
 
 void
-_nm_config_sort_groups (char **groups, gsize ngroups)
+_byx_config_sort_groups (char **groups, gsize ngroups)
 {
 	if (ngroups > 1) {
 		g_qsort_with_data (groups,
@@ -658,21 +658,21 @@ static gboolean
 _setting_is_device_spec (const char *group, const char *key)
 {
 #define _IS(group_v, key_v) (strcmp (group, (""group_v)) == 0 && strcmp (key, (""key_v)) == 0)
-	return    _IS (NM_CONFIG_KEYFILE_GROUP_MAIN, "no-auto-default")
-	       || _IS (NM_CONFIG_KEYFILE_GROUP_MAIN, "ignore-carrier")
-	       || _IS (NM_CONFIG_KEYFILE_GROUP_MAIN, "assume-ipv6ll-only")
-	       || _IS (NM_CONFIG_KEYFILE_GROUP_KEYFILE, "unmanaged-devices")
-	       || (g_str_has_prefix (group, NM_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION) && !strcmp (key, "match-device"))
-	       || (g_str_has_prefix (group, NM_CONFIG_KEYFILE_GROUPPREFIX_DEVICE    ) && !strcmp (key, "match-device"));
+	return    _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "no-auto-default")
+	       || _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "ignore-carrier")
+	       || _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "assume-ipv6ll-only")
+	       || _IS (BYX_CONFIG_KEYFILE_GROUP_KEYFILE, "unmanaged-devices")
+	       || (g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION) && !strcmp (key, "match-device"))
+	       || (g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_DEVICE    ) && !strcmp (key, "match-device"));
 }
 
 static gboolean
 _setting_is_string_list (const char *group, const char *key)
 {
-	return    _IS (NM_CONFIG_KEYFILE_GROUP_MAIN, "plugins")
-	       || _IS (NM_CONFIG_KEYFILE_GROUP_MAIN, NM_CONFIG_KEYFILE_KEY_MAIN_DEBUG)
-	       || _IS (NM_CONFIG_KEYFILE_GROUP_LOGGING, "domains")
-	       || g_str_has_prefix (group, NM_CONFIG_KEYFILE_GROUPPREFIX_TEST_APPEND_STRINGLIST);
+	return    _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "plugins")
+	       || _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG)
+	       || _IS (BYX_CONFIG_KEYFILE_GROUP_LOGGING, "domains")
+	       || g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_TEST_APPEND_STRINGLIST);
 #undef _IS
 }
 
@@ -701,7 +701,7 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
 
 	_LOGD ("Reading config file '%s'", path);
 
-	kf = nm_config_create_keyfile ();
+	kf = byx_config_create_keyfile ();
 	if (!g_key_file_load_from_file (kf, path, G_KEY_FILE_NONE, error)) {
 		g_prefix_error (error, "%s: ", path);
 		g_key_file_free (kf);
@@ -716,7 +716,7 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
 	/* the config-group is internal to every configuration snippets. It doesn't make sense
 	 * to merge it into the global configuration, and it doesn't make sense to preserve the
 	 * group beyond this point. */
-	g_key_file_remove_group (kf, NM_CONFIG_KEYFILE_GROUP_CONFIG, NULL);
+	g_key_file_remove_group (kf, BYX_CONFIG_KEYFILE_GROUP_CONFIG, NULL);
 
 	/* Override the current settings with the new ones */
 	groups = g_key_file_get_groups (kf, &ngroups);
@@ -730,13 +730,13 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
 	 * must reverse the order within each file.
 	 * At the very end, we will revert the order of all sections again and
 	 * get thus the right behavior. This final reversing is done in
-	 * NMConfigData:_get_connection_infos().  */
-	_nm_config_sort_groups (groups, ngroups);
+	 * ByxConfigData:_get_connection_infos().  */
+	_byx_config_sort_groups (groups, ngroups);
 
 	for (g = 0; groups && groups[g]; g++) {
 		const char *group = groups[g];
 
-		if (g_str_has_prefix (group, NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN)) {
+		if (g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN)) {
 			/* internal groups cannot be set by user configuration. */
 			continue;
 		}
@@ -752,13 +752,13 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
 			key = keys[k];
 			g_assert (key && *key);
 
-			if (   _HAS_PREFIX (key, NM_CONFIG_KEYFILE_KEYPREFIX_WAS)
-			    || _HAS_PREFIX (key, NM_CONFIG_KEYFILE_KEYPREFIX_SET)) {
+			if (   _HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)
+			    || _HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)) {
 				/* these keys are protected. We ignore them if the user sets them. */
 				continue;
 			}
 
-			if (!strcmp (key, NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS)) {
+			if (!strcmp (key, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS)) {
 				/* the "was" key is protected and it cannot be set by user configuration. */
 				continue;
 			}
@@ -784,14 +784,14 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
 						new_val = g_key_file_get_string_list (kf, group, key, NULL, NULL);
 						if (!old_val && !g_key_file_has_key (keyfile, group, base_key, NULL)) {
 							/* we must fill the unspecified value with the compile-time default. */
-							if (nm_streq (group, NM_CONFIG_KEYFILE_GROUP_MAIN) && nm_streq (base_key, "plugins")) {
-								g_key_file_set_value (keyfile, group, base_key, NM_CONFIG_DEFAULT_MAIN_PLUGINS);
+							if (nm_streq (group, BYX_CONFIG_KEYFILE_GROUP_MAIN) && nm_streq (base_key, "plugins")) {
+								g_key_file_set_value (keyfile, group, base_key, BYX_CONFIG_DEFAULT_MAIN_PLUGINS);
 								old_val = g_key_file_get_string_list (keyfile, group, base_key, NULL, NULL);
 							}
 						}
 					} else {
-						gs_free char *old_sval = nm_config_keyfile_get_value (keyfile, group, base_key, NM_CONFIG_GET_VALUE_TYPE_SPEC);
-						gs_free char *new_sval = nm_config_keyfile_get_value (kf, group, key, NM_CONFIG_GET_VALUE_TYPE_SPEC);
+						gs_free char *old_sval = byx_config_keyfile_get_value (keyfile, group, base_key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
+						gs_free char *new_sval = byx_config_keyfile_get_value (kf, group, key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
 						gs_free_slist GSList *old_specs = nm_match_spec_split (old_sval);
 						gs_free_slist GSList *new_specs = nm_match_spec_split (new_sval);
 
@@ -819,7 +819,7 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
 
 					if (new->len > 0) {
 						if (is_string_list)
-							nm_config_keyfile_set_string_list (keyfile, group, base_key, (const char *const*) new->pdata, new->len);
+							byx_config_keyfile_set_string_list (keyfile, group, base_key, (const char *const*) new->pdata, new->len);
 						else {
 							gs_free_slist GSList *specs = NULL;
 							gs_free char *specs_joined = NULL;
@@ -971,7 +971,7 @@ _confs_to_description (GString *str, const GPtrArray *confs, const char *name)
 }
 
 static GKeyFile *
-read_entire_config (const NMConfigCmdLineOptions *cli,
+read_entire_config (const ByxConfigCmdLineOptions *cli,
                     const char *config_dir,
                     const char *system_config_dir,
                     char **out_config_main_file,
@@ -998,7 +998,7 @@ read_entire_config (const NMConfigCmdLineOptions *cli,
 		run_config_dir = RUN_CONFIG_DIR;
 
 	/* create a default configuration file. */
-	keyfile = nm_config_create_keyfile ();
+	keyfile = byx_config_create_keyfile ();
 
 	system_confs = _get_config_dir_files (system_config_dir);
 	confs = _get_config_dir_files (config_dir);
@@ -1049,16 +1049,16 @@ read_entire_config (const NMConfigCmdLineOptions *cli,
 	if (cli && cli->plugins) {
 		/* plugins is a string list. Set the value directly, so the user has to do proper escaping
 		 * on the command line. */
-		g_key_file_set_value (keyfile, NM_CONFIG_KEYFILE_GROUP_MAIN, "plugins", cli->plugins);
+		g_key_file_set_value (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "plugins", cli->plugins);
 	}
 	if (cli && cli->configure_and_quit)
-		g_key_file_set_boolean (keyfile, NM_CONFIG_KEYFILE_GROUP_MAIN, "configure-and-quit", TRUE);
+		g_key_file_set_boolean (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "configure-and-quit", TRUE);
 	if (cli && cli->connectivity_uri && cli->connectivity_uri[0])
-		g_key_file_set_string (keyfile, NM_CONFIG_KEYFILE_GROUP_CONNECTIVITY, "uri", cli->connectivity_uri);
+		g_key_file_set_string (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONNECTIVITY, "uri", cli->connectivity_uri);
 	if (cli && cli->connectivity_interval >= 0)
-		g_key_file_set_integer (keyfile, NM_CONFIG_KEYFILE_GROUP_CONNECTIVITY, "interval", cli->connectivity_interval);
+		g_key_file_set_integer (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONNECTIVITY, "interval", cli->connectivity_interval);
 	if (cli && cli->connectivity_response && cli->connectivity_response[0])
-		g_key_file_set_string (keyfile, NM_CONFIG_KEYFILE_GROUP_CONNECTIVITY, "response", cli->connectivity_response);
+		g_key_file_set_string (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONNECTIVITY, "response", cli->connectivity_response);
 
 	if (out_config_description) {
 		GString *str;
@@ -1139,7 +1139,7 @@ _keyfile_serialize_section (GKeyFile *keyfile, const char *group)
 }
 
 gboolean
-nm_config_keyfile_has_global_dns_config (GKeyFile *keyfile, gboolean internal)
+byx_config_keyfile_has_global_dns_config (GKeyFile *keyfile, gboolean internal)
 {
 	gs_strfreev char **groups = NULL;
 	guint g;
@@ -1149,15 +1149,15 @@ nm_config_keyfile_has_global_dns_config (GKeyFile *keyfile, gboolean internal)
 		return FALSE;
 	if (g_key_file_has_group (keyfile,
 	                          internal
-	                              ? NM_CONFIG_KEYFILE_GROUP_GLOBAL_DNS
-	                              : NM_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS))
+	                              ? BYX_CONFIG_KEYFILE_GROUP_GLOBAL_DNS
+	                              : BYX_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS))
 		return TRUE;
 
 	groups = g_key_file_get_groups (keyfile, NULL);
 	if (!groups)
 		return FALSE;
 
-	prefix = internal ? NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN : NM_CONFIG_KEYFILE_GROUPPREFIX_GLOBAL_DNS_DOMAIN;
+	prefix = internal ? BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN : BYX_CONFIG_KEYFILE_GROUPPREFIX_GLOBAL_DNS_DOMAIN;
 
 	for (g = 0; groups[g]; g++) {
 		if (g_str_has_prefix (groups[g], prefix))
@@ -1176,7 +1176,7 @@ nm_config_keyfile_has_global_dns_config (GKeyFile *keyfile, gboolean internal)
  *
  * Does the opposite of intern_config_write(). It reads the internal configuration.
  * Note that the actual format of how the configuration is saved in @filename
- * is different then what we return here. NMConfig manages what is written internally
+ * is different then what we return here. ByxConfig manages what is written internally
  * by having it inside a keyfile_intern. But we don't write that to disk as is.
  * Especially, we also store parts of @keyfile_conf as ".was" and on read we compare
  * what we have, with what ".was".
@@ -1204,9 +1204,9 @@ intern_config_read (const char *filename,
 		return NULL;
 	}
 
-	keyfile_intern = nm_config_create_keyfile ();
+	keyfile_intern = byx_config_create_keyfile ();
 
-	keyfile = nm_config_create_keyfile ();
+	keyfile = byx_config_create_keyfile ();
 	if (!g_key_file_load_from_file (keyfile, filename, G_KEY_FILE_NONE, NULL)) {
 		needs_rewrite = TRUE;
 		goto out;
@@ -1218,14 +1218,14 @@ intern_config_read (const char *filename,
 		const char *group = groups[g];
 		gboolean is_intern, is_atomic;
 
-		if (!strcmp (group, NM_CONFIG_KEYFILE_GROUP_CONFIG))
+		if (!strcmp (group, BYX_CONFIG_KEYFILE_GROUP_CONFIG))
 			continue;
 
 		keys = g_key_file_get_keys (keyfile, group, NULL, NULL);
 		if (!keys)
 			continue;
 
-		is_intern = g_str_has_prefix (group, NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
+		is_intern = g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
 		is_atomic = !is_intern && _is_atomic_section (atomic_section_prefixes, group);
 
 		if (is_atomic) {
@@ -1233,7 +1233,7 @@ intern_config_read (const char *filename,
 			gs_free char *conf_section_is = NULL;
 
 			conf_section_is = _keyfile_serialize_section (keyfile_conf, group);
-			conf_section_was = g_key_file_get_string (keyfile, group, NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, NULL);
+			conf_section_was = g_key_file_get_string (keyfile, group, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, NULL);
 
 			if (g_strcmp0 (conf_section_was, conf_section_is) != 0) {
 				/* the section no longer matches. Skip it entirely. */
@@ -1243,7 +1243,7 @@ intern_config_read (const char *filename,
 			/* we must set the "was" marker in our keyfile, so that we know that the section
 			 * from user config is overwritten. The value doesn't matter, it's just a marker
 			 * that this section is present. */
-			g_key_file_set_value (keyfile_intern, group, NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, "");
+			g_key_file_set_value (keyfile_intern, group, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, "");
 		}
 
 		for (k = 0; keys[k]; k++) {
@@ -1256,14 +1256,14 @@ intern_config_read (const char *filename,
 				has_intern = TRUE;
 				g_key_file_set_value (keyfile_intern, group, key, value_set);
 			} else if (is_atomic) {
-				if (strcmp (key, NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS) == 0)
+				if (strcmp (key, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS) == 0)
 					continue;
 				g_key_file_set_value (keyfile_intern, group, key, value_set);
-			} else if (_HAS_PREFIX (key, NM_CONFIG_KEYFILE_KEYPREFIX_SET)) {
-				const char *key_base = &key[NM_STRLEN (NM_CONFIG_KEYFILE_KEYPREFIX_SET)];
+			} else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)) {
+				const char *key_base = &key[NM_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_SET)];
 				gs_free char *value_was = NULL;
 				gs_free char *value_conf = NULL;
-				gs_free char *key_was = g_strdup_printf (NM_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key_base);
+				gs_free char *key_was = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key_base);
 
 				if (keyfile_conf)
 					value_conf = g_key_file_get_value (keyfile_conf, group, key_base, NULL);
@@ -1279,9 +1279,9 @@ intern_config_read (const char *filename,
 				}
 				has_intern = TRUE;
 				g_key_file_set_value (keyfile_intern, group, key_base, value_set);
-			} else if (_HAS_PREFIX (key, NM_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
-				const char *key_base = &key[NM_STRLEN (NM_CONFIG_KEYFILE_KEYPREFIX_WAS)];
-				gs_free char *key_set = g_strdup_printf (NM_CONFIG_KEYFILE_KEYPREFIX_SET"%s", key_base);
+			} else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
+				const char *key_base = &key[NM_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)];
+				gs_free char *key_set = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_SET"%s", key_base);
 				gs_free char *value_was = NULL;
 				gs_free char *value_conf = NULL;
 
@@ -1304,7 +1304,7 @@ intern_config_read (const char *filename,
 				}
 				has_intern = TRUE;
 				/* signal the absence of the value. That means, we must propagate the
-				 * "was" key to NMConfigData, so that it knows to hide the corresponding
+				 * "was" key to ByxConfigData, so that it knows to hide the corresponding
 				 * user key. */
 				g_key_file_set_value (keyfile_intern, group, key, "");
 			} else
@@ -1319,12 +1319,12 @@ out:
 	 * deletion of options from user configuration may cause the
 	 * internal options to appear again.
 	 */
-	if (nm_config_keyfile_has_global_dns_config (keyfile_conf, FALSE)) {
-		if (g_key_file_remove_group (keyfile_intern, NM_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS, NULL))
+	if (byx_config_keyfile_has_global_dns_config (keyfile_conf, FALSE)) {
+		if (g_key_file_remove_group (keyfile_intern, BYX_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS, NULL))
 			needs_rewrite = TRUE;
 		for (g = 0; groups && groups[g]; g++) {
-			if (   g_str_has_prefix (groups[g], NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN)
-			    && groups[g][NM_STRLEN (NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN)]) {
+			if (   g_str_has_prefix (groups[g], BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN)
+			    && groups[g][NM_STRLEN (BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN)]) {
 				g_key_file_remove_group (keyfile_intern, groups[g], NULL);
 				needs_rewrite = TRUE;
 			}
@@ -1352,8 +1352,8 @@ _intern_config_write_sort_fcn (const char **a, const char **b, const char *const
 	const char *g_b = (b ? *b : NULL);
 	gboolean a_is, b_is;
 
-	a_is = g_str_has_prefix (g_a, NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
-	b_is = g_str_has_prefix (g_b, NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
+	a_is = g_str_has_prefix (g_a, BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
+	b_is = g_str_has_prefix (g_b, BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
 
 	if (a_is != b_is) {
 		if (a_is)
@@ -1393,7 +1393,7 @@ intern_config_write (const char *filename,
 		return FALSE;
 	}
 
-	keyfile = nm_config_create_keyfile ();
+	keyfile = byx_config_create_keyfile ();
 
 	if (keyfile_intern) {
 		groups = g_key_file_get_groups (keyfile_intern, NULL);
@@ -1414,11 +1414,11 @@ intern_config_write (const char *filename,
 		if (!keys)
 			continue;
 
-		is_intern = g_str_has_prefix (group, NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
+		is_intern = g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN);
 		is_atomic = !is_intern && _is_atomic_section (atomic_section_prefixes, group);
 
 		if (is_atomic) {
-			if (   (!keys[0] || (!keys[1] && strcmp (keys[0], NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS) == 0))
+			if (   (!keys[0] || (!keys[1] && strcmp (keys[0], BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS) == 0))
 			    && !g_key_file_has_group (keyfile_conf, group)) {
 				/* we are about to save an atomic section. However, we don't have any additional
 				 * keys on our own and there is no user-provided (overlapping) section either.
@@ -1428,7 +1428,7 @@ intern_config_write (const char *filename,
 				gs_free char *conf_section_is = NULL;
 
 				conf_section_is = _keyfile_serialize_section (keyfile_conf, group);
-				g_key_file_set_string (keyfile, group, NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, conf_section_is);
+				g_key_file_set_string (keyfile, group, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, conf_section_is);
 				g_key_file_set_comment (keyfile, group, NULL,
 				                        " Overwrites entire section from 'NetworkManager.conf'",
 				                        NULL);
@@ -1441,7 +1441,7 @@ intern_config_write (const char *filename,
 			gs_free char *key_set = NULL;
 
 			if (   !is_intern
-			    && strcmp (key, NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS) == 0) {
+			    && strcmp (key, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS) == 0) {
 				g_warn_if_fail (is_atomic);
 				continue;
 			}
@@ -1453,16 +1453,16 @@ intern_config_write (const char *filename,
 			else {
 				gs_free char *value_was = NULL;
 
-				if (_HAS_PREFIX (key, NM_CONFIG_KEYFILE_KEYPREFIX_SET)) {
+				if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)) {
 					/* Setting a key with .set prefix has no meaning, as these keys
 					 * are protected. Just set the value you want to set instead.
 					 * Why did this happen?? */
 					g_warn_if_reached ();
-				} else if (_HAS_PREFIX (key, NM_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
-					const char *key_base = &key[NM_STRLEN (NM_CONFIG_KEYFILE_KEYPREFIX_WAS)];
+				} else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
+					const char *key_base = &key[NM_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)];
 
-					if (   _HAS_PREFIX (key_base, NM_CONFIG_KEYFILE_KEYPREFIX_SET)
-					    || _HAS_PREFIX (key_base, NM_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
+					if (   _HAS_PREFIX (key_base, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)
+					    || _HAS_PREFIX (key_base, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
 						g_warn_if_reached ();
 						continue;
 					}
@@ -1489,11 +1489,11 @@ intern_config_write (const char *filename,
 						if (value_was) {
 							gs_free char *key_was = NULL;
 
-							key_was = g_strdup_printf (NM_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key);
+							key_was = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key);
 							g_key_file_set_value (keyfile, group, key_was, value_was);
 						}
 					}
-					key = key_set = g_strdup_printf (NM_CONFIG_KEYFILE_KEYPREFIX_SET"%s", key);
+					key = key_set = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_SET"%s", key);
 					g_key_file_set_value (keyfile, group, key, value_set);
 				}
 			}
@@ -1511,19 +1511,19 @@ intern_config_write (const char *filename,
 	                        " by NetworkManager and its configuration values are merged\n"
 	                        " with the configuration from 'NetworkManager.conf'.\n"
 	                        "\n"
-	                        " Keys with a \""NM_CONFIG_KEYFILE_KEYPREFIX_SET"\" prefix specify the value to set.\n"
-	                        " A corresponding key with a \""NM_CONFIG_KEYFILE_KEYPREFIX_WAS"\" prefix records the value\n"
+	                        " Keys with a \""BYX_CONFIG_KEYFILE_KEYPREFIX_SET"\" prefix specify the value to set.\n"
+	                        " A corresponding key with a \""BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"\" prefix records the value\n"
 	                        " of the user configuration at the time of storing the file.\n"
 	                        " The value from internal configuration is rejected if the corresponding\n"
-	                        " \""NM_CONFIG_KEYFILE_KEYPREFIX_WAS"\" key no longer matches the configuration from 'NetworkManager.conf'.\n"
+	                        " \""BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"\" key no longer matches the configuration from 'NetworkManager.conf'.\n"
 	                        " That means, if you modify a value in 'NetworkManager.conf', the internal\n"
 	                        " overwrite no longer matches and is ignored.\n"
 	                        "\n"
 	                        " Certain sections can only be overwritten whole, not on a per key basis.\n"
-	                        " Such sections are marked with a \""NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS"\" key that records the user configuration\n"
+	                        " Such sections are marked with a \""BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS"\" key that records the user configuration\n"
 	                        " at the time of writing.\n"
 	                        "\n"
-	                        " Internal sections of the form [" NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN "*] cannot\n"
+	                        " Internal sections of the form [" BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN "*] cannot\n"
 	                        " be set by user configuration.\n"
 	                        "\n"
 	                        " CHANGES TO THIS FILE WILL BE OVERWRITTEN",
@@ -1541,7 +1541,7 @@ intern_config_write (const char *filename,
 /*****************************************************************************/
 
 GSList *
-nm_config_get_match_spec (const GKeyFile *keyfile, const char *group, const char *key, gboolean *out_has_key)
+byx_config_get_match_spec (const GKeyFile *keyfile, const char *group, const char *key, gboolean *out_has_key)
 {
 	gs_free char *value = NULL;
 
@@ -1557,33 +1557,33 @@ nm_config_get_match_spec (const GKeyFile *keyfile, const char *group, const char
 /*****************************************************************************/
 
 gboolean
-nm_config_set_global_dns (NMConfig *self, NMGlobalDnsConfig *global_dns, GError **error)
+byx_config_set_global_dns (ByxConfig *self, NMGlobalDnsConfig *global_dns, GError **error)
 {
-	NMConfigPrivate *priv;
+	ByxConfigPrivate *priv;
 	GKeyFile *keyfile;
 	char **groups;
 	const NMGlobalDnsConfig *old_global_dns;
 	guint i;
 
-	g_return_val_if_fail (NM_IS_CONFIG (self), FALSE);
+	g_return_val_if_fail (BYX_IS_CONFIG (self), FALSE);
 
-	priv = NM_CONFIG_GET_PRIVATE (self);
+	priv = BYX_CONFIG_GET_PRIVATE (self);
 	g_return_val_if_fail (priv->config_data, FALSE);
 
-	old_global_dns = nm_config_data_get_global_dns_config (priv->config_data);
+	old_global_dns = byx_config_data_get_global_dns_config (priv->config_data);
 	if (old_global_dns && !nm_global_dns_config_is_internal (old_global_dns)) {
 		g_set_error_literal (error, 1, 0,
 		                     "Global DNS configuration already set via configuration file");
 		return FALSE;
 	}
 
-	keyfile = nm_config_data_clone_keyfile_intern (priv->config_data);
+	keyfile = byx_config_data_clone_keyfile_intern (priv->config_data);
 
 	/* Remove existing groups */
-	g_key_file_remove_group (keyfile, NM_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS, NULL);
+	g_key_file_remove_group (keyfile, BYX_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS, NULL);
 	groups = g_key_file_get_groups (keyfile, NULL);
 	for (i = 0; groups[i]; i++) {
-		if (g_str_has_prefix (groups[i], NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN))
+		if (g_str_has_prefix (groups[i], BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN))
 			g_key_file_remove_group (keyfile, groups[i], NULL);
 	}
 	g_strfreev (groups);
@@ -1593,11 +1593,11 @@ nm_config_set_global_dns (NMConfig *self, NMGlobalDnsConfig *global_dns, GError 
 		goto done;
 
 	/* Set new values */
-	nm_config_keyfile_set_string_list (keyfile, NM_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS,
+	byx_config_keyfile_set_string_list (keyfile, BYX_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS,
 	                                   "searches", nm_global_dns_config_get_searches (global_dns),
 	                                   -1);
 
-	nm_config_keyfile_set_string_list (keyfile, NM_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS,
+	byx_config_keyfile_set_string_list (keyfile, BYX_CONFIG_KEYFILE_GROUP_INTERN_GLOBAL_DNS,
 	                                   "options", nm_global_dns_config_get_options (global_dns),
 	                                   -1);
 
@@ -1605,17 +1605,17 @@ nm_config_set_global_dns (NMConfig *self, NMGlobalDnsConfig *global_dns, GError 
 		NMGlobalDnsDomain *domain = nm_global_dns_config_get_domain (global_dns, i);
 		gs_free char *group_name = NULL;
 
-		group_name = g_strdup_printf (NM_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN "%s",
+		group_name = g_strdup_printf (BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN "%s",
 		                              nm_global_dns_domain_get_name (domain));
 
-		nm_config_keyfile_set_string_list (keyfile, group_name, "servers",
+		byx_config_keyfile_set_string_list (keyfile, group_name, "servers",
 		                                   nm_global_dns_domain_get_servers (domain), -1);
-		nm_config_keyfile_set_string_list (keyfile, group_name, "options",
+		byx_config_keyfile_set_string_list (keyfile, group_name, "options",
 		                                   nm_global_dns_domain_get_options (domain), -1);
 	}
 
 done:
-	nm_config_set_values (self, keyfile, TRUE, FALSE);
+	byx_config_set_values (self, keyfile, TRUE, FALSE);
 	g_key_file_unref (keyfile);
 
 	return TRUE;
@@ -1623,32 +1623,32 @@ done:
 
 /*****************************************************************************/
 
-void nm_config_set_connectivity_check_enabled (NMConfig *self,
+void byx_config_set_connectivity_check_enabled (ByxConfig *self,
                                                gboolean enabled)
 {
-	NMConfigPrivate *priv;
+	ByxConfigPrivate *priv;
 	GKeyFile *keyfile;
 
-	g_return_if_fail (NM_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG (self));
 
-	priv = NM_CONFIG_GET_PRIVATE (self);
+	priv = BYX_CONFIG_GET_PRIVATE (self);
 	g_return_if_fail (priv->config_data);
 
-	keyfile = nm_config_data_clone_keyfile_intern (priv->config_data);
+	keyfile = byx_config_data_clone_keyfile_intern (priv->config_data);
 
 	/* Remove existing groups */
-	g_key_file_remove_group (keyfile, NM_CONFIG_KEYFILE_GROUP_CONNECTIVITY, NULL);
+	g_key_file_remove_group (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONNECTIVITY, NULL);
 
-	g_key_file_set_value (keyfile, NM_CONFIG_KEYFILE_GROUP_CONNECTIVITY,
+	g_key_file_set_value (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONNECTIVITY,
 	                      "enabled", enabled ? "true" : "false");
 
-	nm_config_set_values (self, keyfile, TRUE, FALSE);
+	byx_config_set_values (self, keyfile, TRUE, FALSE);
 	g_key_file_unref (keyfile);
 }
 
 /**
- * nm_config_set_values:
- * @self: the NMConfig instance
+ * byx_config_set_values:
+ * @self: the ByxConfig instance
  * @keyfile_intern_new: (allow-none): the new internal settings to set.
  *   If %NULL, it is equal to an empty keyfile.
  * @allow_write: only if %TRUE, allow writing the changes to file. Otherwise,
@@ -1667,38 +1667,38 @@ void nm_config_set_connectivity_check_enabled (NMConfig *self,
  *      groups are separate from user configuration, there is no conflict. You set
  *      them, that's it.
  *    - there are atomic sections, i.e. sections whose name start with one of
- *      NM_CONFIG_ATOMIC_SECTION_PREFIXES. If you put values in these sections,
+ *      BYX_CONFIG_ATOMIC_SECTION_PREFIXES. If you put values in these sections,
  *      it means you completely replace the section from user configuration.
  *      You can also hide a user provided section by only putting the special
- *      key NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS into that section.
+ *      key BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS into that section.
  *    - otherwise you can overwrite individual values from user-configuration.
- *      Just set the value. Keys with a prefix NM_CONFIG_KEYFILE_KEYPREFIX_*
+ *      Just set the value. Keys with a prefix BYX_CONFIG_KEYFILE_KEYPREFIX_*
  *      are protected -- as they are not value user keys.
  *      You can also hide a certain user setting by putting only a key
- *      NM_CONFIG_KEYFILE_KEYPREFIX_WAS"keyname" into the keyfile.
+ *      BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"keyname" into the keyfile.
  */
 void
-nm_config_set_values (NMConfig *self,
+byx_config_set_values (ByxConfig *self,
                       GKeyFile *keyfile_intern_new,
                       gboolean allow_write,
                       gboolean force_rewrite)
 {
-	NMConfigPrivate *priv;
+	ByxConfigPrivate *priv;
 	GKeyFile *keyfile_intern_current;
 	GKeyFile *keyfile_user;
 	GKeyFile *keyfile_new;
 	GError *local = NULL;
-	NMConfigData *new_data = NULL;
+	ByxConfigData *new_data = NULL;
 	gs_strfreev char **groups = NULL;
 	gint g;
 
-	g_return_if_fail (NM_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG (self));
 
-	priv = NM_CONFIG_GET_PRIVATE (self);
+	priv = BYX_CONFIG_GET_PRIVATE (self);
 
-	keyfile_intern_current = _nm_config_data_get_keyfile_intern (priv->config_data);
+	keyfile_intern_current = _byx_config_data_get_keyfile_intern (priv->config_data);
 
-	keyfile_new = nm_config_create_keyfile ();
+	keyfile_new = byx_config_create_keyfile ();
 	if (keyfile_intern_new)
 		_nm_keyfile_copy (keyfile_new, keyfile_intern_new);
 
@@ -1706,11 +1706,11 @@ nm_config_set_values (NMConfig *self,
 	groups = g_key_file_get_groups (keyfile_new, NULL);
 	for (g = 0; groups && groups[g]; g++) {
 		if (_is_atomic_section ((const char *const*) priv->atomic_section_prefixes, groups[g]))
-			g_key_file_set_value (keyfile_new, groups[g], NM_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, "");
+			g_key_file_set_value (keyfile_new, groups[g], BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, "");
 	}
 
 	if (!_nm_keyfile_equals (keyfile_intern_current, keyfile_new, TRUE))
-		new_data = nm_config_data_new_update_keyfile_intern (priv->config_data, keyfile_new);
+		new_data = byx_config_data_new_update_keyfile_intern (priv->config_data, keyfile_new);
 
 	_LOGD ("set values(): %s", new_data ? "has changes" : "no changes");
 
@@ -1724,7 +1724,7 @@ nm_config_set_values (NMConfig *self,
 		 * written data. That is correct, because from NM's point of view, those
 		 * changes on disk happened in any case *after* now. */
 		if (*priv->intern_config_file) {
-			keyfile_user = _nm_config_data_get_keyfile_user (priv->config_data);
+			keyfile_user = _byx_config_data_get_keyfile_user (priv->config_data);
 			if (!intern_config_write (priv->intern_config_file, keyfile_new, keyfile_user,
 			                          (const char *const*) priv->atomic_section_prefixes, &local)) {
 				_LOGW ("error saving internal configuration \"%s\": %s", priv->intern_config_file, local->message);
@@ -1734,7 +1734,7 @@ nm_config_set_values (NMConfig *self,
 			_LOGD ("don't persist internal configuration (no file set, use --intern-config?)");
 	}
 	if (new_data)
-		_set_config_data (self, new_data, NM_CONFIG_CHANGE_CAUSE_SET_VALUES);
+		_set_config_data (self, new_data, BYX_CONFIG_CHANGE_CAUSE_SET_VALUES);
 
 	g_key_file_unref (keyfile_new);
 }
@@ -1744,10 +1744,10 @@ nm_config_set_values (NMConfig *self,
  ******************************************************************************/
 
 static const char *
-state_get_filename (const NMConfigCmdLineOptions *cli)
+state_get_filename (const ByxConfigCmdLineOptions *cli)
 {
 	/* For an empty filename, we assume the user wants to disable
-	 * state. NMConfig will not try to read it nor write it out. */
+	 * state. ByxConfig will not try to read it nor write it out. */
 	if (!cli->state_file)
 		return DEFAULT_STATE_FILE;
 	return cli->state_file[0] ? cli->state_file : NULL;
@@ -1798,29 +1798,29 @@ state_new_from_file (const char *filename)
 
 	_LOGD ("state: successfully read state file \"%s\"", filename);
 
-	state->p.net_enabled  = nm_config_keyfile_get_boolean (keyfile, "main", "NetworkingEnabled", state->p.net_enabled);
-	state->p.wifi_enabled = nm_config_keyfile_get_boolean (keyfile, "main", "WirelessEnabled", state->p.wifi_enabled);
-	state->p.wwan_enabled = nm_config_keyfile_get_boolean (keyfile, "main", "WWANEnabled", state->p.wwan_enabled);
+	state->p.net_enabled  = byx_config_keyfile_get_boolean (keyfile, "main", "NetworkingEnabled", state->p.net_enabled);
+	state->p.wifi_enabled = byx_config_keyfile_get_boolean (keyfile, "main", "WirelessEnabled", state->p.wifi_enabled);
+	state->p.wwan_enabled = byx_config_keyfile_get_boolean (keyfile, "main", "WWANEnabled", state->p.wwan_enabled);
 
 out:
 	g_key_file_unref (keyfile);
 	return state;
 }
 
-const NMConfigState *
-nm_config_state_get (NMConfig *self)
+const ByxConfigState *
+byx_config_state_get (ByxConfig *self)
 {
-	NMConfigPrivate *priv;
+	ByxConfigPrivate *priv;
 
-	g_return_val_if_fail (NM_IS_CONFIG (self), NULL);
+	g_return_val_if_fail (BYX_IS_CONFIG (self), NULL);
 
-	priv = NM_CONFIG_GET_PRIVATE (self);
+	priv = BYX_CONFIG_GET_PRIVATE (self);
 
 	if (G_UNLIKELY (!priv->state)) {
 		/* read the state from file lazy on first access. The reason is that
 		 * we want to log a failure to read the file via nm-logging.
 		 *
-		 * So we cannot read the state during construction of NMConfig,
+		 * So we cannot read the state during construction of ByxConfig,
 		 * because at that time nm-logging is not yet configured.
 		 */
 		priv->state = state_new_from_file (state_get_filename (&priv->cli));
@@ -1830,9 +1830,9 @@ nm_config_state_get (NMConfig *self)
 }
 
 static void
-state_write (NMConfig *self)
+state_write (ByxConfig *self)
 {
-	NMConfigPrivate *priv = NM_CONFIG_GET_PRIVATE (self);
+	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
 	const char *filename;
 	GString *str;
 	GError *error = NULL;
@@ -1870,37 +1870,37 @@ state_write (NMConfig *self)
 }
 
 void
-_nm_config_state_set (NMConfig *self,
+_byx_config_state_set (ByxConfig *self,
                       gboolean allow_persist,
                       gboolean force_persist,
                       ...)
 {
-	NMConfigPrivate *priv;
+	ByxConfigPrivate *priv;
 	va_list ap;
-	NMConfigRunStatePropertyType property_type;
+	ByxConfigRunStatePropertyType property_type;
 
-	g_return_if_fail (NM_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG (self));
 
-	priv = NM_CONFIG_GET_PRIVATE (self);
+	priv = BYX_CONFIG_GET_PRIVATE (self);
 
 	va_start (ap, force_persist);
 
-	/* We expect that the NMConfigRunStatePropertyType is an integer type <= sizeof (int).
+	/* We expect that the ByxConfigRunStatePropertyType is an integer type <= sizeof (int).
 	 * Smaller would be fine, since the variadic arguments get promoted to int.
 	 * Larger would be a problem, also, because we want that "0" is a valid sentinel. */
-	G_STATIC_ASSERT_EXPR (sizeof (NMConfigRunStatePropertyType) <= sizeof (int));
+	G_STATIC_ASSERT_EXPR (sizeof (ByxConfigRunStatePropertyType) <= sizeof (int));
 
-	while ((property_type = va_arg (ap, int)) != NM_CONFIG_STATE_PROPERTY_NONE) {
+	while ((property_type = va_arg (ap, int)) != BYX_CONFIG_STATE_PROPERTY_NONE) {
 		bool *p_bool, v_bool;
 
 		switch (property_type) {
-		case NM_CONFIG_STATE_PROPERTY_NETWORKING_ENABLED:
+		case BYX_CONFIG_STATE_PROPERTY_NETWORKING_ENABLED:
 			p_bool = &priv->state->p.net_enabled;
 			break;
-		case NM_CONFIG_STATE_PROPERTY_WIFI_ENABLED:
+		case BYX_CONFIG_STATE_PROPERTY_WIFI_ENABLED:
 			p_bool = &priv->state->p.wifi_enabled;
 			break;
-		case NM_CONFIG_STATE_PROPERTY_WWAN_ENABLED:
+		case BYX_CONFIG_STATE_PROPERTY_WWAN_ENABLED:
 			p_bool = &priv->state->p.wwan_enabled;
 			break;
 		default:
@@ -1932,18 +1932,18 @@ _nm_config_state_set (NMConfig *self,
 #define DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_ROUTE_METRIC_DEFAULT_ASPIRED   "route-metric-default-aspired"
 #define DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_ROUTE_METRIC_DEFAULT_EFFECTIVE "route-metric-default-effective"
 
-NM_UTILS_LOOKUP_STR_DEFINE_STATIC (_device_state_managed_type_to_str, NMConfigDeviceStateManagedType,
+NM_UTILS_LOOKUP_STR_DEFINE_STATIC (_device_state_managed_type_to_str, ByxConfigDeviceStateManagedType,
 	NM_UTILS_LOOKUP_DEFAULT_NM_ASSERT ("unknown"),
-	NM_UTILS_LOOKUP_STR_ITEM (NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN,   "unknown"),
-	NM_UTILS_LOOKUP_STR_ITEM (NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED, "unmanaged"),
-	NM_UTILS_LOOKUP_STR_ITEM (NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED,   "managed"),
+	NM_UTILS_LOOKUP_STR_ITEM (BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN,   "unknown"),
+	NM_UTILS_LOOKUP_STR_ITEM (BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED, "unmanaged"),
+	NM_UTILS_LOOKUP_STR_ITEM (BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED,   "managed"),
 );
 
-static NMConfigDeviceStateData *
+static ByxConfigDeviceStateData *
 _config_device_state_data_new (int ifindex, GKeyFile *kf)
 {
-	NMConfigDeviceStateData *device_state;
-	NMConfigDeviceStateManagedType managed_type = NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN;
+	ByxConfigDeviceStateData *device_state;
+	ByxConfigDeviceStateManagedType managed_type = BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN;
 	gs_free char *connection_uuid = NULL;
 	gs_free char *perm_hw_addr_fake = NULL;
 	gsize connection_uuid_len;
@@ -1956,29 +1956,29 @@ _config_device_state_data_new (int ifindex, GKeyFile *kf)
 	nm_assert (kf);
 	nm_assert (ifindex > 0);
 
-	switch (nm_config_keyfile_get_boolean (kf,
+	switch (byx_config_keyfile_get_boolean (kf,
 	                                       DEVICE_RUN_STATE_KEYFILE_GROUP_DEVICE,
 	                                       DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_MANAGED,
 	                                       -1)) {
 	case TRUE:
-		managed_type = NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED;
-		connection_uuid = nm_config_keyfile_get_value (kf,
+		managed_type = BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED;
+		connection_uuid = byx_config_keyfile_get_value (kf,
 		                                               DEVICE_RUN_STATE_KEYFILE_GROUP_DEVICE,
 		                                               DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_CONNECTION_UUID,
-		                                               NM_CONFIG_GET_VALUE_STRIP | NM_CONFIG_GET_VALUE_NO_EMPTY);
+		                                               BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
 		break;
 	case FALSE:
-		managed_type = NM_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED;
+		managed_type = BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED;
 		break;
 	case -1:
 		/* missing property in keyfile. */
 		break;
 	}
 
-	perm_hw_addr_fake = nm_config_keyfile_get_value (kf,
+	perm_hw_addr_fake = byx_config_keyfile_get_value (kf,
 	                                                 DEVICE_RUN_STATE_KEYFILE_GROUP_DEVICE,
 	                                                 DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_PERM_HW_ADDR_FAKE,
-	                                                 NM_CONFIG_GET_VALUE_STRIP | NM_CONFIG_GET_VALUE_NO_EMPTY);
+	                                                 BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
 	if (perm_hw_addr_fake) {
 		char *normalized;
 
@@ -1987,19 +1987,19 @@ _config_device_state_data_new (int ifindex, GKeyFile *kf)
 		perm_hw_addr_fake = normalized;
 	}
 
-	nm_owned = nm_config_keyfile_get_boolean (kf,
+	nm_owned = byx_config_keyfile_get_boolean (kf,
 	                                          DEVICE_RUN_STATE_KEYFILE_GROUP_DEVICE,
 	                                          DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_NM_OWNED,
 	                                          -1);
 
 	/* metric zero is not a valid metric. While zero valid for IPv4, for IPv6 it is an alias
 	 * for 1024. Since we handle here IPv4 and IPv6 the same, we cannot allow zero. */
-	route_metric_default_effective = nm_config_keyfile_get_int64 (kf,
+	route_metric_default_effective = byx_config_keyfile_get_int64 (kf,
 	                                                              DEVICE_RUN_STATE_KEYFILE_GROUP_DEVICE,
 	                                                              DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_ROUTE_METRIC_DEFAULT_EFFECTIVE,
 	                                                              10, 1, G_MAXUINT32, 0);
 	if (route_metric_default_effective) {
-		route_metric_default_aspired = nm_config_keyfile_get_int64 (kf,
+		route_metric_default_aspired = byx_config_keyfile_get_int64 (kf,
 		                                                            DEVICE_RUN_STATE_KEYFILE_GROUP_DEVICE,
 		                                                            DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_ROUTE_METRIC_DEFAULT_EFFECTIVE,
 		                                                            10, 1, route_metric_default_effective,
@@ -2010,7 +2010,7 @@ _config_device_state_data_new (int ifindex, GKeyFile *kf)
 	connection_uuid_len = connection_uuid ? strlen (connection_uuid) + 1 : 0;
 	perm_hw_addr_fake_len = perm_hw_addr_fake ? strlen (perm_hw_addr_fake) + 1 : 0;
 
-	device_state = g_malloc (sizeof (NMConfigDeviceStateData) +
+	device_state = g_malloc (sizeof (ByxConfigDeviceStateData) +
 	                         connection_uuid_len +
 	                         perm_hw_addr_fake_len);
 
@@ -2038,25 +2038,25 @@ _config_device_state_data_new (int ifindex, GKeyFile *kf)
 }
 
 /**
- * nm_config_device_state_load:
+ * byx_config_device_state_load:
  * @ifindex: the ifindex for which the state is to load
  *
  * Returns: (transfer full): a run state object.
  *   Must be freed with g_free().
  */
-NMConfigDeviceStateData *
-nm_config_device_state_load (int ifindex)
+ByxConfigDeviceStateData *
+byx_config_device_state_load (int ifindex)
 {
-	NMConfigDeviceStateData *device_state;
-	char path[NM_STRLEN (NM_CONFIG_DEVICE_STATE_DIR) + 60];
+	ByxConfigDeviceStateData *device_state;
+	char path[NM_STRLEN (BYX_CONFIG_DEVICE_STATE_DIR) + 60];
 	gs_unref_keyfile GKeyFile *kf = NULL;
 	const char *nm_owned_str;
 
 	g_return_val_if_fail (ifindex > 0, NULL);
 
-	nm_sprintf_buf (path, "%s/%d", NM_CONFIG_DEVICE_STATE_DIR, ifindex);
+	nm_sprintf_buf (path, "%s/%d", BYX_CONFIG_DEVICE_STATE_DIR, ifindex);
 
-	kf = nm_config_create_keyfile ();
+	kf = byx_config_create_keyfile ();
 	if (!g_key_file_load_from_file (kf, path, G_KEY_FILE_NONE, NULL))
 		return NULL;
 
@@ -2089,7 +2089,7 @@ _device_state_parse_filename (const char *filename)
 }
 
 GHashTable *
-nm_config_device_state_load_all (void)
+byx_config_device_state_load_all (void)
 {
 	GHashTable *states;
 	GDir *dir;
@@ -2098,18 +2098,18 @@ nm_config_device_state_load_all (void)
 
 	states = g_hash_table_new_full (nm_direct_hash, NULL, NULL, g_free);
 
-	dir = g_dir_open (NM_CONFIG_DEVICE_STATE_DIR, 0, NULL);
+	dir = g_dir_open (BYX_CONFIG_DEVICE_STATE_DIR, 0, NULL);
 	if (!dir)
 		return states;
 
 	while ((fn = g_dir_read_name (dir))) {
-		NMConfigDeviceStateData *state;
+		ByxConfigDeviceStateData *state;
 
 		ifindex = _device_state_parse_filename (fn);
 		if (ifindex <= 0)
 			continue;
 
-		state = nm_config_device_state_load (ifindex);
+		state = byx_config_device_state_load (ifindex);
 		if (!state)
 			continue;
 
@@ -2124,18 +2124,18 @@ nm_config_device_state_load_all (void)
 /*****************************************************************************/
 
 static GHashTable *
-_device_state_get_all (NMConfig *self)
+_device_state_get_all (ByxConfig *self)
 {
-	NMConfigPrivate *priv = NM_CONFIG_GET_PRIVATE (self);
+	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
 
 	if (G_UNLIKELY (!priv->device_states))
-		priv->device_states = nm_config_device_state_load_all ();
+		priv->device_states = byx_config_device_state_load_all ();
 	return priv->device_states;
 }
 
 /**
- * nm_config_device_state_get_all:
- * @self: the #NMConfig
+ * byx_config_device_state_get_all:
+ * @self: the #ByxConfig
  *
  * This function exists to give convenient access to all
  * device states. Do not ever try to modify the returned
@@ -2144,18 +2144,18 @@ _device_state_get_all (NMConfig *self)
  * Returns: the internal #GHashTable object with all device states.
  */
 const GHashTable *
-nm_config_device_state_get_all (NMConfig *self)
+byx_config_device_state_get_all (ByxConfig *self)
 {
-	g_return_val_if_fail (NM_IS_CONFIG (self), NULL);
+	g_return_val_if_fail (BYX_IS_CONFIG (self), NULL);
 
 	return _device_state_get_all (self);
 }
 
-const NMConfigDeviceStateData *
-nm_config_device_state_get (NMConfig *self,
+const ByxConfigDeviceStateData *
+byx_config_device_state_get (ByxConfig *self,
                             int ifindex)
 {
-	g_return_val_if_fail (NM_IS_CONFIG (self), NULL);
+	g_return_val_if_fail (BYX_IS_CONFIG (self), NULL);
 	g_return_val_if_fail (ifindex > 0 , NULL);
 
 	return g_hash_table_lookup (_device_state_get_all (self), GINT_TO_POINTER (ifindex));
@@ -2164,26 +2164,26 @@ nm_config_device_state_get (NMConfig *self,
 /*****************************************************************************/
 
 void
-nm_config_reload (NMConfig *self, NMConfigChangeFlags reload_flags)
+byx_config_reload (ByxConfig *self, ByxConfigChangeFlags reload_flags)
 {
-	NMConfigPrivate *priv;
+	ByxConfigPrivate *priv;
 	GError *error = NULL;
 	GKeyFile *keyfile, *keyfile_intern;
-	NMConfigData *new_data = NULL;
+	ByxConfigData *new_data = NULL;
 	char *config_main_file = NULL;
 	char *config_description = NULL;
 	gs_strfreev char **no_auto_default = NULL;
 	gboolean intern_config_needs_rewrite;
 
-	g_return_if_fail (NM_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG (self));
 	g_return_if_fail (   reload_flags
-	                  && !NM_FLAGS_ANY (reload_flags, ~NM_CONFIG_CHANGE_CAUSES)
-	                  && !NM_FLAGS_ANY (reload_flags,   NM_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT
-	                                                  | NM_CONFIG_CHANGE_CAUSE_SET_VALUES));
+	                  && !NM_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES)
+	                  && !NM_FLAGS_ANY (reload_flags,   BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT
+	                                                  | BYX_CONFIG_CHANGE_CAUSE_SET_VALUES));
 
-	priv = NM_CONFIG_GET_PRIVATE (self);
+	priv = BYX_CONFIG_GET_PRIVATE (self);
 
-	if (!NM_FLAGS_ANY (reload_flags, NM_CONFIG_CHANGE_CAUSE_SIGHUP | NM_CONFIG_CHANGE_CAUSE_CONF)) {
+	if (!NM_FLAGS_ANY (reload_flags, BYX_CONFIG_CHANGE_CAUSE_SIGHUP | BYX_CONFIG_CHANGE_CAUSE_CONF)) {
 		/* unless SIGHUP is specified, we don't reload the configuration from disc. */
 		_set_config_data (self, NULL, reload_flags);
 		return;
@@ -2217,7 +2217,7 @@ nm_config_reload (NMConfig *self, NMConfigChangeFlags reload_flags)
 		                     (const char *const*) priv->atomic_section_prefixes, NULL);
 	}
 
-	new_data = nm_config_data_new (config_main_file, config_description, (const char *const*) no_auto_default, keyfile, keyfile_intern);
+	new_data = byx_config_data_new (config_main_file, config_description, (const char *const*) no_auto_default, keyfile, keyfile_intern);
 	g_free (config_main_file);
 	g_free (config_description);
 	g_key_file_unref (keyfile);
@@ -2227,55 +2227,55 @@ nm_config_reload (NMConfig *self, NMConfigChangeFlags reload_flags)
 	_set_config_data (self, new_data, reload_flags);
 }
 
-NM_UTILS_FLAGS2STR_DEFINE (nm_config_change_flags_to_string, NMConfigChangeFlags,
+NM_UTILS_FLAGS2STR_DEFINE (byx_config_change_flags_to_string, ByxConfigChangeFlags,
 
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_CONF, "CONF"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_DNS_RC, "DNS_RC"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_DNS_FULL, "DNS_FULL"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_SIGHUP, "SIGHUP"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_SIGUSR1, "SIGUSR1"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_SIGUSR2, "SIGUSR2"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT, "NO_AUTO_DEFAULT"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CAUSE_SET_VALUES, "SET_VALUES"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_CONF, "CONF"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_DNS_RC, "DNS_RC"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_DNS_FULL, "DNS_FULL"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_SIGHUP, "SIGHUP"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_SIGUSR1, "SIGUSR1"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_SIGUSR2, "SIGUSR2"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT, "NO_AUTO_DEFAULT"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CAUSE_SET_VALUES, "SET_VALUES"),
 
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CONFIG_FILES, "config-files"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_VALUES, "values"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_VALUES_USER, "values-user"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_VALUES_INTERN, "values-intern"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_CONNECTIVITY, "connectivity"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_NO_AUTO_DEFAULT, "no-auto-default"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_DNS_MODE, "dns-mode"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_RC_MANAGER, "rc-manager"),
-	NM_UTILS_FLAGS2STR (NM_CONFIG_CHANGE_GLOBAL_DNS_CONFIG, "global-dns-config"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CONFIG_FILES, "config-files"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_VALUES, "values"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_VALUES_USER, "values-user"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_VALUES_INTERN, "values-intern"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CONNECTIVITY, "connectivity"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_NO_AUTO_DEFAULT, "no-auto-default"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_DNS_MODE, "dns-mode"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_RC_MANAGER, "rc-manager"),
+	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_GLOBAL_DNS_CONFIG, "global-dns-config"),
 );
 
 static void
-_set_config_data (NMConfig *self, NMConfigData *new_data, NMConfigChangeFlags reload_flags)
+_set_config_data (ByxConfig *self, ByxConfigData *new_data, ByxConfigChangeFlags reload_flags)
 {
-	NMConfigPrivate *priv = NM_CONFIG_GET_PRIVATE (self);
-	NMConfigData *old_data = priv->config_data;
-	NMConfigChangeFlags changes, changes_diff;
+	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
+	ByxConfigData *old_data = priv->config_data;
+	ByxConfigChangeFlags changes, changes_diff;
 	gboolean had_new_data = !!new_data;
 
 	nm_assert (reload_flags);
-	nm_assert (!NM_FLAGS_ANY (reload_flags, ~NM_CONFIG_CHANGE_CAUSES));
-	nm_assert (   NM_IN_SET (reload_flags, NM_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT, NM_CONFIG_CHANGE_CAUSE_SET_VALUES)
-	           || !NM_FLAGS_ANY (reload_flags, NM_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT | NM_CONFIG_CHANGE_CAUSE_SET_VALUES));
+	nm_assert (!NM_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES));
+	nm_assert (   NM_IN_SET (reload_flags, BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT, BYX_CONFIG_CHANGE_CAUSE_SET_VALUES)
+	           || !NM_FLAGS_ANY (reload_flags, BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT | BYX_CONFIG_CHANGE_CAUSE_SET_VALUES));
 
 	changes = reload_flags;
 
 	if (new_data) {
-		changes_diff = nm_config_data_diff (old_data, new_data);
-		if (changes_diff == NM_CONFIG_CHANGE_NONE)
+		changes_diff = byx_config_data_diff (old_data, new_data);
+		if (changes_diff == BYX_CONFIG_CHANGE_NONE)
 			g_clear_object (&new_data);
 		else
 			changes |= changes_diff;
 	}
 
 	if (   NM_IN_SET (reload_flags,
-	                  NM_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT,
-	                  NM_CONFIG_CHANGE_CAUSE_SET_VALUES,
-	                  NM_CONFIG_CHANGE_CAUSE_CONF)
+	                  BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT,
+	                  BYX_CONFIG_CHANGE_CAUSE_SET_VALUES,
+	                  BYX_CONFIG_CHANGE_CAUSE_CONF)
 	    && !new_data) {
 		/* no relevant changes that should be propagated. Return silently. */
 		return;
@@ -2283,14 +2283,14 @@ _set_config_data (NMConfig *self, NMConfigData *new_data, NMConfigChangeFlags re
 
 	if (new_data) {
 		_LOGI ("signal: %s (%s)",
-		       nm_config_change_flags_to_string (changes, NULL, 0),
-		       nm_config_data_get_config_description (new_data));
-		nm_config_data_log (new_data, "CONFIG: ", "  ", NULL);
+		       byx_config_change_flags_to_string (changes, NULL, 0),
+		       byx_config_data_get_config_description (new_data));
+		byx_config_data_log (new_data, "CONFIG: ", "  ", NULL);
 		priv->config_data = new_data;
 	} else if (had_new_data)
-		_LOGI ("signal: %s (no changes from disk)", nm_config_change_flags_to_string (changes, NULL, 0));
+		_LOGI ("signal: %s (no changes from disk)", byx_config_change_flags_to_string (changes, NULL, 0));
 	else
-		_LOGI ("signal: %s", nm_config_change_flags_to_string (changes, NULL, 0));
+		_LOGI ("signal: %s", byx_config_change_flags_to_string (changes, NULL, 0));
 	g_signal_emit (self, signals[SIGNAL_CONFIG_CHANGED], 0,
 	               new_data ?: old_data,
 	               changes, old_data);
@@ -2298,27 +2298,27 @@ _set_config_data (NMConfig *self, NMConfigData *new_data, NMConfigChangeFlags re
 		g_object_unref (old_data);
 }
 
-BYX_DEFINE_SINGLETON_REGISTER (NMConfig);
+BYX_DEFINE_SINGLETON_REGISTER (ByxConfig);
 
-NMConfig *
-nm_config_get (void)
+ByxConfig *
+byx_config_get (void)
 {
 	g_assert (singleton_instance);
 	return singleton_instance;
 }
 
-NMConfig *
-nm_config_setup (const NMConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
+ByxConfig *
+byx_config_setup (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
 {
 	g_assert (!singleton_instance);
 
-	singleton_instance = nm_config_new (cli, atomic_section_prefixes, error);
+	singleton_instance = byx_config_new (cli, atomic_section_prefixes, error);
 	if (singleton_instance) {
 		byx_singleton_instance_register ();
 
 		/* usually, you would not see this logging line because when creating the
-		 * NMConfig instance, the logging is not yet set up to print debug message. */
-		byx_log_dbg (LOGD_CORE, "setup %s singleton (%p)", "NMConfig", singleton_instance);
+		 * ByxConfig instance, the logging is not yet set up to print debug message. */
+		byx_log_dbg (LOGD_CORE, "setup %s singleton (%p)", "ByxConfig", singleton_instance);
 	}
 	return singleton_instance;
 }
@@ -2329,9 +2329,9 @@ static void
 set_property (GObject *object, guint prop_id,
               const GValue *value, GParamSpec *pspec)
 {
-	NMConfig *self = NM_CONFIG (object);
-	NMConfigPrivate *priv = NM_CONFIG_GET_PRIVATE (self);
-	NMConfigCmdLineOptions *cli;
+	ByxConfig *self = BYX_CONFIG (object);
+	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
+	ByxConfigCmdLineOptions *cli;
 	char **strv;
 
 	switch (prop_id) {
@@ -2339,9 +2339,9 @@ set_property (GObject *object, guint prop_id,
 		/* construct-only */
 		cli = g_value_get_pointer (value);
 		if (!cli)
-			_nm_config_cmd_line_options_clear (&priv->cli);
+			_byx_config_cmd_line_options_clear (&priv->cli);
 		else
-			_nm_config_cmd_line_options_copy (cli, &priv->cli);
+			_byx_config_cmd_line_options_copy (cli, &priv->cli);
 		break;
 	case PROP_ATOMIC_SECTION_PREFIXES:
 		/* construct-only */
@@ -2361,8 +2361,8 @@ set_property (GObject *object, guint prop_id,
 static gboolean
 init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 {
-	NMConfig *self = NM_CONFIG (initable);
-	NMConfigPrivate *priv = NM_CONFIG_GET_PRIVATE (self);
+	ByxConfig *self = BYX_CONFIG (initable);
+	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
 	GKeyFile *keyfile, *keyfile_intern;
 	char *config_main_file = NULL;
 	char *config_description = NULL;
@@ -2408,12 +2408,12 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 	else
 		priv->no_auto_default_file = g_strdup (DEFAULT_NO_AUTO_DEFAULT_FILE);
 
-	priv->monitor_connection_files = nm_config_keyfile_get_boolean (keyfile, NM_CONFIG_KEYFILE_GROUP_MAIN, "monitor-connection-files", FALSE);
+	priv->monitor_connection_files = byx_config_keyfile_get_boolean (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "monitor-connection-files", FALSE);
 
-	priv->log_level = nm_strstrip (g_key_file_get_string (keyfile, NM_CONFIG_KEYFILE_GROUP_LOGGING, "level", NULL));
-	priv->log_domains = nm_strstrip (g_key_file_get_string (keyfile, NM_CONFIG_KEYFILE_GROUP_LOGGING, "domains", NULL));
+	priv->log_level = nm_strstrip (g_key_file_get_string (keyfile, BYX_CONFIG_KEYFILE_GROUP_LOGGING, "level", NULL));
+	priv->log_domains = nm_strstrip (g_key_file_get_string (keyfile, BYX_CONFIG_KEYFILE_GROUP_LOGGING, "domains", NULL));
 
-	priv->configure_and_quit = nm_config_keyfile_get_boolean (keyfile, NM_CONFIG_KEYFILE_GROUP_MAIN, "configure-and-quit", FALSE);
+	priv->configure_and_quit = byx_config_keyfile_get_boolean (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "configure-and-quit", FALSE);
 
 	no_auto_default = no_auto_default_from_file (priv->no_auto_default_file);
 
@@ -2426,7 +2426,7 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 		                     (const char *const*) priv->atomic_section_prefixes, NULL);
 	}
 
-	priv->config_data_orig = nm_config_data_new (config_main_file, config_description, (const char *const*) no_auto_default, keyfile, keyfile_intern);
+	priv->config_data_orig = byx_config_data_new (config_main_file, config_description, (const char *const*) no_auto_default, keyfile, keyfile_intern);
 
 	priv->config_data = g_object_ref (priv->config_data_orig);
 
@@ -2441,25 +2441,25 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 /*****************************************************************************/
 
 static void
-nm_config_init (NMConfig *config)
+byx_config_init (ByxConfig *config)
 {
 }
 
-NMConfig *
-nm_config_new (const NMConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
+ByxConfig *
+byx_config_new (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
 {
-	return NM_CONFIG (g_initable_new (NM_TYPE_CONFIG,
+	return BYX_CONFIG (g_initable_new (BYX_TYPE_CONFIG,
 	                                  NULL,
 	                                  error,
-	                                  NM_CONFIG_CMD_LINE_OPTIONS, cli,
-	                                  NM_CONFIG_ATOMIC_SECTION_PREFIXES, atomic_section_prefixes,
+	                                  BYX_CONFIG_CMD_LINE_OPTIONS, cli,
+	                                  BYX_CONFIG_ATOMIC_SECTION_PREFIXES, atomic_section_prefixes,
 	                                  NULL));
 }
 
 static void
 finalize (GObject *gobject)
 {
-	NMConfigPrivate *priv = NM_CONFIG_GET_PRIVATE ((NMConfig *) gobject);
+	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE ((ByxConfig *) gobject);
 
 	state_free (priv->state);
 
@@ -2471,16 +2471,16 @@ finalize (GObject *gobject)
 	g_free (priv->log_domains);
 	g_strfreev (priv->atomic_section_prefixes);
 
-	_nm_config_cmd_line_options_clear (&priv->cli);
+	_byx_config_cmd_line_options_clear (&priv->cli);
 
 	g_clear_object (&priv->config_data);
 	g_clear_object (&priv->config_data_orig);
 
-	G_OBJECT_CLASS (nm_config_parent_class)->finalize (gobject);
+	G_OBJECT_CLASS (byx_config_parent_class)->finalize (gobject);
 }
 
 static void
-nm_config_class_init (NMConfigClass *config_class)
+byx_config_class_init (ByxConfigClass *config_class)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (config_class);
 
@@ -2488,13 +2488,13 @@ nm_config_class_init (NMConfigClass *config_class)
 	object_class->set_property = set_property;
 
 	obj_properties[PROP_CMD_LINE_OPTIONS] =
-	     g_param_spec_pointer (NM_CONFIG_CMD_LINE_OPTIONS, "", "",
+	     g_param_spec_pointer (BYX_CONFIG_CMD_LINE_OPTIONS, "", "",
 	                           G_PARAM_WRITABLE |
 	                           G_PARAM_CONSTRUCT_ONLY |
 	                           G_PARAM_STATIC_STRINGS);
 
 	obj_properties[PROP_ATOMIC_SECTION_PREFIXES] =
-	     g_param_spec_boxed (NM_CONFIG_ATOMIC_SECTION_PREFIXES, "", "",
+	     g_param_spec_boxed (BYX_CONFIG_ATOMIC_SECTION_PREFIXES, "", "",
 	                         G_TYPE_STRV,
 	                         G_PARAM_WRITABLE |
 	                         G_PARAM_CONSTRUCT_ONLY |
@@ -2503,26 +2503,26 @@ nm_config_class_init (NMConfigClass *config_class)
 	g_object_class_install_properties (object_class, _PROPERTY_ENUMS_LAST, obj_properties);
 
 	signals[SIGNAL_CONFIG_CHANGED] =
-	    g_signal_new (NM_CONFIG_SIGNAL_CONFIG_CHANGED,
+	    g_signal_new (BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
 	                  G_OBJECT_CLASS_TYPE (object_class),
 	                  G_SIGNAL_RUN_FIRST,
 	                  0,
 	                  NULL, NULL, NULL,
 	                  G_TYPE_NONE,
 	                  3,
-	                  NM_TYPE_CONFIG_DATA,
+	                  BYX_TYPE_CONFIG_DATA,
 	                  /* Use plain guint type for changes argument. This avoids
 	                   * glib/ffi bug https://bugzilla.redhat.com/show_bug.cgi?id=1260577 */
-	                  /* NM_TYPE_CONFIG_CHANGE_FLAGS, */
+	                  /* BYX_TYPE_CONFIG_CHANGE_FLAGS, */
 	                  G_TYPE_UINT,
-	                  NM_TYPE_CONFIG_DATA);
+	                  BYX_TYPE_CONFIG_DATA);
 
-	G_STATIC_ASSERT_EXPR (sizeof (guint) == sizeof (NMConfigChangeFlags));
-	G_STATIC_ASSERT_EXPR (((gint64) ((NMConfigChangeFlags) -1)) > ((gint64) 0));
+	G_STATIC_ASSERT_EXPR (sizeof (guint) == sizeof (ByxConfigChangeFlags));
+	G_STATIC_ASSERT_EXPR (((gint64) ((ByxConfigChangeFlags) -1)) > ((gint64) 0));
 }
 
 static void
-nm_config_initable_iface_init (GInitableIface *iface)
+byx_config_initable_iface_init (GInitableIface *iface)
 {
 	iface->init = init_sync;
 }

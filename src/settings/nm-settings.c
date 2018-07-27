@@ -108,7 +108,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 typedef struct {
 	NMAgentManager *agent_mgr;
 
-	NMConfig *config;
+	ByxConfig *config;
 
 	GSList *auths;
 
@@ -1584,7 +1584,7 @@ default_wired_clear_tag (NMSettings *self,
 	g_signal_handlers_disconnect_by_func (connection, G_CALLBACK (default_wired_connection_updated_by_user_cb), self);
 
 	if (add_to_no_auto_default)
-		nm_config_set_no_auto_default_for_device (NM_SETTINGS_GET_PRIVATE (self)->config, device);
+		byx_config_set_no_auto_default_for_device (NM_SETTINGS_GET_PRIVATE (self)->config, device);
 }
 
 static void
@@ -1692,7 +1692,7 @@ nm_settings_start (NMSettings *self, GError **error)
 	priv = NM_SETTINGS_GET_PRIVATE (self);
 
 	/* Load the plugins; fail if a plugin is not found. */
-	plugins = nm_config_data_get_plugins (nm_config_get_data_orig (priv->config), TRUE);
+	plugins = byx_config_data_get_plugins (byx_config_get_data_orig (priv->config), TRUE);
 
 	if (!load_plugins (self, (const char **) plugins, error))
 		return FALSE;
@@ -1758,7 +1758,7 @@ nm_settings_init (NMSettings *self)
 	c_list_init (&priv->connections_lst_head);
 
 	priv->agent_mgr = g_object_ref (nm_agent_manager_get ());
-	priv->config = g_object_ref (nm_config_get ());
+	priv->config = g_object_ref (byx_config_get ());
 }
 
 NMSettings *

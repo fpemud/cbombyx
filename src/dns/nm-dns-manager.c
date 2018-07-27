@@ -116,7 +116,7 @@ typedef struct {
 	char *mode;
 	NMDnsPlugin *plugin;
 
-	NMConfig *config;
+	ByxConfig *config;
 
 	struct {
 		guint64 ts;
@@ -1175,7 +1175,7 @@ update_dns (NMDnsManager *self,
 	gboolean caching = FALSE, update = TRUE;
 	gboolean resolv_conf_updated = FALSE;
 	SpawnResult result = SR_ERROR;
-	NMConfigData *data;
+	ByxConfigData *data;
 	NMGlobalDnsConfig *global_config;
 
 	g_return_val_if_fail (!error || !*error, FALSE);
@@ -1198,8 +1198,8 @@ update_dns (NMDnsManager *self,
 		_LOGD ("update-dns: updating resolv.conf");
 	}
 
-	data = nm_config_get_data (priv->config);
-	global_config = nm_config_data_get_global_dns_config (data);
+	data = byx_config_get_data (priv->config);
+	global_config = byx_config_data_get_global_dns_config (data);
 
 	/* Update hash with config we're applying */
 	compute_hash (self, global_config, priv->hash);
@@ -1529,7 +1529,7 @@ nm_dns_manager_end_updates (NMDnsManager *self, const char *func)
 	priv = NM_DNS_MANAGER_GET_PRIVATE (self);
 	g_return_if_fail (priv->updates_queue > 0);
 
-	compute_hash (self, nm_config_data_get_global_dns_config (nm_config_get_data (priv->config)), new);
+	compute_hash (self, byx_config_data_get_global_dns_config (byx_config_get_data (priv->config)), new);
 	changed = (memcmp (new, priv->prev_hash, sizeof (new)) != 0) ? TRUE : FALSE;
 	_LOGD ("(%s): DNS configuration %s", func, changed ? "changed" : "did not change");
 
@@ -1729,7 +1729,7 @@ init_resolv_conf_mode (NMDnsManager *self, gboolean force_reload_plugin)
 	const char *mode;
 	gboolean param_changed = FALSE, plugin_changed = FALSE;
 
-	mode = nm_config_data_get_dns_mode (nm_config_get_data (priv->config));
+	mode = byx_config_data_get_dns_mode (byx_config_get_data (priv->config));
 
 	if (nm_streq0 (mode, "none"))
 		rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_UNMANAGED;
@@ -1737,7 +1737,7 @@ init_resolv_conf_mode (NMDnsManager *self, gboolean force_reload_plugin)
 		const char *man;
 
 		rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_UNKNOWN;
-		man = nm_config_data_get_rc_manager (nm_config_get_data (priv->config));
+		man = byx_config_data_get_rc_manager (byx_config_get_data (priv->config));
 
 again:
 		if (!man) {
@@ -1752,9 +1752,9 @@ again:
 		if (rc_manager == NM_DNS_MANAGER_RESOLV_CONF_MAN_UNKNOWN) {
 			if (man) {
 				_LOGW ("init: unknown resolv.conf manager \"%s\", fallback to \"%s\"",
-				       man, ""NM_CONFIG_DEFAULT_MAIN_RC_MANAGER);
+				       man, ""BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER);
 			}
-			man = ""NM_CONFIG_DEFAULT_MAIN_RC_MANAGER;
+			man = ""BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER;
 			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_SYMLINK;
 			goto again;
 		}
@@ -1824,34 +1824,34 @@ again:
 }
 
 static void
-config_changed_cb (NMConfig *config,
-                   NMConfigData *config_data,
-                   NMConfigChangeFlags changes,
-                   NMConfigData *old_data,
+config_changed_cb (ByxConfig *config,
+                   ByxConfigData *config_data,
+                   ByxConfigChangeFlags changes,
+                   ByxConfigData *old_data,
                    NMDnsManager *self)
 {
 	GError *error = NULL;
 
-	if (NM_FLAGS_ANY (changes, NM_CONFIG_CHANGE_DNS_MODE |
-	                           NM_CONFIG_CHANGE_RC_MANAGER |
-	                           NM_CONFIG_CHANGE_CAUSE_SIGHUP |
-	                           NM_CONFIG_CHANGE_CAUSE_DNS_FULL)) {
+	if (NM_FLAGS_ANY (changes, BYX_CONFIG_CHANGE_DNS_MODE |
+	                           BYX_CONFIG_CHANGE_RC_MANAGER |
+	                           BYX_CONFIG_CHANGE_CAUSE_SIGHUP |
+	                           BYX_CONFIG_CHANGE_CAUSE_DNS_FULL)) {
 		/* reload the resolv-conf mode also on SIGHUP (when DNS_MODE didn't change).
 		 * The reason is, that the configuration also depends on whether resolv.conf
 		 * is immutable, thus, without the configuration changing, we always want to
 		 * re-configure the mode. */
 		init_resolv_conf_mode (self,
-		                       NM_FLAGS_ANY (changes,   NM_CONFIG_CHANGE_CAUSE_SIGHUP
-		                                              | NM_CONFIG_CHANGE_CAUSE_DNS_FULL));
+		                       NM_FLAGS_ANY (changes,   BYX_CONFIG_CHANGE_CAUSE_SIGHUP
+		                                              | BYX_CONFIG_CHANGE_CAUSE_DNS_FULL));
 	}
 
-	if (NM_FLAGS_ANY (changes, NM_CONFIG_CHANGE_CAUSE_SIGHUP |
-	                           NM_CONFIG_CHANGE_CAUSE_SIGUSR1 |
-	                           NM_CONFIG_CHANGE_CAUSE_DNS_RC |
-	                           NM_CONFIG_CHANGE_CAUSE_DNS_FULL |
-	                           NM_CONFIG_CHANGE_DNS_MODE |
-	                           NM_CONFIG_CHANGE_RC_MANAGER |
-	                           NM_CONFIG_CHANGE_GLOBAL_DNS_CONFIG)) {
+	if (NM_FLAGS_ANY (changes, BYX_CONFIG_CHANGE_CAUSE_SIGHUP |
+	                           BYX_CONFIG_CHANGE_CAUSE_SIGUSR1 |
+	                           BYX_CONFIG_CHANGE_CAUSE_DNS_RC |
+	                           BYX_CONFIG_CHANGE_CAUSE_DNS_FULL |
+	                           BYX_CONFIG_CHANGE_DNS_MODE |
+	                           BYX_CONFIG_CHANGE_RC_MANAGER |
+	                           BYX_CONFIG_CHANGE_GLOBAL_DNS_CONFIG)) {
 		if (!update_dns (self, FALSE, &error)) {
 			_LOGW ("could not commit DNS changes: %s", error->message);
 			g_clear_error (&error);
@@ -1926,7 +1926,7 @@ _get_config_variant (NMDnsManager *self)
 	if (priv->config_variant)
 		return priv->config_variant;
 
-	global_config = nm_config_data_get_global_dns_config (nm_config_get_data (priv->config));
+	global_config = byx_config_data_get_global_dns_config (byx_config_get_data (priv->config));
 	if (global_config) {
 		priv->config_variant = _get_global_config_variant (global_config);
 		_LOGT ("current configuration: %s", (str = g_variant_print (priv->config_variant, TRUE)));
@@ -2046,7 +2046,7 @@ nm_dns_manager_init (NMDnsManager *self)
 
 	c_list_init (&priv->ip_config_lst_head);
 
-	priv->config = g_object_ref (nm_config_get ());
+	priv->config = g_object_ref (byx_config_get ());
 
 	priv->configs = g_hash_table_new_full (nm_direct_hash, NULL,
 	                                       NULL, (GDestroyNotify) _config_data_free);
@@ -2055,7 +2055,7 @@ nm_dns_manager_init (NMDnsManager *self)
 	compute_hash (self, NULL, NM_DNS_MANAGER_GET_PRIVATE (self)->hash);
 
 	g_signal_connect (G_OBJECT (priv->config),
-	                  NM_CONFIG_SIGNAL_CONFIG_CHANGED,
+	                  BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
 	                  G_CALLBACK (config_changed_cb),
 	                  self);
 	init_resolv_conf_mode (self, TRUE);

@@ -30,7 +30,7 @@
 #include "nm-setting-wireless-security.h"
 #include "nm-config.h"
 
-#define NM_CONFIG_KEYFILE_PATH_DEFAULT NMCONFDIR "/system-connections"
+#define BYX_CONFIG_KEYFILE_PATH_DEFAULT NMCONFDIR "/system-connections"
 
 /*****************************************************************************/
 
@@ -158,12 +158,12 @@ nms_keyfile_utils_get_path (void)
 	static char *path = NULL;
 
 	if (G_UNLIKELY (!path)) {
-		path = nm_config_data_get_value (NM_CONFIG_GET_DATA_ORIG,
-		                                 NM_CONFIG_KEYFILE_GROUP_KEYFILE,
-		                                 NM_CONFIG_KEYFILE_KEY_KEYFILE_PATH,
-		                                 NM_CONFIG_GET_VALUE_STRIP | NM_CONFIG_GET_VALUE_NO_EMPTY);
+		path = byx_config_data_get_value (BYX_CONFIG_GET_DATA_ORIG,
+		                                 BYX_CONFIG_KEYFILE_GROUP_KEYFILE,
+		                                 BYX_CONFIG_KEYFILE_KEY_KEYFILE_PATH,
+		                                 BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
 		if (!path)
-			path = g_strdup (""NM_CONFIG_KEYFILE_PATH_DEFAULT"");
+			path = g_strdup (""BYX_CONFIG_KEYFILE_PATH_DEFAULT"");
 	}
 	return path;
 }

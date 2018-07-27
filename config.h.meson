@@ -20,16 +20,16 @@
 #mesondefine IPTABLES_PATH
 
 /* Default configuration option for logging.backend */
-#mesondefine NM_CONFIG_DEFAULT_LOGGING_BACKEND
+#mesondefine BYX_CONFIG_DEFAULT_LOGGING_BACKEND
 
 /* Default configuration option for main.dhcp setting */
-#mesondefine NM_CONFIG_DEFAULT_MAIN_DHCP
+#mesondefine BYX_CONFIG_DEFAULT_MAIN_DHCP
 
 /* Default configuration option for main.plugins setting */
-#mesondefine NM_CONFIG_DEFAULT_MAIN_PLUGINS
+#mesondefine BYX_CONFIG_DEFAULT_MAIN_PLUGINS
 
 /* Default value for main.rc-manager setting */
-#mesondefine NM_CONFIG_DEFAULT_MAIN_RC_MANAGER
+#mesondefine BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER
 
 /* Define if more asserts are enabled */
 #mesondefine NM_MORE_ASSERTS

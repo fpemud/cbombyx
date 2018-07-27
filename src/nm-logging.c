@@ -841,7 +841,7 @@ byx_logging_syslog_openlog (const char *logging_backend, gboolean debug)
 	gboolean fetch_monotonic_timestamp = FALSE;
 	gboolean obsolete_debug_backend = FALSE;
 
-	nm_assert (NM_IN_STRSET (""NM_CONFIG_DEFAULT_LOGGING_BACKEND,
+	nm_assert (NM_IN_STRSET (""BYX_CONFIG_DEFAULT_LOGGING_BACKEND,
 	                         NM_LOG_CONFIG_BACKEND_JOURNAL,
 	                         NM_LOG_CONFIG_BACKEND_SYSLOG));
 
@@ -849,7 +849,7 @@ byx_logging_syslog_openlog (const char *logging_backend, gboolean debug)
 		g_return_if_reached ();
 
 	if (!logging_backend)
-		logging_backend = ""NM_CONFIG_DEFAULT_LOGGING_BACKEND;
+		logging_backend = ""BYX_CONFIG_DEFAULT_LOGGING_BACKEND;
 
 	if (nm_streq (logging_backend, NM_LOG_CONFIG_BACKEND_DEBUG)) {
 		/* "debug" was wrongly documented as a valid logging backend. It makes no sense however,
@@ -858,7 +858,7 @@ byx_logging_syslog_openlog (const char *logging_backend, gboolean debug)
 		 * logging backend from configuration.
 		 *
 		 * Fall back to the default. */
-		logging_backend = ""NM_CONFIG_DEFAULT_LOGGING_BACKEND;
+		logging_backend = ""BYX_CONFIG_DEFAULT_LOGGING_BACKEND;
 		obsolete_debug_backend = TRUE;
 	}
 

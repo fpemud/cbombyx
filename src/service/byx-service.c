@@ -1877,7 +1877,7 @@ connect_success (ByxService *self)
 	if (timeout == 0) {
 		char *value;
 
-		value = nm_config_data_get_connection_default (NM_CONFIG_GET_DATA,
+		value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                              "vpn.timeout", NULL);
 		timeout = _byx_utils_ascii_str_to_int64 (value, 10, 0, G_MAXUINT32, 60);
 		timeout = timeout == 0 ? 60 : timeout;

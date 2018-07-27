@@ -2636,7 +2636,7 @@ _autoconnect_retries_initial (NMSettingsConnection *self)
 
 	/* -1 means 'default' */
 	if (retries == -1)
-		retries = nm_config_data_get_autoconnect_retries_default (NM_CONFIG_GET_DATA);
+		retries = byx_config_data_get_autoconnect_retries_default (BYX_CONFIG_GET_DATA);
 
 	/* 0 means 'forever', which is translated to a retry count of -1 */
 	if (retries == 0)

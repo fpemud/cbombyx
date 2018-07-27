@@ -35,8 +35,8 @@ typedef struct _NMVpnConnection      ByxService;
 typedef struct _NMActRequest         NMActRequest;
 typedef struct _NMAuthSubject        NMAuthSubject;
 typedef struct _ByxDBusManager        ByxDBusManager;
-typedef struct _NMConfig             NMConfig;
-typedef struct _NMConfigData         NMConfigData;
+typedef struct _ByxConfig             ByxConfig;
+typedef struct _ByxConfigData         ByxConfigData;
 typedef struct _NMAcdManager         NMAcdManager;
 typedef struct _NMConnectivity       NMConnectivity;
 typedef struct _NMDevice             NMDevice;
@@ -54,7 +54,7 @@ typedef struct _NMPacrunnerManager   NMPacrunnerManager;
 typedef struct _NMSessionMonitor     NMSessionMonitor;
 typedef struct _NMSleepMonitor       NMSleepMonitor;
 typedef struct _NMLldpListener       NMLldpListener;
-typedef struct _NMConfigDeviceStateData NMConfigDeviceStateData;
+typedef struct _ByxConfigDeviceStateData ByxConfigDeviceStateData;
 
 struct _NMDedupMultiIndex;
 
