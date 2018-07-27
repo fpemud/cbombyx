@@ -105,7 +105,6 @@ enum {
 	INTERNAL_DEVICE_REMOVED,
 	ACTIVE_CONNECTION_ADDED,
 	ACTIVE_CONNECTION_REMOVED,
-	CONFIGURE_QUIT,
 
 	LAST_SIGNAL
 };
@@ -1462,9 +1461,6 @@ check_if_startup_complete (ByxManager *self)
 	}
 
 	_notify (self, PROP_STARTUP);
-
-	if (byx_config_get_configure_and_quit (priv->config))
-		g_signal_emit (self, signals[CONFIGURE_QUIT], 0);
 }
 
 static void
@@ -1542,8 +1538,6 @@ remove_device (ByxManager *self,
 				nm_device_sys_iface_state_set (device, NM_DEVICE_SYS_IFACE_STATE_REMOVED);
 				nm_device_set_unmanaged_by_flags (device, NM_UNMANAGED_PLATFORM_INIT, TRUE, NM_DEVICE_STATE_REASON_REMOVED);
 			}
-		} else if (quitting && byx_config_get_configure_and_quit (priv->config)) {
-			nm_device_spawn_iface_helper (device);
 		}
 	}
 
@@ -7005,11 +6999,4 @@ byx_manager_class_init (ByxManagerClass *manager_class)
 	                  G_SIGNAL_RUN_FIRST,
 	                  0, NULL, NULL, NULL,
 	                  G_TYPE_NONE, 1, NM_TYPE_ACTIVE_CONNECTION);
-
-	signals[CONFIGURE_QUIT] =
-	    g_signal_new (BYX_MANAGER_CONFIGURE_QUIT,
-	                  G_OBJECT_CLASS_TYPE (object_class),
-	                  G_SIGNAL_RUN_FIRST,
-	                  0, NULL, NULL, NULL,
-	                  G_TYPE_NONE, 0);
 }

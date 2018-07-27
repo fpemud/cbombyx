@@ -82,9 +82,9 @@ No.
 Networkmanager do this because user can create connection, so the creator may want to hide/disable it from others.
 All the connections in Bombyx can be viewed as created by root, like packages.
 So they should be visible to all users.
-If you really need to do this, you should do it in filesystem level. how do you hide files from users? how do you restrict file access?
-Bombyx's architecture should let this happen.
-
+Connections can be auto enable when system starts, before any user login.
+So hide/forbid connection from user is useless.
+Just like you can't hide system service from specific users. So connections are more like system service, not application.
 
 
 
@@ -93,5 +93,10 @@ Yes.
 I have delete the core code, but all the audit point is commented so we can add it back in future.
 it is good for both enterprise and personal usage.
 
+
+
+Bombyx should not support auto discover changes in connection files.
+Bombyx should reload connection files via ReloadConnections dbus call.
+Automatic reloading is supported but is not advised NetworkManager because race conditions.
 
 

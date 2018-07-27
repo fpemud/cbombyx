@@ -49,8 +49,6 @@ typedef struct {
 	GHashTable *connections;  /* uuid::connection */
 
 	gboolean initialized;
-	GFileMonitor *monitor;
-	gulong monitor_id;
 
 	ByxConfig *config;
 } NMSKeyfilePluginPrivate;
@@ -334,46 +332,6 @@ dir_changed (GFileMonitor *monitor,
 	g_free (full_path);
 }
 
-static void
-config_changed_cb (ByxConfig *config,
-                   ByxConfigData *config_data,
-                   ByxConfigChangeFlags changes,
-                   ByxConfigData *old_data,
-                   NMSKeyfilePlugin *self)
-{
-	gs_free char *old_value = NULL, *new_value = NULL;
-
-	old_value = byx_config_data_get_value (old_data, BYX_CONFIG_KEYFILE_GROUP_KEYFILE, BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
-	new_value = byx_config_data_get_value (config_data, BYX_CONFIG_KEYFILE_GROUP_KEYFILE, BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
-
-	if (g_strcmp0 (old_value, new_value) != 0)
-		g_signal_emit_by_name (self, NM_SETTINGS_PLUGIN_UNMANAGED_SPECS_CHANGED);
-}
-
-static void
-setup_monitoring (NMSettingsPlugin *config)
-{
-	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE ((NMSKeyfilePlugin *) config);
-	GFile *file;
-	GFileMonitor *monitor;
-
-	if (byx_config_get_monitor_connection_files (priv->config)) {
-		file = g_file_new_for_path (nms_keyfile_utils_get_path ());
-		monitor = g_file_monitor_directory (file, G_FILE_MONITOR_NONE, NULL, NULL);
-		g_object_unref (file);
-
-		if (monitor) {
-			priv->monitor_id = g_signal_connect (monitor, "changed", G_CALLBACK (dir_changed), config);
-			priv->monitor = monitor;
-		}
-	}
-
-	g_signal_connect (G_OBJECT (priv->config),
-	                  BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
-	                  G_CALLBACK (config_changed_cb),
-	                  config);
-}
-
 static GHashTable *
 _paths_from_connections (GHashTable *connections)
 {
@@ -489,7 +447,6 @@ get_connections (NMSettingsPlugin *config)
 	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE ((NMSKeyfilePlugin *) config);
 
 	if (!priv->initialized) {
-		setup_monitoring (config);
 		read_connections (config);
 		priv->initialized = TRUE;
 	}
@@ -589,20 +546,12 @@ dispose (GObject *object)
 {
 	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE ((NMSKeyfilePlugin *) object);
 
-	if (priv->monitor) {
-		nm_clear_g_signal_handler (priv->monitor, &priv->monitor_id);
-
-		g_file_monitor_cancel (priv->monitor);
-		g_clear_object (&priv->monitor);
-	}
-
 	if (priv->connections) {
 		g_hash_table_destroy (priv->connections);
 		priv->connections = NULL;
 	}
 
 	if (priv->config) {
-		g_signal_handlers_disconnect_by_func (priv->config, config_changed_cb, object);
 		g_clear_object (&priv->config);
 	}
 

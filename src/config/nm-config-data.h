@@ -36,7 +36,6 @@
 #define BYX_CONFIG_DATA_CONNECTIVITY_URI      "connectivity-uri"
 #define BYX_CONFIG_DATA_CONNECTIVITY_INTERVAL "connectivity-interval"
 #define BYX_CONFIG_DATA_CONNECTIVITY_RESPONSE "connectivity-response"
-#define BYX_CONFIG_DATA_NO_AUTO_DEFAULT       "no-auto-default"
 #define BYX_CONFIG_DATA_DNS_MODE              "dns"
 
 /* The flags for Reload. Currently these are internal defines,
@@ -112,9 +111,6 @@ typedef enum { /*< flags >*/
 	/* configuration regarding connectivity changed */
 	BYX_CONFIG_CHANGE_CONNECTIVITY              = (1L << 14),
 
-	/* configuration regarding no-auto-default changed */
-	BYX_CONFIG_CHANGE_NO_AUTO_DEFAULT           = (1L << 15),
-
 	/* configuration regarding dns-mode changed */
 	BYX_CONFIG_CHANGE_DNS_MODE                  = (1L << 16),
 
@@ -135,11 +131,9 @@ GType byx_config_data_get_type (void);
 
 ByxConfigData *byx_config_data_new (const char *config_main_file,
                                   const char *config_description,
-                                  const char *const*no_auto_default,
                                   GKeyFile *keyfile_user,
                                   GKeyFile *keyfile_intern);
 ByxConfigData *byx_config_data_new_update_keyfile_intern (const ByxConfigData *base, GKeyFile *keyfile_intern);
-ByxConfigData *byx_config_data_new_update_no_auto_default (const ByxConfigData *base, const char *const*no_auto_default);
 
 ByxConfigChangeFlags byx_config_data_diff (ByxConfigData *old_data, ByxConfigData *new_data);
 
@@ -157,16 +151,12 @@ char *byx_config_data_get_value (const ByxConfigData *config_data, const char *g
 gint byx_config_data_get_value_boolean (const ByxConfigData *self, const char *group, const char *key, gint default_value);
 gint64 byx_config_data_get_value_int64 (const ByxConfigData *self, const char *group, const char *key, guint base, gint64 min, gint64 max, gint64 fallback);
 
-char **byx_config_data_get_plugins (const ByxConfigData *config_data, gboolean allow_default);
 gboolean byx_config_data_get_connectivity_enabled (const ByxConfigData *config_data);
 const char *byx_config_data_get_connectivity_uri (const ByxConfigData *config_data);
 guint byx_config_data_get_connectivity_interval (const ByxConfigData *config_data);
 const char *byx_config_data_get_connectivity_response (const ByxConfigData *config_data);
 
 int byx_config_data_get_autoconnect_retries_default (const ByxConfigData *config_data);
-
-const char *const*byx_config_data_get_no_auto_default (const ByxConfigData *config_data);
-gboolean          byx_config_data_get_no_auto_default_for_device (const ByxConfigData *self, NMDevice *device);
 
 const char *byx_config_data_get_dns_mode (const ByxConfigData *self);
 const char *byx_config_data_get_rc_manager (const ByxConfigData *self);

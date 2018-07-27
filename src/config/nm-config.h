@@ -57,9 +57,7 @@
 
 #define BYX_CONFIG_KEYFILE_GROUP_KEYFILE                     "keyfile"
 
-#define BYX_CONFIG_KEYFILE_KEY_MAIN_AUTH_POLKIT              "auth-polkit"
 #define BYX_CONFIG_KEYFILE_KEY_MAIN_AUTOCONNECT_RETRIES_DEFAULT "autoconnect-retries-default"
-#define BYX_CONFIG_KEYFILE_KEY_MAIN_DHCP                     "dhcp"
 #define BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG                    "debug"
 #define BYX_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER             "slaves-order"
 #define BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND               "backend"
@@ -121,10 +119,8 @@ ByxConfigData *byx_config_get_data_orig (ByxConfig *config);
 #define BYX_CONFIG_GET_DATA      (byx_config_get_data (byx_config_get ()))
 #define BYX_CONFIG_GET_DATA_ORIG (byx_config_get_data_orig (byx_config_get ()))
 
-gboolean byx_config_get_monitor_connection_files (ByxConfig *config);
 const char *byx_config_get_log_level (ByxConfig *config);
 const char *byx_config_get_log_domains (ByxConfig *config);
-gboolean byx_config_get_configure_and_quit (ByxConfig *config);
 gboolean byx_config_get_is_debug (ByxConfig *config);
 
 gboolean byx_config_get_first_start (ByxConfig *config);
@@ -139,9 +135,6 @@ ByxConfigCmdLineOptions *byx_config_cmd_line_options_new (gboolean first_start);
 void                    byx_config_cmd_line_options_free (ByxConfigCmdLineOptions *cli);
 void                    byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli,
                                                                    GOptionContext *opt_ctx);
-
-gboolean byx_config_get_no_auto_default_for_device (ByxConfig *config, NMDevice *device);
-void byx_config_set_no_auto_default_for_device  (ByxConfig *config, NMDevice *device);
 
 ByxConfig *byx_config_new (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error);
 ByxConfig *byx_config_setup (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error);
@@ -196,8 +189,6 @@ extern char *_byx_config_match_env;
 /*****************************************************************************/
 
 #define BYX_CONFIG_DEVICE_STATE_DIR ""NMRUNDIR"/devices"
-
-#define BYX_CONFIG_DEFAULT_MAIN_AUTH_POLKIT_BOOL     (nm_streq (""BYX_CONFIG_DEFAULT_MAIN_AUTH_POLKIT, "true"))
 
 typedef enum {
 	BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN   = -1,

@@ -151,13 +151,6 @@ else
   distro = 'unknown'
 endif
 
-config_plugins_default = get_option('config_plugins_default')
-if config_plugins_default == ''
-  config_plugins = []
-  config_plugins_default = ','.join(config_plugins)
-endif
-config_h.set_quoted('BYX_CONFIG_DEFAULT_MAIN_PLUGINS', config_plugins_default)
-
 # introspection support
 enable_introspection = get_option('introspection')
 if enable_introspection

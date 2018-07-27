@@ -22,12 +22,6 @@
 /* Default configuration option for logging.backend */
 #mesondefine BYX_CONFIG_DEFAULT_LOGGING_BACKEND
 
-/* Default configuration option for main.dhcp setting */
-#mesondefine BYX_CONFIG_DEFAULT_MAIN_DHCP
-
-/* Default configuration option for main.plugins setting */
-#mesondefine BYX_CONFIG_DEFAULT_MAIN_PLUGINS
-
 /* Default value for main.rc-manager setting */
 #mesondefine BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER
 

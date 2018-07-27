@@ -69,7 +69,6 @@ NM_GOBJECT_PROPERTIES_DEFINE_BASE (
 	PROP_CONNECTIVITY_URI,
 	PROP_CONNECTIVITY_INTERVAL,
 	PROP_CONNECTIVITY_RESPONSE,
-	PROP_NO_AUTO_DEFAULT,
 );
 
 typedef struct {
@@ -96,12 +95,6 @@ typedef struct {
 	} connectivity;
 
 	int autoconnect_retries_default;
-
-	struct {
-		char **arr;
-		GSList *specs;
-		GSList *specs_config;
-	} no_auto_default;
 
 	GSList *ignore_carrier;
 	GSList *assume_ipv6ll_only;
@@ -224,27 +217,6 @@ byx_config_data_get_value_int64 (const ByxConfigData *self, const char *group, c
 	return val;
 }
 
-char **
-byx_config_data_get_plugins (const ByxConfigData *self, gboolean allow_default)
-{
-	const ByxConfigDataPrivate *priv;
-	char **list;
-
-	g_return_val_if_fail (self, NULL);
-
-	priv = BYX_CONFIG_DATA_GET_PRIVATE (self);
-
-	list = g_key_file_get_string_list (priv->keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "plugins", NULL, NULL);
-	if (!list && allow_default) {
-		gs_unref_keyfile GKeyFile *kf = byx_config_create_keyfile ();
-
-		/* let keyfile split the default string according to its own escaping rules. */
-		g_key_file_set_value (kf, BYX_CONFIG_KEYFILE_GROUP_MAIN, "plugins", BYX_CONFIG_DEFAULT_MAIN_PLUGINS);
-		list = g_key_file_get_string_list (kf, BYX_CONFIG_KEYFILE_GROUP_MAIN, "plugins", NULL, NULL);
-	}
-	return _byx_utils_strv_cleanup (list, TRUE, TRUE, TRUE);
-}
-
 gboolean
 byx_config_data_get_connectivity_enabled (const ByxConfigData *self)
 {
@@ -283,27 +255,6 @@ byx_config_data_get_autoconnect_retries_default (const ByxConfigData *self)
 	g_return_val_if_fail (self, FALSE);
 
 	return BYX_CONFIG_DATA_GET_PRIVATE (self)->autoconnect_retries_default;
-}
-
-const char *const*
-byx_config_data_get_no_auto_default (const ByxConfigData *self)
-{
-	g_return_val_if_fail (self, FALSE);
-
-	return (const char *const*) BYX_CONFIG_DATA_GET_PRIVATE (self)->no_auto_default.arr;
-}
-
-gboolean
-byx_config_data_get_no_auto_default_for_device (const ByxConfigData *self, NMDevice *device)
-{
-	const ByxConfigDataPrivate *priv;
-
-	g_return_val_if_fail (BYX_IS_CONFIG_DATA (self), FALSE);
-	g_return_val_if_fail (NM_IS_DEVICE (device), FALSE);
-
-	priv = BYX_CONFIG_DATA_GET_PRIVATE (self);
-	return    nm_device_spec_match_list (device, priv->no_auto_default.specs)
-	       || nm_device_spec_match_list (device, priv->no_auto_default.specs_config);
 }
 
 const char *
@@ -596,10 +547,7 @@ static const struct {
 	const char *key;
 	const char *value;
 } default_values[] = {
-	{ BYX_CONFIG_KEYFILE_GROUP_MAIN,    "plugins",                              BYX_CONFIG_DEFAULT_MAIN_PLUGINS },
 	{ BYX_CONFIG_KEYFILE_GROUP_MAIN,    "rc-manager",                           BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER },
-	{ BYX_CONFIG_KEYFILE_GROUP_MAIN,    BYX_CONFIG_KEYFILE_KEY_MAIN_AUTH_POLKIT, BYX_CONFIG_DEFAULT_MAIN_AUTH_POLKIT },
-	{ BYX_CONFIG_KEYFILE_GROUP_MAIN,    BYX_CONFIG_KEYFILE_KEY_MAIN_DHCP,        BYX_CONFIG_DEFAULT_MAIN_DHCP },
 	{ BYX_CONFIG_KEYFILE_GROUP_LOGGING, "backend",                              BYX_CONFIG_DEFAULT_LOGGING_BACKEND },
 };
 
@@ -1488,10 +1436,6 @@ byx_config_data_diff (ByxConfigData *old_data, ByxConfigData *new_data)
 	    || g_strcmp0 (byx_config_data_get_connectivity_response (old_data), byx_config_data_get_connectivity_response (new_data)))
 		changes |= BYX_CONFIG_CHANGE_CONNECTIVITY;
 
-	if (   !_slist_str_equals (priv_old->no_auto_default.specs, priv_new->no_auto_default.specs)
-	    || !_slist_str_equals (priv_old->no_auto_default.specs_config, priv_new->no_auto_default.specs_config))
-		changes |= BYX_CONFIG_CHANGE_NO_AUTO_DEFAULT;
-
 	if (g_strcmp0 (byx_config_data_get_dns_mode (old_data), byx_config_data_get_dns_mode (new_data)))
 		changes |= BYX_CONFIG_CHANGE_DNS_MODE;
 
@@ -1577,27 +1521,6 @@ set_property (GObject *object,
 			priv->keyfile_intern = NULL;
 		}
 		break;
-	case PROP_NO_AUTO_DEFAULT:
-		/* construct-only */
-		{
-			char **value_arr = g_value_get_boxed (value);
-			guint i, j = 0;
-
-			priv->no_auto_default.arr = g_new (char *, g_strv_length (value_arr) + 1);
-			priv->no_auto_default.specs = NULL;
-
-			for (i = 0; value_arr && value_arr[i]; i++) {
-				if (   *value_arr[i]
-				    && byx_utils_hwaddr_valid (value_arr[i], -1)
-				    && byx_utils_strv_find_first (value_arr, i, value_arr[i]) < 0) {
-					priv->no_auto_default.arr[j++] = g_strdup (value_arr[i]);
-					priv->no_auto_default.specs = g_slist_prepend (priv->no_auto_default.specs, g_strdup_printf ("mac:%s", value_arr[i]));
-				}
-			}
-			priv->no_auto_default.arr[j++] = NULL;
-			priv->no_auto_default.specs = g_slist_reverse (priv->no_auto_default.specs);
-		}
-		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;
@@ -1643,8 +1566,6 @@ constructed (GObject *object)
 	priv->ignore_carrier = byx_config_get_match_spec (priv->keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "ignore-carrier", NULL);
 	priv->assume_ipv6ll_only = byx_config_get_match_spec (priv->keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "assume-ipv6ll-only", NULL);
 
-	priv->no_auto_default.specs_config = byx_config_get_match_spec (priv->keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "no-auto-default", NULL);
-
 	priv->global_dns = load_global_dns (priv->keyfile_user, FALSE);
 	if (!priv->global_dns)
 		priv->global_dns = load_global_dns (priv->keyfile_intern, TRUE);
@@ -1655,7 +1576,6 @@ constructed (GObject *object)
 ByxConfigData *
 byx_config_data_new (const char *config_main_file,
                     const char *config_description,
-                    const char *const*no_auto_default,
                     GKeyFile *keyfile_user,
                     GKeyFile *keyfile_intern)
 {
@@ -1664,7 +1584,6 @@ byx_config_data_new (const char *config_main_file,
 	                     BYX_CONFIG_DATA_CONFIG_DESCRIPTION, config_description,
 	                     BYX_CONFIG_DATA_KEYFILE_USER, keyfile_user,
 	                     BYX_CONFIG_DATA_KEYFILE_INTERN, keyfile_intern,
-	                     BYX_CONFIG_DATA_NO_AUTO_DEFAULT, no_auto_default,
 	                     NULL);
 }
 
@@ -1678,22 +1597,6 @@ byx_config_data_new_update_keyfile_intern (const ByxConfigData *base, GKeyFile *
 	                     BYX_CONFIG_DATA_CONFIG_DESCRIPTION, priv->config_description,
 	                     BYX_CONFIG_DATA_KEYFILE_USER, priv->keyfile_user, /* the keyfile is unchanged. It's safe to share it. */
 	                     BYX_CONFIG_DATA_KEYFILE_INTERN, keyfile_intern,
-	                     BYX_CONFIG_DATA_NO_AUTO_DEFAULT, priv->no_auto_default.arr,
-	                     NULL);
-}
-
-ByxConfigData *
-byx_config_data_new_update_no_auto_default (const ByxConfigData *base,
-                                           const char *const*no_auto_default)
-{
-	const ByxConfigDataPrivate *priv = BYX_CONFIG_DATA_GET_PRIVATE (base);
-
-	return g_object_new (BYX_TYPE_CONFIG_DATA,
-	                     BYX_CONFIG_DATA_CONFIG_MAIN_FILE, priv->config_main_file,
-	                     BYX_CONFIG_DATA_CONFIG_DESCRIPTION, priv->config_description,
-	                     BYX_CONFIG_DATA_KEYFILE_USER, priv->keyfile_user, /* the keyfile is unchanged. It's safe to share it. */
-	                     BYX_CONFIG_DATA_KEYFILE_INTERN, priv->keyfile_intern,
-	                     BYX_CONFIG_DATA_NO_AUTO_DEFAULT, no_auto_default,
 	                     NULL);
 }
 
@@ -1707,10 +1610,6 @@ finalize (GObject *gobject)
 
 	g_free (priv->connectivity.uri);
 	g_free (priv->connectivity.response);
-
-	g_slist_free_full (priv->no_auto_default.specs, g_free);
-	g_slist_free_full (priv->no_auto_default.specs_config, g_free);
-	g_strfreev (priv->no_auto_default.arr);
 
 	g_free (priv->dns_mode);
 	g_free (priv->rc_manager);
@@ -1793,13 +1692,6 @@ byx_config_data_class_init (ByxConfigDataClass *config_class)
 	                          NULL,
 	                          G_PARAM_READABLE |
 	                          G_PARAM_STATIC_STRINGS);
-
-	obj_properties[PROP_NO_AUTO_DEFAULT] =
-	     g_param_spec_boxed (BYX_CONFIG_DATA_NO_AUTO_DEFAULT, "", "",
-	                         G_TYPE_STRV,
-	                         G_PARAM_WRITABLE |
-	                         G_PARAM_CONSTRUCT_ONLY |
-	                         G_PARAM_STATIC_STRINGS);
 
 	g_object_class_install_properties (object_class, _PROPERTY_ENUMS_LAST, obj_properties);
 }

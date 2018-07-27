@@ -67,7 +67,6 @@
 
 #define BYX_MANAGER_ACTIVE_CONNECTION_ADDED   "active-connection-added"
 #define BYX_MANAGER_ACTIVE_CONNECTION_REMOVED "active-connection-removed"
-#define BYX_MANAGER_CONFIGURE_QUIT            "configure-quit"
 #define BYX_MANAGER_INTERNAL_DEVICE_ADDED     "internal-device-added"
 #define BYX_MANAGER_INTERNAL_DEVICE_REMOVED   "internal-device-removed"
 

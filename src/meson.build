@@ -5,8 +5,6 @@ install_data(
   install_dir: dbus_conf_dir
 )
 
-core_plugins = []
-
 nm_cflags = ['-DNETWORKMANAGER_COMPILATION=NM_NETWORKMANAGER_COMPILATION_DAEMON']
 
 nm_dep = declare_dependency(
@@ -144,7 +142,7 @@ ldflags = ['-rdynamic']
 
 # FIXME: this doesn't work and it depends on libtool
 '''
-src/NetworkManager.ver: src/libNetworkManager.la $(core_plugins)
+src/NetworkManager.ver: src/libNetworkManager.la
   $(AM_V_GEN) NM="$(NM)" "$(srcdir)/tools/create-exports-NetworkManager.sh" --called-from-make "$(srcdir)"
 
 src_NetworkManager_LDFLAGS = \

@@ -92,10 +92,6 @@ content_files = \
 	../../COPYING \
 	$(NULL)
 
-if CONFIG_PLUGIN_IFCFG_RH
-content_files += $(top_builddir)/man/nm-settings-ifcfg-rh.xml
-endif
-
 include $(top_srcdir)/gtk-doc.make
 
 ####################################

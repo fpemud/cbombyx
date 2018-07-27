@@ -37,7 +37,6 @@
 #define DEFAULT_CONFIG_MAIN_FILE_OLD    NMCONFDIR "/nm-system-settings.conf"
 #define DEFAULT_SYSTEM_CONFIG_DIR       NMLIBDIR  "/conf.d"
 #define RUN_CONFIG_DIR                  NMRUNDIR  "/conf.d"
-#define DEFAULT_NO_AUTO_DEFAULT_FILE    NMSTATEDIR "/no-auto-default.state"
 #define DEFAULT_INTERN_CONFIG_FILE      NMSTATEDIR "/NetworkManager-intern.conf"
 #define DEFAULT_STATE_FILE              NMSTATEDIR "/bombyx.state"
 
@@ -49,9 +48,6 @@ struct ByxConfigCmdLineOptions {
 	char *config_dir;
 	char *system_config_dir;
 	char *state_file;
-	char *no_auto_default_file;
-	char *plugins;
-	gboolean configure_and_quit;
 	gboolean is_debug;
 	char *connectivity_uri;
 
@@ -97,15 +93,10 @@ typedef struct {
 
 	char *config_dir;
 	char *system_config_dir;
-	char *no_auto_default_file;
 	char *intern_config_file;
-
-	gboolean monitor_connection_files;
 
 	char *log_level;
 	char *log_domains;
-
-	gboolean configure_and_quit;
 
 	char **atomic_section_prefixes;
 
@@ -299,14 +290,6 @@ byx_config_get_data_orig (ByxConfig *config)
 	return BYX_CONFIG_GET_PRIVATE (config)->config_data_orig;
 }
 
-gboolean
-byx_config_get_monitor_connection_files (ByxConfig *config)
-{
-	g_return_val_if_fail (config != NULL, FALSE);
-
-	return BYX_CONFIG_GET_PRIVATE (config)->monitor_connection_files;
-}
-
 const char *
 byx_config_get_log_level (ByxConfig *config)
 {
@@ -324,12 +307,6 @@ byx_config_get_log_domains (ByxConfig *config)
 }
 
 gboolean
-byx_config_get_configure_and_quit (ByxConfig *config)
-{
-	return BYX_CONFIG_GET_PRIVATE (config)->configure_and_quit;
-}
-
-gboolean
 byx_config_get_is_debug (ByxConfig *config)
 {
 	return BYX_CONFIG_GET_PRIVATE (config)->cli.is_debug;
@@ -343,121 +320,14 @@ byx_config_get_first_start (ByxConfig *config)
 
 /*****************************************************************************/
 
-static char **
-no_auto_default_from_file (const char *no_auto_default_file)
-{
-	GPtrArray *no_auto_default_new;
-	char **list;
-	guint i;
-	char *data;
-
-	no_auto_default_new = g_ptr_array_new ();
-
-	if (   no_auto_default_file
-	    && g_file_get_contents (no_auto_default_file, &data, NULL, NULL)) {
-		list = g_strsplit (data, "\n", -1);
-		for (i = 0; list[i]; i++) {
-			if (   *list[i]
-			    && byx_utils_hwaddr_valid (list[i], -1)
-			    && byx_utils_strv_find_first (list, i, list[i]) < 0)
-				g_ptr_array_add (no_auto_default_new, list[i]);
-			else
-				g_free (list[i]);
-		}
-		g_free (list);
-		g_free (data);
-	}
-
-	g_ptr_array_add (no_auto_default_new, NULL);
-	return (char **) g_ptr_array_free (no_auto_default_new, FALSE);
-}
-
-static gboolean
-no_auto_default_to_file (const char *no_auto_default_file, const char *const*no_auto_default, GError **error)
-{
-	GString *data;
-	gboolean success;
-	guint i;
-
-	data = g_string_new ("");
-	for (i = 0; no_auto_default && no_auto_default[i]; i++) {
-		g_string_append (data, no_auto_default[i]);
-		g_string_append_c (data, '\n');
-	}
-	success = g_file_set_contents (no_auto_default_file, data->str, data->len, error);
-	g_string_free (data, TRUE);
-	return success;
-}
-
-gboolean
-byx_config_get_no_auto_default_for_device (ByxConfig *self, NMDevice *device)
-{
-	g_return_val_if_fail (BYX_IS_CONFIG (self), FALSE);
-
-	return byx_config_data_get_no_auto_default_for_device (BYX_CONFIG_GET_PRIVATE (self)->config_data, device);
-}
-
-void
-byx_config_set_no_auto_default_for_device (ByxConfig *self, NMDevice *device)
-{
-	ByxConfigPrivate *priv;
-	GError *error = NULL;
-	ByxConfigData *new_data = NULL;
-	const char *hw_address;
-	const char *const*no_auto_default_current;
-	GPtrArray *no_auto_default_new = NULL;
-	guint i;
-
-	g_return_if_fail (BYX_IS_CONFIG (self));
-	g_return_if_fail (NM_IS_DEVICE (device));
-
-	priv = BYX_CONFIG_GET_PRIVATE (self);
-
-	hw_address = nm_device_get_permanent_hw_address (device);
-	if (!hw_address)
-		return;
-
-	no_auto_default_current = byx_config_data_get_no_auto_default (priv->config_data);
-
-	if (byx_utils_strv_find_first ((char **) no_auto_default_current, -1, hw_address) >= 0) {
-		/* @hw_address is already blocked. We don't have to update our in-memory representation.
-		 * Maybe we should write to no_auto_default_file anew, but let's save that too. */
-		return;
-	}
-
-	no_auto_default_new = g_ptr_array_new ();
-	for (i = 0; no_auto_default_current && no_auto_default_current[i]; i++)
-		g_ptr_array_add (no_auto_default_new, (char *) no_auto_default_current[i]);
-	g_ptr_array_add (no_auto_default_new, (char *) hw_address);
-	g_ptr_array_add (no_auto_default_new, NULL);
-
-	if (!no_auto_default_to_file (priv->no_auto_default_file, (const char *const*) no_auto_default_new->pdata, &error)) {
-		_LOGW ("Could not update no-auto-default.state file: %s",
-		       error->message);
-		g_error_free (error);
-	}
-
-	new_data = byx_config_data_new_update_no_auto_default (priv->config_data, (const char *const*) no_auto_default_new->pdata);
-
-	/* unref no_auto_default_set here. Note that _set_config_data() probably invalidates the content of the array. */
-	g_ptr_array_unref (no_auto_default_new);
-
-	_set_config_data (self, new_data, BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT);
-}
-
-/*****************************************************************************/
-
 static void
 _byx_config_cmd_line_options_clear (ByxConfigCmdLineOptions *cli)
 {
 	g_clear_pointer (&cli->config_main_file, g_free);
 	g_clear_pointer (&cli->config_dir, g_free);
 	g_clear_pointer (&cli->system_config_dir, g_free);
-	g_clear_pointer (&cli->no_auto_default_file, g_free);
 	g_clear_pointer (&cli->intern_config_file, g_free);
 	g_clear_pointer (&cli->state_file, g_free);
-	g_clear_pointer (&cli->plugins, g_free);
-	cli->configure_and_quit = FALSE;
 	cli->is_debug = FALSE;
 	g_clear_pointer (&cli->connectivity_uri, g_free);
 	g_clear_pointer (&cli->connectivity_response, g_free);
@@ -476,11 +346,8 @@ _byx_config_cmd_line_options_copy (const ByxConfigCmdLineOptions *cli, ByxConfig
 	dst->config_dir = g_strdup (cli->config_dir);
 	dst->system_config_dir = g_strdup (cli->system_config_dir);
 	dst->config_main_file = g_strdup (cli->config_main_file);
-	dst->no_auto_default_file = g_strdup (cli->no_auto_default_file);
 	dst->intern_config_file = g_strdup (cli->intern_config_file);
 	dst->state_file = g_strdup (cli->state_file);
-	dst->plugins = g_strdup (cli->plugins);
-	dst->configure_and_quit = cli->configure_and_quit;
 	dst->is_debug = cli->is_debug;
 	dst->connectivity_uri = g_strdup (cli->connectivity_uri);
 	dst->connectivity_response = g_strdup (cli->connectivity_response);
@@ -523,9 +390,6 @@ byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli,
 			{ "system-config-dir", 0, 0, G_OPTION_ARG_FILENAME, &cli->system_config_dir, N_("System config directory location"), DEFAULT_SYSTEM_CONFIG_DIR },
 			{ "intern-config", 0, 0, G_OPTION_ARG_FILENAME, &cli->intern_config_file, N_("Internal config file location"), DEFAULT_INTERN_CONFIG_FILE },
 			{ "state-file", 0, 0, G_OPTION_ARG_FILENAME, &cli->state_file, N_("State file location"), DEFAULT_STATE_FILE },
-			{ "no-auto-default", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_FILENAME, &cli->no_auto_default_file, N_("State file for no-auto-default devices"), DEFAULT_NO_AUTO_DEFAULT_FILE },
-			{ "plugins", 0, 0, G_OPTION_ARG_STRING, &cli->plugins, N_("List of plugins separated by ','"), BYX_CONFIG_DEFAULT_MAIN_PLUGINS },
-			{ "configure-and-quit", 0, 0, G_OPTION_ARG_NONE, &cli->configure_and_quit, N_("Quit after initial configuration"), NULL },
 			{ "debug", 'd', 0, G_OPTION_ARG_NONE, &cli->is_debug, N_("Don't become a daemon, and log to stderr"), NULL },
 
 				/* These three are hidden for now, and should eventually just go away. */
@@ -658,8 +522,7 @@ static gboolean
 _setting_is_device_spec (const char *group, const char *key)
 {
 #define _IS(group_v, key_v) (strcmp (group, (""group_v)) == 0 && strcmp (key, (""key_v)) == 0)
-	return    _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "no-auto-default")
-	       || _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "ignore-carrier")
+	return    _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "ignore-carrier")
 	       || _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "assume-ipv6ll-only")
 	       || _IS (BYX_CONFIG_KEYFILE_GROUP_KEYFILE, "unmanaged-devices")
 	       || (g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_CONNECTION) && !strcmp (key, "match-device"))
@@ -669,8 +532,7 @@ _setting_is_device_spec (const char *group, const char *key)
 static gboolean
 _setting_is_string_list (const char *group, const char *key)
 {
-	return    _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, "plugins")
-	       || _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG)
+	return    _IS (BYX_CONFIG_KEYFILE_GROUP_MAIN, BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG)
 	       || _IS (BYX_CONFIG_KEYFILE_GROUP_LOGGING, "domains")
 	       || g_str_has_prefix (group, BYX_CONFIG_KEYFILE_GROUPPREFIX_TEST_APPEND_STRINGLIST);
 #undef _IS
@@ -782,13 +644,6 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
 					if (is_string_list) {
 						old_val = g_key_file_get_string_list (keyfile, group, base_key, NULL, NULL);
 						new_val = g_key_file_get_string_list (kf, group, key, NULL, NULL);
-						if (!old_val && !g_key_file_has_key (keyfile, group, base_key, NULL)) {
-							/* we must fill the unspecified value with the compile-time default. */
-							if (nm_streq (group, BYX_CONFIG_KEYFILE_GROUP_MAIN) && nm_streq (base_key, "plugins")) {
-								g_key_file_set_value (keyfile, group, base_key, BYX_CONFIG_DEFAULT_MAIN_PLUGINS);
-								old_val = g_key_file_get_string_list (keyfile, group, base_key, NULL, NULL);
-							}
-						}
 					} else {
 						gs_free char *old_sval = byx_config_keyfile_get_value (keyfile, group, base_key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
 						gs_free char *new_sval = byx_config_keyfile_get_value (kf, group, key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
@@ -1044,15 +899,6 @@ read_entire_config (const ByxConfigCmdLineOptions *cli,
 			return NULL;
 	}
 
-	/* Merge settings from command line. They overwrite everything read from
-	 * config files. */
-	if (cli && cli->plugins) {
-		/* plugins is a string list. Set the value directly, so the user has to do proper escaping
-		 * on the command line. */
-		g_key_file_set_value (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "plugins", cli->plugins);
-	}
-	if (cli && cli->configure_and_quit)
-		g_key_file_set_boolean (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "configure-and-quit", TRUE);
 	if (cli && cli->connectivity_uri && cli->connectivity_uri[0])
 		g_key_file_set_string (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONNECTIVITY, "uri", cli->connectivity_uri);
 	if (cli && cli->connectivity_interval >= 0)
@@ -2172,7 +2018,6 @@ byx_config_reload (ByxConfig *self, ByxConfigChangeFlags reload_flags)
 	ByxConfigData *new_data = NULL;
 	char *config_main_file = NULL;
 	char *config_description = NULL;
-	gs_strfreev char **no_auto_default = NULL;
 	gboolean intern_config_needs_rewrite;
 
 	g_return_if_fail (BYX_IS_CONFIG (self));
@@ -2206,8 +2051,6 @@ byx_config_reload (ByxConfig *self, ByxConfigChangeFlags reload_flags)
 		return;
 	}
 
-	no_auto_default = no_auto_default_from_file (priv->no_auto_default_file);
-
 	keyfile_intern = intern_config_read (priv->intern_config_file,
 	                                     keyfile,
 	                                     (const char *const*) priv->atomic_section_prefixes,
@@ -2217,7 +2060,7 @@ byx_config_reload (ByxConfig *self, ByxConfigChangeFlags reload_flags)
 		                     (const char *const*) priv->atomic_section_prefixes, NULL);
 	}
 
-	new_data = byx_config_data_new (config_main_file, config_description, (const char *const*) no_auto_default, keyfile, keyfile_intern);
+	new_data = byx_config_data_new (config_main_file, config_description, keyfile, keyfile_intern);
 	g_free (config_main_file);
 	g_free (config_description);
 	g_key_file_unref (keyfile);
@@ -2243,7 +2086,6 @@ NM_UTILS_FLAGS2STR_DEFINE (byx_config_change_flags_to_string, ByxConfigChangeFla
 	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_VALUES_USER, "values-user"),
 	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_VALUES_INTERN, "values-intern"),
 	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_CONNECTIVITY, "connectivity"),
-	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_NO_AUTO_DEFAULT, "no-auto-default"),
 	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_DNS_MODE, "dns-mode"),
 	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_RC_MANAGER, "rc-manager"),
 	NM_UTILS_FLAGS2STR (BYX_CONFIG_CHANGE_GLOBAL_DNS_CONFIG, "global-dns-config"),
@@ -2366,7 +2208,6 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 	GKeyFile *keyfile, *keyfile_intern;
 	char *config_main_file = NULL;
 	char *config_description = NULL;
-	gs_strfreev char **no_auto_default = NULL;
 	gboolean intern_config_needs_rewrite;
 	const char *s;
 
@@ -2403,19 +2244,8 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 
 	/* Initialize read only private members */
 
-	if (priv->cli.no_auto_default_file)
-		priv->no_auto_default_file = g_strdup (priv->cli.no_auto_default_file);
-	else
-		priv->no_auto_default_file = g_strdup (DEFAULT_NO_AUTO_DEFAULT_FILE);
-
-	priv->monitor_connection_files = byx_config_keyfile_get_boolean (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "monitor-connection-files", FALSE);
-
 	priv->log_level = nm_strstrip (g_key_file_get_string (keyfile, BYX_CONFIG_KEYFILE_GROUP_LOGGING, "level", NULL));
 	priv->log_domains = nm_strstrip (g_key_file_get_string (keyfile, BYX_CONFIG_KEYFILE_GROUP_LOGGING, "domains", NULL));
-
-	priv->configure_and_quit = byx_config_keyfile_get_boolean (keyfile, BYX_CONFIG_KEYFILE_GROUP_MAIN, "configure-and-quit", FALSE);
-
-	no_auto_default = no_auto_default_from_file (priv->no_auto_default_file);
 
 	keyfile_intern = intern_config_read (priv->intern_config_file,
 	                                     keyfile,
@@ -2426,7 +2256,7 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 		                     (const char *const*) priv->atomic_section_prefixes, NULL);
 	}
 
-	priv->config_data_orig = byx_config_data_new (config_main_file, config_description, (const char *const*) no_auto_default, keyfile, keyfile_intern);
+	priv->config_data_orig = byx_config_data_new (config_main_file, config_description, keyfile, keyfile_intern);
 
 	priv->config_data = g_object_ref (priv->config_data_orig);
 
@@ -2465,7 +2295,6 @@ finalize (GObject *gobject)
 
 	g_free (priv->config_dir);
 	g_free (priv->system_config_dir);
-	g_free (priv->no_auto_default_file);
 	g_free (priv->intern_config_file);
 	g_free (priv->log_level);
 	g_free (priv->log_domains);

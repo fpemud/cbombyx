@@ -59,7 +59,6 @@
 #define CONFIG_ATOMIC_SECTION_PREFIXES ((char **) NULL)
 
 static GMainLoop *main_loop = NULL;
-static gboolean configure_and_quit = FALSE;
 
 static struct {
 	gboolean show_version;
@@ -152,14 +151,6 @@ nm_main_config_reload (int signal)
 	 * Hence, a ByxConfig singleton instance must always be
 	 * available. */
 	byx_config_reload (byx_config_get (), reload_flags);
-}
-
-static void
-manager_configure_quit (ByxManager *manager, gpointer user_data)
-{
-	byx_log_info (LOGD_CORE, "quitting now that startup is complete");
-	g_main_loop_quit (main_loop);
-	configure_and_quit = TRUE;
 }
 
 static int
@@ -387,8 +378,6 @@ main (int argc, char *argv[])
 	                       byx_manager_dbus_set_property_handle,
 	                       manager);
 
-	g_signal_connect (manager, BYX_MANAGER_CONFIGURE_QUIT, G_CALLBACK (manager_configure_quit), config);
-
 	if (!byx_manager_start (manager, &error)) {
 		byx_log_err (LOGD_CORE, "failed to initialize: %s", error->message);
 		goto done;
@@ -411,11 +400,9 @@ main (int argc, char *argv[])
 
 	success = TRUE;
 
-	if (configure_and_quit == FALSE) {
-		sd_id = nm_sd_event_attach_default ();
+	sd_id = nm_sd_event_attach_default ();
 
-		g_main_loop_run (main_loop);
-	}
+	g_main_loop_run (main_loop);
 
 done:
 	byx_manager_stop (manager);

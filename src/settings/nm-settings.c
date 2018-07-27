@@ -166,8 +166,7 @@ static void connection_ready_changed (NMSettingsConnection *conn,
 
 static void default_wired_clear_tag (NMSettings *self,
                                      NMDevice *device,
-                                     NMSettingsConnection *connection,
-                                     gboolean add_to_no_auto_default);
+                                     NMSettingsConnection *connection);
 
 /*****************************************************************************/
 
@@ -727,81 +726,6 @@ add_keyfile_plugin (NMSettings *self)
 		g_return_if_reached ();
 }
 
-static gboolean
-load_plugins (NMSettings *self, const char **plugins, GError **error)
-{
-	GSList *list = NULL;
-	const char **iter;
-	gboolean keyfile_added = FALSE;
-	gboolean success = TRUE;
-	gboolean add_ibft = FALSE;
-	gboolean has_no_ibft;
-	gssize idx_no_ibft, idx_ibft;
-
-	idx_ibft    = byx_utils_strv_find_first ((char **) plugins, -1, "ibft");
-	idx_no_ibft = byx_utils_strv_find_first ((char **) plugins, -1, "no-ibft");
-	has_no_ibft = idx_no_ibft >= 0 && idx_no_ibft > idx_ibft;
-
-	for (iter = plugins; iter && *iter; iter++) {
-		const char *pname = *iter;
-
-		if (!*pname || strchr (pname, '/')) {
-			_LOGW ("ignore invalid plugin \"%s\"", pname);
-			continue;
-		}
-
-		if (NM_IN_STRSET (pname, "ifcfg-suse", "ifnet")) {
-			_LOGW ("skipping deprecated plugin %s", pname);
-			continue;
-		}
-
-		if (!strcmp (pname, "no-ibft"))
-			continue;
-		if (has_no_ibft && !strcmp (pname, "ibft"))
-			continue;
-
-		/* keyfile plugin is built-in now */
-		if (strcmp (pname, "keyfile") == 0) {
-			if (!keyfile_added) {
-				add_keyfile_plugin (self);
-				keyfile_added = TRUE;
-			}
-			continue;
-		}
-
-		if (byx_utils_strv_find_first ((char **) plugins,
-		                              iter - plugins,
-		                              pname) >= 0) {
-			/* the plugin is already mentioned in the list previously.
-			 * Don't load a duplicate. */
-			continue;
-		}
-
-		success = load_plugin (self, &list, pname, error);
-		if (!success)
-			break;
-
-		if (add_ibft && !strcmp (pname, "ifcfg-rh")) {
-			/* The plugin ibft is not explicitly mentioned but we just enabled "ifcfg-rh".
-			 * Enable "ibft" by default after "ifcfg-rh". */
-			pname = "ibft";
-			add_ibft = FALSE;
-
-			success = load_plugin (self, &list, "ibft", error);
-			if (!success)
-				break;
-		}
-	}
-
-	/* If keyfile plugin was not among configured plugins, add it as the last one */
-	if (!keyfile_added)
-		add_keyfile_plugin (self);
-
-	g_slist_free_full (list, g_object_unref);
-
-	return success;
-}
-
 static void
 connection_updated (NMSettingsConnection *connection, gboolean by_user, gpointer user_data)
 {
@@ -829,7 +753,7 @@ connection_removed (NMSettingsConnection *connection, gpointer user_data)
 	 */
 	device = g_object_get_qdata (G_OBJECT (connection), _default_wired_device_quark ());
 	if (device)
-		default_wired_clear_tag (self, device, connection, TRUE);
+		default_wired_clear_tag (self, device, connection);
 
 	/* Disconnect signal handlers, as plugins might still keep references
 	 * to the connection (and thus the signal handlers would still be live)
@@ -1563,14 +1487,13 @@ default_wired_connection_updated_by_user_cb (NMSettingsConnection *connection, g
 	 */
 	device = g_object_get_qdata (G_OBJECT (connection), _default_wired_device_quark ());
 	if (device)
-		default_wired_clear_tag (self, device, connection, FALSE);
+		default_wired_clear_tag (self, device, connection);
 }
 
 static void
 default_wired_clear_tag (NMSettings *self,
                          NMDevice *device,
-                         NMSettingsConnection *connection,
-                         gboolean add_to_no_auto_default)
+                         NMSettingsConnection *connection)
 {
 	g_return_if_fail (NM_IS_SETTINGS (self));
 	g_return_if_fail (NM_IS_DEVICE (device));
@@ -1582,9 +1505,6 @@ default_wired_clear_tag (NMSettings *self,
 	g_object_set_qdata (G_OBJECT (device), _default_wired_connection_quark (), NULL);
 
 	g_signal_handlers_disconnect_by_func (connection, G_CALLBACK (default_wired_connection_updated_by_user_cb), self);
-
-	if (add_to_no_auto_default)
-		byx_config_set_no_auto_default_for_device (NM_SETTINGS_GET_PRIVATE (self)->config, device);
 }
 
 static void
@@ -1661,7 +1581,7 @@ nm_settings_device_removed (NMSettings *self, NMDevice *device, gboolean quittin
 
 	connection = g_object_get_qdata (G_OBJECT (device), _default_wired_connection_quark ());
 	if (connection) {
-		default_wired_clear_tag (self, device, connection, FALSE);
+		default_wired_clear_tag (self, device, connection);
 
 		/* Don't delete the default wired connection on shutdown, so that it
 		 * remains up and can be assumed if NM starts again.
@@ -1690,12 +1610,6 @@ nm_settings_start (NMSettings *self, GError **error)
 	gs_strfreev char **plugins = NULL;
 
 	priv = NM_SETTINGS_GET_PRIVATE (self);
-
-	/* Load the plugins; fail if a plugin is not found. */
-	plugins = byx_config_data_get_plugins (byx_config_get_data_orig (priv->config), TRUE);
-
-	if (!load_plugins (self, (const char **) plugins, error))
-		return FALSE;
 
 	load_connections (self);
 	check_startup_complete (self);
