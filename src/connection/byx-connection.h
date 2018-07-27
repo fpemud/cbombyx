@@ -320,8 +320,6 @@ const char *    byx_connection_get_permanent_hw_address_full (ByxConnection *sel
                                                          gboolean *out_is_fake);
 const char *    byx_connection_get_initial_hw_address (ByxConnection *dev);
 
-NMProxyConfig * byx_connection_get_proxy_config      (ByxConnection *dev);
-
 NMDhcp4Config * byx_connection_get_dhcp4_config      (ByxConnection *dev);
 NMDhcp6Config * byx_connection_get_dhcp6_config      (ByxConnection *dev);
 NMIP4Config *   byx_connection_get_ip4_config        (ByxConnection *dev);

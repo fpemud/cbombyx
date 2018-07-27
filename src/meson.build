@@ -103,7 +103,6 @@ sources = files(
   'nm-hostname-manager.c',
   'nm-manager.c',
   'nm-netns.c',
-  'nm-pacrunner-manager.c',
   'nm-policy.c',
   'nm-proxy-config.c',
   'nm-rfkill-manager.c',

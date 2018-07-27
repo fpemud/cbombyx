@@ -58,7 +58,6 @@
 #include "nm-proxy-config.h"
 #include "nm-ip4-config.h"
 #include "nm-ip6-config.h"
-#include "nm-pacrunner-manager.h"
 #include "dnsmasq/nm-dnsmasq-manager.h"
 #include "nm-dhcp4-config.h"
 #include "nm-dhcp6-config.h"
@@ -388,11 +387,6 @@ typedef struct _ByxConnectionPrivate {
 
 	char *          current_stable_id;
 
-	/* Proxy Configuration */
-	NMProxyConfig *proxy_config;
-	NMPacrunnerManager *pacrunner_manager;
-	NMPacrunnerCallId *pacrunner_call_id;
-
 	/* IP configuration info. Combined config from VPN, settings, and device */
 	union {
 		struct {
@@ -575,8 +569,6 @@ G_DEFINE_ABSTRACT_TYPE (ByxConnection, nm_device, NM_TYPE_DBUS_OBJECT)
 
 static const ByxDBusInterfaceInfoExtended interface_info_device;
 static const GDBusSignalInfo signal_info_state_changed;
-
-static void byx_connection_set_proxy_config (ByxConnection *self, const char *pac_url);
 
 static gboolean update_ext_ip_config (ByxConnection *self, int addr_family, gboolean intersect_configs);
 
@@ -6958,10 +6950,6 @@ dhcp4_state_changed (NMDhcpClient *client,
 		if (priv->ip4_state == IP_FAIL)
 			_set_ip_state (self, AF_INET, IP_CONF);
 
-		g_free (priv->dhcp4.pac_url);
-		priv->dhcp4.pac_url = g_strdup (g_hash_table_lookup (options, "wpad"));
-		byx_connection_set_proxy_config (self, priv->dhcp4.pac_url);
-
 		nm_dhcp4_config_set_options (priv->dhcp4.config, options);
 		_notify (self, PROP_DHCP4_CONFIG);
 
@@ -9409,9 +9397,6 @@ activate_stage3_ip_config_start (ByxConnection *self)
 	    && !byx_connection_activate_stage3_ip6_start (self))
 		return;
 
-	/* Proxy */
-	byx_connection_set_proxy_config (self, NULL);
-
 	check_ip_state (self, TRUE, TRUE);
 }
 
@@ -10417,35 +10402,6 @@ byx_connection_reactivate_ip6_config (ByxConnection *self,
 	}
 }
 
-static void
-_pacrunner_manager_send (ByxConnection *self)
-{
-	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
-
-	nm_pacrunner_manager_remove_clear (priv->pacrunner_manager,
-	                                   &priv->pacrunner_call_id);
-
-	if (!priv->pacrunner_manager)
-		priv->pacrunner_manager = g_object_ref (nm_pacrunner_manager_get ());
-
-	priv->pacrunner_call_id = nm_pacrunner_manager_send (priv->pacrunner_manager,
-	                                                     byx_connection_get_ip_iface (self),
-	                                                     priv->proxy_config,
-	                                                     NULL,
-	                                                     NULL);
-}
-
-static void
-reactivate_proxy_config (ByxConnection *self)
-{
-	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
-
-	if (!priv->pacrunner_call_id)
-		return;
-	byx_connection_set_proxy_config (self, priv->dhcp4.pac_url);
-	_pacrunner_manager_send (self);
-}
-
 static gboolean
 can_reapply_change (ByxConnection *self, const char *setting_name,
                     NMSetting *s_old, NMSetting *s_new,
@@ -10658,8 +10614,6 @@ check_and_reapply_connection (ByxConnection *self,
 
 	byx_connection_reactivate_ip4_config (self, s_ip4_old, s_ip4_new);
 	byx_connection_reactivate_ip6_config (self, s_ip6_old, s_ip6_new);
-
-	reactivate_proxy_config (self);
 
 	return TRUE;
 }
@@ -11314,43 +11268,6 @@ byx_connection_is_activating (ByxConnection *self)
 	 * we're activating anyway.
 	 */
 	return priv->act_handle4.id ? TRUE : FALSE;
-}
-
-NMProxyConfig *
-byx_connection_get_proxy_config (ByxConnection *self)
-{
-	g_return_val_if_fail (BYX_IS_CONNECTION (self), NULL);
-
-	return BYX_CONNECTION_GET_PRIVATE (self)->proxy_config;
-}
-
-static void
-byx_connection_set_proxy_config (ByxConnection *self, const char *pac_url)
-{
-	ByxConnectionPrivate *priv;
-	NMConnection *connection;
-	NMSettingProxy *s_proxy = NULL;
-
-	g_return_if_fail (BYX_IS_CONNECTION (self));
-
-	priv = BYX_CONNECTION_GET_PRIVATE (self);
-
-	g_clear_object (&priv->proxy_config);
-	priv->proxy_config = nm_proxy_config_new ();
-
-	if (pac_url) {
-		nm_proxy_config_set_method (priv->proxy_config, NM_PROXY_CONFIG_METHOD_AUTO);
-		nm_proxy_config_set_pac_url (priv->proxy_config, pac_url);
-		_LOGD (LOGD_PROXY, "proxy: PAC url \"%s\"", pac_url);
-	} else
-		nm_proxy_config_set_method (priv->proxy_config, NM_PROXY_CONFIG_METHOD_NONE);
-
-	connection = byx_connection_get_applied_connection (self);
-	if (connection)
-		s_proxy = nm_connection_get_setting_proxy (connection);
-
-	if (s_proxy)
-		nm_proxy_config_merge_setting (priv->proxy_config, s_proxy);
 }
 
 /* IP Configuration stuff */
@@ -13551,7 +13468,6 @@ _cleanup_generic_post (ByxConnection *self, CleanupType cleanup_type)
 	 */
 	byx_connection_set_ip_config (self, AF_INET, NULL, TRUE, NULL);
 	byx_connection_set_ip_config (self, AF_INET6, NULL, TRUE, NULL);
-	g_clear_object (&priv->proxy_config);
 	g_clear_object (&priv->con_ip_config_4);
 	applied_config_clear (&priv->dev_ip4_config);
 	applied_config_clear (&priv->wwan_ip_config_4);
@@ -14206,9 +14122,6 @@ _set_state_full (ByxConnection *self,
 				deactivate_dispatcher_complete (0, self);
 			}
 		}
-
-		nm_pacrunner_manager_remove_clear (priv->pacrunner_manager,
-		                                   &priv->pacrunner_call_id);
 		break;
 	case BYX_CONNECTION_STATE_DISCONNECTED:
 		if (   priv->queued_act_request
@@ -14226,9 +14139,6 @@ _set_state_full (ByxConnection *self,
 		                           self,
 		                           req,
 		                           NULL, NULL, NULL);
-
-		if (priv->proxy_config)
-			_pacrunner_manager_send (self);
 		break;
 	case BYX_CONNECTION_STATE_FAILED:
 		/* Usually upon failure the activation chain is interrupted in
@@ -15170,10 +15080,6 @@ dispose (GObject *object)
 	nm_clear_g_signal_handler (byx_config_get (), &priv->config_changed_id);
 
 	dispatcher_cleanup (self);
-
-	nm_pacrunner_manager_remove_clear (priv->pacrunner_manager,
-	                                   &priv->pacrunner_call_id);
-	g_clear_object (&priv->pacrunner_manager);
 
 	_cleanup_generic_pre (self, CLEANUP_TYPE_KEEP);
 

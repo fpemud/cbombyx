@@ -26,3 +26,7 @@ is_valid_hostname (const char *hostname)
 }
 
 
+		g_free (priv->dhcp4.pac_url);
+		priv->dhcp4.pac_url = g_strdup (g_hash_table_lookup (options, "wpad"));
+
+
