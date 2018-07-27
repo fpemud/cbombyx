@@ -10,12 +10,6 @@
 /* has getrandom */
 #mesondefine HAVE_GETRANDOM
 
-/* Define to 1 if libsystemd is available */
-#mesondefine HAVE_LIBSYSTEMD
-
-/* Define if you have SELinux support */
-#mesondefine HAVE_SELINUX
-
 /* Define if systemd support is available */
 #mesondefine HAVE_SYSTEMD
 
@@ -45,15 +39,6 @@
 
 /* Define to the full name and version of this package. */
 #mesondefine PACKAGE_STRING
-
-/* The size of `dev_t', as computed by sizeof. */
-#mesondefine SIZEOF_DEV_T
-
-/* The size of `time_t', as computed by sizeof. */
-#mesondefine SIZEOF_TIME_T
-
-/* The size of `pid_t', as computed by sizeof. */
-#mesondefine SIZEOF_PID_T
 
 /* Define to 1 to use elogind suspend api */
 #mesondefine SUSPEND_RESUME_ELOGIND

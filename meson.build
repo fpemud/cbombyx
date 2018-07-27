@@ -18,27 +18,27 @@ byx_micro_version = nm_version.split('.')[2].to_int()
 byx_gir_version = '1.0'
 
 byx_prefix = get_option('prefix')
-nm_bindir = join_paths(byx_prefix, get_option('bindir'))
-nm_datadir = join_paths(byx_prefix, get_option('datadir'))
-nm_includedir = join_paths(byx_prefix, get_option('includedir'))
-nm_libdir = join_paths(byx_prefix, get_option('libdir'))
-nm_libexecdir = join_paths(byx_prefix, get_option('libexecdir'))
-nm_localedir = join_paths(byx_prefix, get_option('localedir'))
-nm_localstatedir = join_paths(byx_prefix, get_option('localstatedir'))
-nm_mandir = join_paths(byx_prefix, get_option('mandir'))
-nm_runstatedir = join_paths(nm_localstatedir, 'run')
-nm_sbindir = join_paths(byx_prefix, get_option('sbindir'))
-nm_sysconfdir = join_paths(byx_prefix, get_option('sysconfdir'))
+byx_bindir = join_paths(byx_prefix, get_option('bindir'))
+byx_datadir = join_paths(byx_prefix, get_option('datadir'))
+byx_includedir = join_paths(byx_prefix, get_option('includedir'))
+byx_libdir = join_paths(byx_prefix, get_option('libdir'))
+byx_libexecdir = join_paths(byx_prefix, get_option('libexecdir'))
+byx_localedir = join_paths(byx_prefix, get_option('localedir'))
+byx_localstatedir = join_paths(byx_prefix, get_option('localstatedir'))
+byx_mandir = join_paths(byx_prefix, get_option('mandir'))
+byx_runstatedir = join_paths(byx_localstatedir, 'run')
+byx_sbindir = join_paths(byx_prefix, get_option('sbindir'))
+byx_sysconfdir = join_paths(byx_prefix, get_option('sysconfdir'))
 
-nm_pkgsbindir = join_paths(nm_sbindir, nm_name)
-nm_pkgconfdir = join_paths(nm_sysconfdir, nm_name)
-nm_pkgdatadir = join_paths(nm_datadir, nm_name)
-nm_pkgincludedir = join_paths(nm_includedir, nm_name)
+nm_pkgsbindir = join_paths(byx_sbindir, nm_name)
+nm_pkgconfdir = join_paths(byx_sysconfdir, nm_name)
+nm_pkgdatadir = join_paths(byx_datadir, nm_name)
+nm_pkgincludedir = join_paths(byx_includedir, nm_name)
 nm_pkglibdir = join_paths(byx_prefix, 'lib', nm_name)
-nm_pkgrundir = join_paths(nm_runstatedir, nm_name)
-nm_pkgstatedir = join_paths(nm_localstatedir, nm_name)
-nm_vpndir = join_paths(nm_libdir, nm_name)
-nm_plugindir = join_paths(nm_libdir, nm_name, nm_version)
+nm_pkgrundir = join_paths(byx_runstatedir, nm_name)
+nm_pkgstatedir = join_paths(byx_localstatedir, nm_name)
+nm_vpndir = join_paths(byx_libdir, nm_name)
+nm_plugindir = join_paths(byx_libdir, nm_name, nm_version)
 
 nm_build_cflags = [
   '-DNM_BUILD_SRCDIR="@0@"'.format(meson.source_root()),
@@ -123,10 +123,8 @@ dbus_dep = dependency('dbus-1', version: '>= 1.1')
 libndp_dep = dependency('libndp')
 
 libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
-config_h.set10('HAVE_LIBSYSTEMD', libsystemd_dep.found())
 
 systemd_dep = dependency('systemd', required: false)
-have_systemd_200 = systemd_dep.found() and systemd_dep.version().version_compare('>= 200')
 
 gio_unix_dep = dependency('gio-unix-2.0', version: '>= 2.40')
 
@@ -230,12 +228,6 @@ dbus_ifaces_dir = get_option('dbus_ifaces_dir')
 if dbus_ifaces_dir == ''
   assert(dbus_dep.found(), 'D-Bus required but not found, please provide a valid interfaces dir')
   dbus_ifaces_dir = dbus_dep.get_pkgconfig_variable('interfaces_dir')
-endif
-
-dbus_sys_dir = get_option('dbus_sys_dir')
-if dbus_sys_dir == ''
-  assert(dbus_dep.found(), 'D-Bus required but not found, please provide a valid system bus services dir')
-  dbus_sys_dir = dbus_dep.get_pkgconfig_variable('system_bus_services_dir')
 endif
 
 config_dns_rc_manager_default = get_option('config_dns_rc_manager_default')
@@ -435,13 +427,13 @@ configure_file(
 
 meson.add_install_script(
   'meson_post_install.py',
-  nm_datadir,
-  nm_bindir,
+  byx_datadir,
+  byx_bindir,
   nm_pkgconfdir,
   nm_pkglibdir,
-  nm_localstatedir,
+  byx_localstatedir,
   enable_docs ? 'install_docs' : '',
-  nm_mandir
+  byx_mandir
 )
 
 output = '\nSystem paths:\n'
@@ -468,8 +460,6 @@ output += '\n'
 output += '\nMiscellaneous:\n'
 output += '  have introspection: ' + enable_introspection.to_string() + '\n'
 output += '  build documentation and manpages: ' + enable_docs.to_string() + '\n'
-# FIXME
-#output += '  install pregenerated documentation and manpages: no
 output += '  tests: ' + tests + '\n'
 output += '  more-asserts: @0@\n'.format(more_asserts)
 output += '  more-logging: ' + more_logging.to_string() + '\n'

@@ -1951,22 +1951,6 @@ connection_removed (NMSettings *settings,
 }
 
 static void
-connection_flags_changed (NMSettings *settings,
-                          NMSettingsConnection *connection,
-                          gpointer user_data)
-{
-	NMPolicyPrivate *priv = user_data;
-	NMPolicy *self = _PRIV_TO_SELF (priv);
-
-	if (NM_FLAGS_HAS (nm_settings_connection_get_flags (connection),
-	                  NM_SETTINGS_CONNECTION_INT_FLAGS_VISIBLE)) {
-		if (!nm_settings_connection_autoconnect_is_blocked (connection))
-			schedule_activate_all (self);
-	} else
-		_deactivate_if_active (self, connection);
-}
-
-static void
 secret_agent_registered (NMSettings *settings,
                          NMSecretAgent *agent,
                          gpointer user_data)
@@ -2102,7 +2086,6 @@ constructed (GObject *object)
 	g_signal_connect (priv->settings, NM_SETTINGS_SIGNAL_CONNECTION_ADDED,         (GCallback) connection_added, priv);
 	g_signal_connect (priv->settings, NM_SETTINGS_SIGNAL_CONNECTION_UPDATED,       (GCallback) connection_updated, priv);
 	g_signal_connect (priv->settings, NM_SETTINGS_SIGNAL_CONNECTION_REMOVED,       (GCallback) connection_removed, priv);
-	g_signal_connect (priv->settings, NM_SETTINGS_SIGNAL_CONNECTION_FLAGS_CHANGED, (GCallback) connection_flags_changed, priv);
 
 	g_signal_connect (priv->agent_mgr, NM_AGENT_MANAGER_AGENT_REGISTERED, G_CALLBACK (secret_agent_registered), self);
 

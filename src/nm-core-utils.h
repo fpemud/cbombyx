@@ -217,7 +217,6 @@ gboolean byx_utils_connection_has_default_route (NMConnection *connection,
                                                 gboolean *out_is_never_default);
 
 char *byx_utils_new_vlan_name (const char *parent_iface, guint32 vlan_id);
-const char *byx_utils_new_infiniband_name (char *name, const char *parent_name, int p_key);
 
 int byx_utils_cmp_connection_by_autoconnect_priority (NMConnection *a, NMConnection *b);
 

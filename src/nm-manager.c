@@ -195,9 +195,6 @@ typedef struct {
 	bool net_enabled:1;
 
 	unsigned connectivity_check_enabled_last:2;
-
-	guint delete_volatile_connection_idle_id;
-	CList delete_volatile_connection_lst_head;
 } ByxManagerPrivate;
 
 struct _ByxManager {
@@ -1073,23 +1070,23 @@ _config_changed_cb (NMConfig *config, NMConfigData *config_data, NMConfigChangeF
 }
 
 static void
-_reload_auth_cb (NMAuthChain *chain,
-                 GError *error,
-                 GDBusMethodInvocation *context,
-                 gpointer user_data)
+impl_manager_reload (ByxDBusObject *obj,
+                     const ByxDBusInterfaceInfoExtended *interface_info,
+                     const NMDBusMethodInfoExtended *method_info,
+                     GDBusConnection *connection,
+                     const char *sender,
+                     GDBusMethodInvocation *invocation,
+                     GVariant *parameters)
 {
-	ByxManager *self = BYX_MANAGER (user_data);
+	ByxManager *self = BYX_MANAGER (obj);
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	GError *ret_error = NULL;
-	NMAuthCallResult result;
+	NMAuthChain *chain;
 	guint32 flags;
-	char s_buf[60];
 	NMConfigChangeFlags reload_type = NM_CONFIG_CHANGE_NONE;
+	GError *ret_error = NULL;
+	char s_buf[60];
 
-	g_assert (context);
-
-	priv->auth_chains = g_slist_remove (priv->auth_chains, chain);
-	flags = GPOINTER_TO_UINT (nm_auth_chain_get_data (chain, "flags"));
+	g_variant_get (parameters, "(u)", &flags);
 
 	if (NM_FLAGS_ANY (flags, ~BYX_MANAGER_RELOAD_FLAGS_ALL)) {
 		/* invalid flags */
@@ -1106,8 +1103,8 @@ _reload_auth_cb (NMAuthChain *chain,
 
 	if (reload_type == NM_CONFIG_CHANGE_NONE) {
 		ret_error = g_error_new_literal (BYX_MANAGER_ERROR,
-											BYX_MANAGER_ERROR_INVALID_ARGUMENTS,
-											"Invalid flags for reload");
+										 BYX_MANAGER_ERROR_INVALID_ARGUMENTS,
+										 "Invalid flags for reload");
 	}
 
 #if 0
@@ -1118,45 +1115,15 @@ _reload_auth_cb (NMAuthChain *chain,
 #endif
 
 	if (ret_error) {
-		g_dbus_method_invocation_take_error (context, ret_error);
-		goto out;
+		g_dbus_method_invocation_take_error (invocation, ret_error);
+		return
 	}
 
 	nm_config_reload (priv->config, reload_type);
-	g_dbus_method_invocation_return_value (context, NULL);
+	g_dbus_method_invocation_return_value (invocation, NULL);
 
 out:
 	nm_auth_chain_destroy (chain);
-}
-
-static void
-impl_manager_reload (ByxDBusObject *obj,
-                     const ByxDBusInterfaceInfoExtended *interface_info,
-                     const NMDBusMethodInfoExtended *method_info,
-                     GDBusConnection *connection,
-                     const char *sender,
-                     GDBusMethodInvocation *invocation,
-                     GVariant *parameters)
-{
-	ByxManager *self = BYX_MANAGER (obj);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMAuthChain *chain;
-	guint32 flags;
-
-	g_variant_get (parameters, "(u)", &flags);
-
-	chain = nm_auth_chain_new_context (invocation, _reload_auth_cb, self);
-	if (!chain) {
-		g_dbus_method_invocation_return_error_literal (invocation,
-		                                               BYX_MANAGER_ERROR,
-		                                               BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                               "Unable to authenticate request");
-		return;
-	}
-
-	priv->auth_chains = g_slist_append (priv->auth_chains, chain);
-	nm_auth_chain_set_data (chain, "flags", GUINT_TO_POINTER (flags), NULL);
-	nm_auth_chain_add_call (chain, NM_AUTH_PERMISSION_RELOAD, TRUE);
 }
 
 /*****************************************************************************/
@@ -1999,77 +1966,9 @@ connection_added_cb (NMSettings *settings,
 static void
 connection_updated_cb (NMSettings *settings,
                        NMConnection *connection,
-                       gboolean by_user,
                        ByxManager *self)
 {
-	if (by_user)
-		connection_changed (self, connection);
-}
-
-/*****************************************************************************/
-
-typedef struct {
-	CList delete_volatile_connection_lst;
-	NMSettingsConnection *connection;
-} DeleteVolatileConnectionData;
-
-static void
-_delete_volatile_connection_all (ByxManager *self, gboolean do_delete)
-{
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	CList *lst;
-	DeleteVolatileConnectionData *data;
-
-	while ((lst = c_list_first (&priv->delete_volatile_connection_lst_head))) {
-		gs_unref_object NMSettingsConnection *connection = NULL;
-
-		data = c_list_entry (lst,
-		                     DeleteVolatileConnectionData,
-		                     delete_volatile_connection_lst);
-		connection = data->connection;
-		c_list_unlink_stale (&data->delete_volatile_connection_lst);
-		g_slice_free (DeleteVolatileConnectionData, data);
-
-		if (do_delete)
-			_delete_volatile_connection_do (self, connection);
-	}
-}
-
-static gboolean
-_delete_volatile_connection_cb (gpointer user_data)
-{
-	ByxManager *self = user_data;
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-
-	priv->delete_volatile_connection_idle_id = 0;
-	_delete_volatile_connection_all (self, TRUE);
-	return G_SOURCE_REMOVE;
-}
-
-static void
-connection_flags_changed (NMSettings *settings,
-                          NMSettingsConnection *connection,
-                          gpointer user_data)
-{
-	ByxManager *self = user_data;
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	DeleteVolatileConnectionData *data;
-
-	if (!NM_FLAGS_HAS (nm_settings_connection_get_flags (connection),
-	                   NM_SETTINGS_CONNECTION_INT_FLAGS_VOLATILE))
-		return;
-
-	if (active_connection_find (self, connection, NULL, NM_ACTIVE_CONNECTION_STATE_DEACTIVATED, NULL)) {
-		/* the connection still has an active-connection. It will be purged
-		 * when the active connection(s) get(s) removed. */
-		return;
-	}
-
-	data = g_slice_new (DeleteVolatileConnectionData);
-	data->connection = g_object_ref (connection);
-	c_list_link_tail (&priv->delete_volatile_connection_lst_head, &data->delete_volatile_connection_lst);
-	if (!priv->delete_volatile_connection_idle_id)
-		priv->delete_volatile_connection_idle_id = g_idle_add (_delete_volatile_connection_cb, self);
+	connection_changed (self, connection);
 }
 
 /*****************************************************************************/
@@ -2503,10 +2402,6 @@ get_existing_connection (ByxManager *self,
 		return NULL;
 	}
 
-	nm_settings_connection_set_flags (NM_SETTINGS_CONNECTION (added),
-	                                  NM_SETTINGS_CONNECTION_INT_FLAGS_NM_GENERATED |
-	                                  NM_SETTINGS_CONNECTION_INT_FLAGS_VOLATILE,
-	                                  TRUE);
 	NM_SET_OUT (out_generated, TRUE);
 	return added;
 }
@@ -6311,7 +6206,6 @@ constructed (GObject *object)
 	                  G_CALLBACK (connection_added_cb), self);
 	g_signal_connect (priv->settings, NM_SETTINGS_SIGNAL_CONNECTION_UPDATED,
 	                  G_CALLBACK (connection_updated_cb), self);
-	g_signal_connect (priv->settings, NM_SETTINGS_SIGNAL_CONNECTION_FLAGS_CHANGED, G_CALLBACK (connection_flags_changed), self);
 
 	/*
 	 * Do not delete existing virtual devices to keep connectivity up.
@@ -6368,7 +6262,6 @@ byx_manager_init (ByxManager *self)
 	c_list_init (&priv->devices_lst_head);
 	c_list_init (&priv->active_connections_lst_head);
 	c_list_init (&priv->async_op_lst_head);
-	c_list_init (&priv->delete_volatile_connection_lst_head);
 
 	priv->platform = g_object_ref (NM_PLATFORM_GET);
 
@@ -6648,7 +6541,6 @@ dispose (GObject *object)
 		g_signal_handlers_disconnect_by_func (priv->settings, system_unmanaged_devices_changed_cb, self);
 		g_signal_handlers_disconnect_by_func (priv->settings, connection_added_cb, self);
 		g_signal_handlers_disconnect_by_func (priv->settings, connection_updated_cb, self);
-		g_signal_handlers_disconnect_by_func (priv->settings, connection_flags_changed, self);
 		g_clear_object (&priv->settings);
 	}
 
@@ -6666,11 +6558,6 @@ dispose (GObject *object)
 		g_signal_handlers_disconnect_by_func (priv->rfkill_mgr, rfkill_manager_rfkill_changed_cb, self);
 		g_clear_object (&priv->rfkill_mgr);
 	}
-
-	nm_clear_g_source (&priv->delete_volatile_connection_idle_id);
-	_delete_volatile_connection_all (self, FALSE);
-	nm_assert (!priv->delete_volatile_connection_idle_id);
-	nm_assert (c_list_is_empty (&priv->delete_volatile_connection_lst_head));
 
 	byx_device_factory_manager_for_each_factory (_deinit_device_factory, self);
 

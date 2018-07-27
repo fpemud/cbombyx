@@ -17,16 +17,16 @@ nm_dep = declare_dependency(
 
 cflags = nm_cflags + [
   '-DPREFIX="@0@"'.format(byx_prefix),
-  '-DBINDIR="@0@"'.format(nm_bindir),
-  '-DDATADIR="@0@"'.format(nm_datadir),
-  '-DLIBEXECDIR="@0@"'.format(nm_libexecdir),
-  '-DLOCALSTATEDIR="@0@"'.format(nm_localstatedir),
-  '-DRUNSTATEDIR="@0@"'.format(nm_runstatedir),
-  '-DSBINDIR="@0@"'.format(nm_sbindir),
-  '-DSYSCONFDIR="@0@"'.format(nm_sysconfdir),
+  '-DBINDIR="@0@"'.format(byx_bindir),
+  '-DDATADIR="@0@"'.format(byx_datadir),
+  '-DLIBEXECDIR="@0@"'.format(byx_libexecdir),
+  '-DLOCALSTATEDIR="@0@"'.format(byx_localstatedir),
+  '-DRUNSTATEDIR="@0@"'.format(byx_runstatedir),
+  '-DSBINDIR="@0@"'.format(byx_sbindir),
+  '-DSYSCONFDIR="@0@"'.format(byx_sysconfdir),
   '-DRUNDIR="@0@"'.format(nm_pkgrundir),
   '-DNMCONFDIR="@0@"'.format(nm_pkgconfdir),
-  '-DNMLOCALEDIR="@0@"'.format(nm_localedir),
+  '-DNMLOCALEDIR="@0@"'.format(byx_localedir),
   '-DNMPLUGINDIR="@0@"'.format(nm_plugindir),
   '-DNMRUNDIR="@0@"'.format(nm_pkgrundir),
   '-DNMSTATEDIR="@0@"'.format(nm_pkgstatedir),
@@ -176,5 +176,5 @@ network_manager = executable(
   link_with: libnetwork_manager,
   link_args: ldflags,
   install: true,
-  install_dir: nm_sbindir
+  install_dir: byx_sbindir
 )

@@ -61,7 +61,6 @@ NM_GOBJECT_PROPERTIES_DEFINE (NMSettingsConnection,
 enum {
 	REMOVED,
 	UPDATED_INTERNAL,
-	FLAGS_CHANGED,
 	LAST_SIGNAL
 };
 
@@ -2245,8 +2244,6 @@ nm_settings_connection_set_flags_full (NMSettingsConnection *self,
 		_notify (self, PROP_FLAGS);
 		if (notify_unsaved)
 			g_object_thaw_notify (G_OBJECT (self));
-
-		g_signal_emit (self, signals[FLAGS_CHANGED], 0);
 	}
 	return old_flags;
 }
@@ -3129,14 +3126,6 @@ nm_settings_connection_class_init (NMSettingsConnectionClass *klass)
 	                  G_SIGNAL_RUN_FIRST,
 	                  0,
 	                  NULL, NULL,
-	                  g_cclosure_marshal_VOID__VOID,
-	                  G_TYPE_NONE, 0);
-
-	signals[FLAGS_CHANGED] =
-	    g_signal_new (NM_SETTINGS_CONNECTION_FLAGS_CHANGED,
-	                  G_TYPE_FROM_CLASS (klass),
-	                  G_SIGNAL_RUN_FIRST,
-	                  0, NULL, NULL,
 	                  g_cclosure_marshal_VOID__VOID,
 	                  G_TYPE_NONE, 0);
 }
