@@ -100,3 +100,17 @@ Bombyx should reload connection files via ReloadConnections dbus call.
 Automatic reloading is supported but is not advised NetworkManager because race conditions.
 
 
+
+
+how do bombyx support proxy?
+1. bombyx gets pac-url from dhcp when retrive ip addresss.
+2. bombyx get pac file from pac-url
+3. bombyx publish proxy dbus api
+4. libproxy call this api with the target url to get proxy info
+
+bombyx should re-get pac-url when pac-url changes, re-get pac file when pac file changes. how to do it?
+bombyx should merge all the pac file from different interface. how to do that?
+service can provide pac file to bombyx, which has a higher priority than pac file from dhcp.
+bombyx should merge all the pac file from different service. how to do that?
+user can provide proxy info, which has a higher priority than pac file from service.
+
