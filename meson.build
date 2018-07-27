@@ -123,7 +123,6 @@ dbus_dep = dependency('dbus-1', version: '>= 1.1')
 libndp_dep = dependency('libndp')
 
 libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
-
 systemd_dep = dependency('systemd', required: false)
 
 gio_unix_dep = dependency('gio-unix-2.0', version: '>= 2.40')
