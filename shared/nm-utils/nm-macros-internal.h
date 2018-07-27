@@ -1145,7 +1145,7 @@ nm_strcmp_p (gconstpointer a, gconstpointer b)
 static inline guint
 nm_encode_version (guint major, guint minor, guint micro)
 {
-	/* analog to the preprocessor macro NM_ENCODE_VERSION(). */
+	/* analog to the preprocessor macro BYX_ENCODE_VERSION(). */
 	return (major << 16) | (minor << 8) | micro;
 }
 

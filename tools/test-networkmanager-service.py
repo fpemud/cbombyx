@@ -1222,7 +1222,7 @@ PRP_NM_PRIMARY_CONNECTION        = 'PrimaryConnection'
 PRP_NM_ACTIVATING_CONNECTION     = 'ActivatingConnection'
 PRP_NM_STARTUP                   = 'Startup'
 PRP_NM_STATE                     = 'State'
-PRP_NM_VERSION                   = 'Version'
+PRP_BYX_VERSION                   = 'Version'
 PRP_NM_CONNECTIVITY              = 'Connectivity'
 
 class NetworkManager(ExportedObj):
@@ -1246,7 +1246,7 @@ class NetworkManager(ExportedObj):
             PRP_NM_ACTIVATING_CONNECTION:     ExportedObj.to_path(None),
             PRP_NM_STARTUP:                   False,
             PRP_NM_STATE:                     dbus.UInt32(NM.State.DISCONNECTED),
-            PRP_NM_VERSION:                   "0.9.9.0",
+            PRP_BYX_VERSION:                   "0.9.9.0",
             PRP_NM_CONNECTIVITY:              dbus.UInt32(NM.ConnectivityState.NONE),
         }
 

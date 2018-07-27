@@ -553,7 +553,7 @@ nm_config_create_keyfile ()
 
 /* this is an external variable, to make loading testable. Other then that,
  * no code is supposed to change this. */
-guint _nm_config_match_nm_version = NM_VERSION;
+guint _nm_config_match_nm_version = BYX_VERSION;
 char *_nm_config_match_env = NULL;
 
 static gboolean

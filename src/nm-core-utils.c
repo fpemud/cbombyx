@@ -1087,9 +1087,9 @@ byx_utils_read_link_absolute (const char *link_file, GError **error)
 #define DRIVER_TAG "driver:"
 #define SUBCHAN_TAG "s390-subchannels:"
 #define EXCEPT_TAG "except:"
-#define MATCH_TAG_CONFIG_NM_VERSION             "nm-version:"
-#define MATCH_TAG_CONFIG_NM_VERSION_MIN         "nm-version-min:"
-#define MATCH_TAG_CONFIG_NM_VERSION_MAX         "nm-version-max:"
+#define MATCH_TAG_CONFIG_BYX_VERSION             "nm-version:"
+#define MATCH_TAG_CONFIG_BYX_VERSION_MIN         "nm-version-min:"
+#define MATCH_TAG_CONFIG_BYX_VERSION_MAX         "nm-version-max:"
 #define MATCH_TAG_CONFIG_ENV                    "env:"
 
 typedef struct {
@@ -1436,10 +1436,10 @@ match_config_eval (const char *str, const char *tag, guint cur_nm_version)
 
 #define CHECK_AND_RETURN_FALSE(cur, val, tag, is_last_digit) \
 	G_STMT_START { \
-		if (!strcmp (tag, MATCH_TAG_CONFIG_NM_VERSION_MIN)) { \
+		if (!strcmp (tag, MATCH_TAG_CONFIG_BYX_VERSION_MIN)) { \
 			if (cur < val) \
 				return FALSE; \
-		} else if (!strcmp (tag, MATCH_TAG_CONFIG_NM_VERSION_MAX)) { \
+		} else if (!strcmp (tag, MATCH_TAG_CONFIG_BYX_VERSION_MAX)) { \
 			if (cur > val) \
 				return FALSE; \
 		} else { \
@@ -1478,12 +1478,12 @@ nm_match_spec_config (const GSList *specs, guint cur_nm_version, const char *env
 
 		spec_str = match_except (spec_str, &except);
 
-		if (_MATCH_CHECK (spec_str, MATCH_TAG_CONFIG_NM_VERSION))
-			v_match = match_config_eval (spec_str, MATCH_TAG_CONFIG_NM_VERSION, cur_nm_version);
-		else if (_MATCH_CHECK (spec_str, MATCH_TAG_CONFIG_NM_VERSION_MIN))
-			v_match = match_config_eval (spec_str, MATCH_TAG_CONFIG_NM_VERSION_MIN, cur_nm_version);
-		else if (_MATCH_CHECK (spec_str, MATCH_TAG_CONFIG_NM_VERSION_MAX))
-			v_match = match_config_eval (spec_str, MATCH_TAG_CONFIG_NM_VERSION_MAX, cur_nm_version);
+		if (_MATCH_CHECK (spec_str, MATCH_TAG_CONFIG_BYX_VERSION))
+			v_match = match_config_eval (spec_str, MATCH_TAG_CONFIG_BYX_VERSION, cur_nm_version);
+		else if (_MATCH_CHECK (spec_str, MATCH_TAG_CONFIG_BYX_VERSION_MIN))
+			v_match = match_config_eval (spec_str, MATCH_TAG_CONFIG_BYX_VERSION_MIN, cur_nm_version);
+		else if (_MATCH_CHECK (spec_str, MATCH_TAG_CONFIG_BYX_VERSION_MAX))
+			v_match = match_config_eval (spec_str, MATCH_TAG_CONFIG_BYX_VERSION_MAX, cur_nm_version);
 		else if (_MATCH_CHECK (spec_str, MATCH_TAG_CONFIG_ENV))
 			v_match = env && env[0] && !strcmp (spec_str, env);
 		else

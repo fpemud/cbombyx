@@ -18,37 +18,37 @@
  * Copyright 2011, 2015 Red Hat, Inc.
  */
 
-#ifndef __NM_VERSION_MACROS_H__
-#define __NM_VERSION_MACROS_H__
+#ifndef __BYX_VERSION_MACROS_H__
+#define __BYX_VERSION_MACROS_H__
 
 /* This header must not include glib or libnm. */
 
 /**
- * NM_MAJOR_VERSION:
+ * BYX_MAJOR_VERSION:
  *
  * Evaluates to the major version number of NetworkManager which this source
  * is compiled against.
  */
-#define NM_MAJOR_VERSION (@NM_MAJOR_VERSION@)
+#define BYX_MAJOR_VERSION (@BYX_MAJOR_VERSION@)
 
 /**
- * NM_MINOR_VERSION:
+ * BYX_MINOR_VERSION:
  *
  * Evaluates to the minor version number of NetworkManager which this source
  * is compiled against.
  */
-#define NM_MINOR_VERSION (@NM_MINOR_VERSION@)
+#define BYX_MINOR_VERSION (@BYX_MINOR_VERSION@)
 
 /**
- * NM_MICRO_VERSION:
+ * BYX_MICRO_VERSION:
  *
  * Evaluates to the micro version number of NetworkManager which this source
  * compiled against.
  */
-#define NM_MICRO_VERSION (@NM_MICRO_VERSION@)
+#define BYX_MICRO_VERSION (@BYX_MICRO_VERSION@)
 
 /**
- * NM_CHECK_VERSION:
+ * BYX_CHECK_VERSION:
  * @major: major version (e.g. 1 for version 1.2.5)
  * @minor: minor version (e.g. 2 for version 1.2.5)
  * @micro: micro version (e.g. 5 for version 1.2.5)
@@ -56,16 +56,14 @@
  * Returns: %TRUE if the version of the NetworkManager header files
  * is the same as or newer than the passed-in version.
  */
-#define NM_CHECK_VERSION(major,minor,micro)                         \
-    (NM_MAJOR_VERSION > (major) ||                                  \
-     (NM_MAJOR_VERSION == (major) && NM_MINOR_VERSION > (minor)) || \
-     (NM_MAJOR_VERSION == (major) && NM_MINOR_VERSION == (minor) && NM_MICRO_VERSION >= (micro)))
+#define BYX_CHECK_VERSION(major,minor,micro)                          \
+    (BYX_MAJOR_VERSION > (major) ||                                   \
+     (BYX_MAJOR_VERSION == (major) && BYX_MINOR_VERSION > (minor)) || \
+     (BYX_MAJOR_VERSION == (major) && BYX_MINOR_VERSION == (minor) && BYX_MICRO_VERSION >= (micro)))
 
 
-#define NM_ENCODE_VERSION(major,minor,micro) ((major) << 16 | (minor) << 8 | (micro))
+#define BYX_ENCODE_VERSION(major,minor,micro) ((major) << 16 | (minor) << 8 | (micro))
 
-#define NM_VERSION_1_10   (NM_ENCODE_VERSION (1, 10, 0))
+#define BYX_VERSION BYX_ENCODE_VERSION (BYX_MAJOR_VERSION, BYX_MINOR_VERSION, BYX_MICRO_VERSION)
 
-#define NM_VERSION NM_ENCODE_VERSION (NM_MAJOR_VERSION, NM_MINOR_VERSION, NM_MICRO_VERSION)
-
-#endif  /* __NM_VERSION_MACROS_H__ */
+#endif  /* __BYX_VERSION_MACROS_H__ */
