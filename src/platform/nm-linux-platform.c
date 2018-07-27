@@ -5444,67 +5444,6 @@ link_get_driver_info (NMPlatform *platform,
 /*****************************************************************************/
 
 static gboolean
-ip4_address_add (NMPlatform *platform,
-                 int ifindex,
-                 in_addr_t addr,
-                 guint8 plen,
-                 in_addr_t peer_addr,
-                 guint32 lifetime,
-                 guint32 preferred,
-                 guint32 flags,
-                 const char *label)
-{
-	NMPObject obj_id;
-	nm_auto_nlmsg struct nl_msg *nlmsg = NULL;
-
-	nlmsg = _nl_msg_new_address (RTM_NEWADDR,
-	                             NLM_F_CREATE | NLM_F_REPLACE,
-	                             AF_INET,
-	                             ifindex,
-	                             &addr,
-	                             plen,
-	                             &peer_addr,
-	                             flags,
-	                             byx_utils_ip4_address_is_link_local (addr) ? RT_SCOPE_LINK : RT_SCOPE_UNIVERSE,
-	                             lifetime,
-	                             preferred,
-	                             label);
-
-	nmp_object_stackinit_id_ip4_address (&obj_id, ifindex, addr, plen, peer_addr);
-	return do_add_addrroute (platform, &obj_id, nlmsg, FALSE) == NM_PLATFORM_ERROR_SUCCESS;
-}
-
-static gboolean
-ip6_address_add (NMPlatform *platform,
-                 int ifindex,
-                 struct in6_addr addr,
-                 guint8 plen,
-                 struct in6_addr peer_addr,
-                 guint32 lifetime,
-                 guint32 preferred,
-                 guint32 flags)
-{
-	NMPObject obj_id;
-	nm_auto_nlmsg struct nl_msg *nlmsg = NULL;
-
-	nlmsg = _nl_msg_new_address (RTM_NEWADDR,
-	                             NLM_F_CREATE | NLM_F_REPLACE,
-	                             AF_INET6,
-	                             ifindex,
-	                             &addr,
-	                             plen,
-	                             &peer_addr,
-	                             flags,
-	                             RT_SCOPE_UNIVERSE,
-	                             lifetime,
-	                             preferred,
-	                             NULL);
-
-	nmp_object_stackinit_id_ip6_address (&obj_id, ifindex, &addr);
-	return do_add_addrroute (platform, &obj_id, nlmsg, FALSE) == NM_PLATFORM_ERROR_SUCCESS;
-}
-
-static gboolean
 ip4_address_delete (NMPlatform *platform, int ifindex, in_addr_t addr, guint8 plen, in_addr_t peer_address)
 {
 	nm_auto_nlmsg struct nl_msg *nlmsg = NULL;
@@ -5526,31 +5465,6 @@ ip4_address_delete (NMPlatform *platform, int ifindex, in_addr_t addr, guint8 pl
 		g_return_val_if_reached (FALSE);
 
 	nmp_object_stackinit_id_ip4_address (&obj_id, ifindex, addr, plen, peer_address);
-	return do_delete_object (platform, &obj_id, nlmsg);
-}
-
-static gboolean
-ip6_address_delete (NMPlatform *platform, int ifindex, struct in6_addr addr, guint8 plen)
-{
-	nm_auto_nlmsg struct nl_msg *nlmsg = NULL;
-	NMPObject obj_id;
-
-	nlmsg = _nl_msg_new_address (RTM_DELADDR,
-	                             0,
-	                             AF_INET6,
-	                             ifindex,
-	                             &addr,
-	                             plen,
-	                             NULL,
-	                             0,
-	                             RT_SCOPE_NOWHERE,
-	                             NM_PLATFORM_LIFETIME_PERMANENT,
-	                             NM_PLATFORM_LIFETIME_PERMANENT,
-	                             NULL);
-	if (!nlmsg)
-		g_return_val_if_reached (FALSE);
-
-	nmp_object_stackinit_id_ip6_address (&obj_id, ifindex, &addr);
 	return do_delete_object (platform, &obj_id, nlmsg);
 }
 
@@ -6468,9 +6382,7 @@ nm_linux_platform_class_init (NMLinuxPlatformClass *klass)
 
 	platform_class->object_delete = object_delete;
 	platform_class->ip4_address_add = ip4_address_add;
-	platform_class->ip6_address_add = ip6_address_add;
 	platform_class->ip4_address_delete = ip4_address_delete;
-	platform_class->ip6_address_delete = ip6_address_delete;
 
 	platform_class->ip_route_add = ip_route_add;
 	platform_class->ip_route_get = ip_route_get;
