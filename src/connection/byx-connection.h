@@ -628,13 +628,6 @@ guint byx_connection_get_supplicant_timeout (ByxConnection *self);
 
 gboolean byx_connection_auth_retries_try_next (ByxConnection *self);
 
-gboolean byx_connection_hw_addr_get_cloned (ByxConnection *self,
-                                       NMConnection *connection,
-                                       gboolean is_wifi,
-                                       char **hwaddr,
-                                       gboolean *preserve,
-                                       GError **error);
-
 typedef struct _ByxConnectionConnectivityHandle ByxConnectionConnectivityHandle;
 
 typedef void (*ByxConnectionConnectivityCallback) (ByxConnection *self,
