@@ -174,8 +174,6 @@ typedef struct {
 
 	NMSleepMonitor *sleep_monitor;
 
-	NMAuthManager *auth_mgr;
-
 	GHashTable *device_route_metrics;
 
 	GSList *auth_chains;
@@ -5222,45 +5220,6 @@ _internal_sleep (ByxManager *self, gboolean do_sleep)
 	_notify (self, PROP_SLEEPING);
 }
 
-#if 0
-static void
-sleep_auth_done_cb (NMAuthChain *chain,
-                    GError *error,
-                    GDBusMethodInvocation *context,
-                    gpointer user_data)
-{
-	ByxManager *self = BYX_MANAGER (user_data);
-	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	GError *ret_error;
-	NMAuthCallResult result;
-	gboolean do_sleep;
-
-	priv->auth_chains = g_slist_remove (priv->auth_chains, chain);
-
-	result = nm_auth_chain_get_result (chain, NM_AUTH_PERMISSION_SLEEP_WAKE);
-	if (error) {
-		_LOGD (LOGD_SUSPEND, "Sleep/wake request failed: %s", error->message);
-		ret_error = g_error_new (BYX_MANAGER_ERROR,
-		                         BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                         "Sleep/wake request failed: %s",
-		                         error->message);
-		g_dbus_method_invocation_take_error (context, ret_error);
-	} else if (result != NM_AUTH_CALL_RESULT_YES) {
-		ret_error = g_error_new_literal (BYX_MANAGER_ERROR,
-		                                 BYX_MANAGER_ERROR_PERMISSION_DENIED,
-		                                 "Not authorized to sleep/wake");
-		g_dbus_method_invocation_take_error (context, ret_error);
-	} else {
-		/* Auth success */
-		do_sleep = GPOINTER_TO_UINT (nm_auth_chain_get_data (chain, "sleep"));
-		_internal_sleep (self, do_sleep);
-		g_dbus_method_invocation_return_value (context, NULL);
-	}
-
-	nm_auth_chain_destroy (chain);
-}
-#endif
-
 static void
 impl_manager_sleep (ByxDBusObject *obj,
                     const ByxDBusInterfaceInfoExtended *interface_info,
@@ -5977,16 +5936,6 @@ err:
 
 /*****************************************************************************/
 
-static void
-auth_mgr_changed (NMAuthManager *auth_manager, gpointer user_data)
-{
-	/* Let clients know they should re-check their authorization */
-	nm_dbus_object_emit_signal (user_data,
-	                            &interface_info_manager,
-	                            &signal_info_check_permissions,
-	                            "()");
-}
-
 #define KERN_RFKILL_OP_CHANGE_ALL 3
 #define KERN_RFKILL_TYPE_WLAN     1
 #define KERN_RFKILL_TYPE_WWAN     5
@@ -6290,13 +6239,6 @@ byx_manager_init (ByxManager *self)
 	g_signal_connect (priv->sleep_monitor, NM_SLEEP_MONITOR_SLEEPING,
 	                  G_CALLBACK (sleeping_cb), self);
 
-	/* Listen for authorization changes */
-	priv->auth_mgr = g_object_ref (nm_auth_manager_get ());
-	g_signal_connect (priv->auth_mgr,
-	                  NM_AUTH_MANAGER_SIGNAL_CHANGED,
-	                  G_CALLBACK (auth_mgr_changed),
-	                  self);
-
 	/* Update timestamps in active connections */
 	priv->timestamp_update_id = g_timeout_add_seconds (300, (GSourceFunc) periodic_update_active_connection_timestamps, self);
 
@@ -6500,13 +6442,6 @@ dispose (GObject *object)
 		                                      G_CALLBACK (concheck_config_changed_cb),
 		                                      self);
 		g_clear_object (&priv->concheck_mgr);
-	}
-
-	if (priv->auth_mgr) {
-		g_signal_handlers_disconnect_by_func (priv->auth_mgr,
-		                                      G_CALLBACK (auth_mgr_changed),
-		                                      self);
-		g_clear_object (&priv->auth_mgr);
 	}
 
 	nm_assert (c_list_is_empty (&priv->devices_lst_head));
