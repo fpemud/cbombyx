@@ -1,0 +1,4 @@
+[submodule "shared/c-list"]
+	path = shared/c-list
+	url = https://github.com/c-util/c-list
+	branch = :v3
