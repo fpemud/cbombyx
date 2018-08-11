@@ -5,3 +5,7 @@
 [submodule "shared/c-siphash"]
 	path = shared/c-siphash
 	url = https://github.com/c-util/c-siphash
+[submodule "shared/n-acd"]
+	path = shared/n-acd
+	url = https://github.com/nettools/n-acd
+	branch = :v1
