@@ -1100,7 +1100,7 @@ nm_platform_link_get_unmanaged (NMPlatform *self, int ifindex, gboolean *unmanag
 	if (!uproperty)
 		return FALSE;
 
-	*unmanaged = nm_udev_utils_property_as_boolean (uproperty);
+	*unmanaged = byx_udev_utils_property_as_boolean (uproperty);
 	return TRUE;
 }
 

@@ -37,7 +37,7 @@ enum {
 static guint signals[LAST_SIGNAL] = { 0 };
 
 typedef struct {
-	NMUdevClient *udev_client;
+	ByxUdevClient *udev_client;
 
 	/* Authoritative rfkill state (RFKILL_* enum) */
 	RfKillState rfkill_states[RFKILL_TYPE_MAX];
@@ -198,7 +198,7 @@ recheck_killswitches (NMRfkillManager *self)
 		RfKillState dev_state;
 		int sysfs_state;
 
-		device = udev_device_new_from_subsystem_sysname (nm_udev_client_get_udev (priv->udev_client),
+		device = udev_device_new_from_subsystem_sysname (byx_udev_client_get_udev (priv->udev_client),
 		                                                 "rfkill", ks->name);
 		if (!device)
 			continue;
@@ -337,7 +337,7 @@ rfkill_remove (NMRfkillManager *self,
 }
 
 static void
-handle_uevent (NMUdevClient *client,
+handle_uevent (ByxUdevClient *client,
                struct udev_device *device,
                gpointer user_data)
 {
@@ -377,10 +377,10 @@ nm_rfkill_manager_init (NMRfkillManager *self)
 	for (i = 0; i < RFKILL_TYPE_MAX; i++)
 		priv->rfkill_states[i] = RFKILL_UNBLOCKED;
 
-	priv->udev_client = nm_udev_client_new ((const char *[]) { "rfkill", NULL },
+	priv->udev_client = byx_udev_client_new ((const char *[]) { "rfkill", NULL },
 	                                        handle_uevent, self);
 
-	enumerate = nm_udev_client_enumerate_new (priv->udev_client);
+	enumerate = byx_udev_client_enumerate_new (priv->udev_client);
 	udev_enumerate_scan_devices (enumerate);
 	iter = udev_enumerate_get_list_entry (enumerate);
 	for (; iter; iter = udev_list_entry_get_next (iter)) {
@@ -416,7 +416,7 @@ dispose (GObject *object)
 		priv->killswitches = NULL;
 	}
 
-	priv->udev_client = nm_udev_client_unref (priv->udev_client);
+	priv->udev_client = byx_udev_client_unref (priv->udev_client);
 
 	G_OBJECT_CLASS (nm_rfkill_manager_parent_class)->dispose (object);
 }

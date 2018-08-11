@@ -20,7 +20,7 @@
 
 #include "byx-default.h"
 
-#include "nm-udev-utils.h"
+#include "byx-udev-utils.h"
 
 #include <libudev.h>
 
@@ -29,14 +29,14 @@ struct _NMPUdevClient {
 	GSource *watch_source;
 	struct udev *udev;
 	struct udev_monitor *monitor;
-	NMUdevClientEvent event_handler;
+	ByxUdevClientEvent event_handler;
 	gpointer event_user_data;
 };
 
 /*****************************************************************************/
 
 gboolean
-nm_udev_utils_property_as_boolean (const char *uproperty)
+byx_udev_utils_property_as_boolean (const char *uproperty)
 {
 	/* taken from g_udev_device_get_property_as_boolean() */
 
@@ -49,7 +49,7 @@ nm_udev_utils_property_as_boolean (const char *uproperty)
 }
 
 const char *
-nm_udev_utils_property_decode (const char *uproperty, char **to_free)
+byx_udev_utils_property_decode (const char *uproperty, char **to_free)
 {
 	const char *p;
 	char *unescaped = NULL;
@@ -95,11 +95,11 @@ nm_udev_utils_property_decode (const char *uproperty, char **to_free)
 }
 
 char *
-nm_udev_utils_property_decode_cp (const char *uproperty)
+byx_udev_utils_property_decode_cp (const char *uproperty)
 {
 	char *cpy;
 
-	uproperty = nm_udev_utils_property_decode (uproperty, &cpy);
+	uproperty = byx_udev_utils_property_decode (uproperty, &cpy);
 	return cpy ?: g_strdup (uproperty);
 }
 
@@ -134,7 +134,7 @@ _subsystem_split (const char *subsystem_full,
 }
 
 static struct udev_enumerate *
-nm_udev_utils_enumerate (struct udev *uclient,
+byx_udev_utils_enumerate (struct udev *uclient,
                          const char *const*subsystems)
 {
 	struct udev_enumerate *enumerate;
@@ -161,7 +161,7 @@ nm_udev_utils_enumerate (struct udev *uclient,
 }
 
 struct udev *
-nm_udev_client_get_udev (NMUdevClient *self)
+byx_udev_client_get_udev (ByxUdevClient *self)
 {
 	g_return_val_if_fail (self, NULL);
 
@@ -169,11 +169,11 @@ nm_udev_client_get_udev (NMUdevClient *self)
 }
 
 struct udev_enumerate *
-nm_udev_client_enumerate_new (NMUdevClient *self)
+byx_udev_client_enumerate_new (ByxUdevClient *self)
 {
 	g_return_val_if_fail (self, NULL);
 
-	return nm_udev_utils_enumerate (self->udev, (const char *const*) self->subsystems);
+	return byx_udev_utils_enumerate (self->udev, (const char *const*) self->subsystems);
 }
 
 /*****************************************************************************/
@@ -183,7 +183,7 @@ monitor_event (GIOChannel *source,
                GIOCondition condition,
                gpointer user_data)
 {
-	NMUdevClient *self = user_data;
+	ByxUdevClient *self = user_data;
 	struct udev_device *udevice;
 
 	if (!self->monitor)
@@ -203,7 +203,7 @@ out:
 }
 
 /**
- * nm_udev_client_new:
+ * byx_udev_client_new:
  * @subsystems: the subsystems
  * @event_handler: callback for events
  * @event_user_data: user-data for @event_handler
@@ -211,18 +211,18 @@ out:
  * Basically, it is g_udev_client_new(), and most notably
  * g_udev_client_constructed().
  *
- * Returns: a new NMUdevClient instance.
+ * Returns: a new ByxUdevClient instance.
  */
-NMUdevClient *
-nm_udev_client_new (const char *const*subsystems,
-                    NMUdevClientEvent event_handler,
+ByxUdevClient *
+byx_udev_client_new (const char *const*subsystems,
+                    ByxUdevClientEvent event_handler,
                     gpointer event_user_data)
 {
-	NMUdevClient *self;
+	ByxUdevClient *self;
 	GIOChannel *channel;
 	guint n;
 
-	self = g_slice_new0 (NMUdevClient);
+	self = g_slice_new0 (ByxUdevClient);
 
 	self->event_handler = event_handler;
 	self->event_user_data = event_user_data;
@@ -267,11 +267,11 @@ nm_udev_client_new (const char *const*subsystems,
 	return self;
 
 fail:
-	return nm_udev_client_unref (self);
+	return byx_udev_client_unref (self);
 }
 
-NMUdevClient *
-nm_udev_client_unref (NMUdevClient *self)
+ByxUdevClient *
+byx_udev_client_unref (ByxUdevClient *self)
 {
 	if (!self)
 		return NULL;
@@ -288,7 +288,7 @@ nm_udev_client_unref (NMUdevClient *self)
 
 	g_strfreev (self->subsystems);
 
-	g_slice_free (NMUdevClient, self);
+	g_slice_free (ByxUdevClient, self);
 
 	return NULL;
 }

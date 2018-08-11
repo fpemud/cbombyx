@@ -3039,7 +3039,7 @@ typedef struct {
 	bool sysctl_get_warned;
 	GHashTable *sysctl_get_prev_values;
 
-	NMUdevClient *udev_client;
+	ByxUdevClient *udev_client;
 
 	struct {
 		/* which delayed actions are scheduled, as marked in @flags.
@@ -6109,7 +6109,7 @@ udev_device_removed (NMPlatform *platform,
 }
 
 static void
-handle_udev_event (NMUdevClient *udev_client,
+handle_udev_event (ByxUdevClient *udev_client,
                    struct udev_device *udevice,
                    gpointer user_data)
 {
@@ -6165,7 +6165,7 @@ constructed (GObject *_object)
 	nm_assert (!platform->_netns || platform->_netns == nmp_netns_get_current ());
 
 	if (nm_platform_get_use_udev (platform)) {
-		priv->udev_client = nm_udev_client_new ((const char *[]) { "net", NULL },
+		priv->udev_client = byx_udev_client_new ((const char *[]) { "net", NULL },
 		                                        handle_udev_event, platform);
 	}
 
@@ -6260,7 +6260,7 @@ constructed (GObject *_object)
 		struct udev_list_entry *devices, *l;
 
 		/* And read initial device list */
-		enumerator = nm_udev_client_enumerate_new (priv->udev_client);
+		enumerator = byx_udev_client_enumerate_new (priv->udev_client);
 
 		udev_enumerate_add_match_is_initialized (enumerator);
 
@@ -6321,7 +6321,7 @@ finalize (GObject *object)
 		g_hash_table_destroy (priv->sysctl_get_prev_values);
 	}
 
-	priv->udev_client = nm_udev_client_unref (priv->udev_client);
+	priv->udev_client = byx_udev_client_unref (priv->udev_client);
 
 	G_OBJECT_CLASS (nm_linux_platform_parent_class)->finalize (object);
 }

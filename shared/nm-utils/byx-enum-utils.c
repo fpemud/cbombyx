@@ -21,7 +21,7 @@
 
 #include "byx-default.h"
 
-#include "nm-enum-utils.h"
+#include "byx-enum-utils.h"
 
 /*****************************************************************************/
 
@@ -29,7 +29,7 @@
 
 static void
 _ASSERT_enum_values_info (GType type,
-                          const NMUtilsEnumValueInfo *value_infos)
+                          const ByxUtilsEnumValueInfo *value_infos)
 {
 #if NM_MORE_ASSERTS > 5
 	nm_auto_unref_gtypeclass GTypeClass *klass = NULL;
@@ -127,10 +127,10 @@ _enum_is_valid_flags_nick (const char *str)
 }
 
 char *
-_byx_utils_enum_to_str_full (GType type,
+byx_utils_enum_to_str_full (GType type,
                             int value,
                             const char *flags_separator,
-                            const NMUtilsEnumValueInfo *value_infos)
+                            const ByxUtilsEnumValueInfo *value_infos)
 {
 	nm_auto_unref_gtypeclass GTypeClass *klass = NULL;
 
@@ -207,8 +207,8 @@ flags_done:
 	g_return_val_if_reached (NULL);
 }
 
-static const NMUtilsEnumValueInfo *
-_find_value_info (const NMUtilsEnumValueInfo *value_infos, const char *needle)
+static const ByxUtilsEnumValueInfo *
+_find_value_info (const ByxUtilsEnumValueInfo *value_infos, const char *needle)
 {
 	if (value_infos) {
 		for (; value_infos->nick; value_infos++) {
@@ -220,11 +220,11 @@ _find_value_info (const NMUtilsEnumValueInfo *value_infos, const char *needle)
 }
 
 gboolean
-_byx_utils_enum_from_str_full (GType type,
+byx_utils_enum_from_str_full (GType type,
                               const char *str,
                               int *out_value,
                               char **err_token,
-                              const NMUtilsEnumValueInfo *value_infos)
+                              const ByxUtilsEnumValueInfo *value_infos)
 {
 	GTypeClass *klass;
 	gboolean ret = FALSE;
@@ -232,7 +232,7 @@ _byx_utils_enum_from_str_full (GType type,
 	gs_free char *str_clone = NULL;
 	char *s;
 	gint64 v64;
-	const NMUtilsEnumValueInfo *nick;
+	const ByxUtilsEnumValueInfo *nick;
 
 	g_return_val_if_fail (str, FALSE);
 
@@ -323,7 +323,7 @@ _byx_utils_enum_from_str_full (GType type,
 }
 
 const char **
-_byx_utils_enum_get_values (GType type, gint from, gint to)
+byx_utils_enum_get_values (GType type, gint from, gint to)
 {
 	GTypeClass *klass;
 	GPtrArray *array;
