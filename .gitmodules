@@ -2,3 +2,6 @@
 	path = shared/c-list
 	url = https://github.com/c-util/c-list
 	branch = :v3
+[submodule "shared/c-siphash"]
+	path = shared/c-siphash
+	url = https://github.com/c-util/c-siphash
