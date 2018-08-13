@@ -42,20 +42,20 @@ typedef struct {
 	/* Authoritative rfkill state (RFKILL_* enum) */
 	RfKillState rfkill_states[RFKILL_TYPE_MAX];
 	GSList *killswitches;
-} NMRfkillManagerPrivate;
+} ByxRfkillManagerPrivate;
 
-struct _NMRfkillManager {
+struct _ByxRfkillManager {
 	GObject parent;
-	NMRfkillManagerPrivate _priv;
+	ByxRfkillManagerPrivate _priv;
 };
 
-struct _NMRfkillManagerClass {
+struct _ByxRfkillManagerClass {
 	GObjectClass parent;
 };
 
-G_DEFINE_TYPE (NMRfkillManager, nm_rfkill_manager, G_TYPE_OBJECT)
+G_DEFINE_TYPE (ByxRfkillManager, byx_rfkill_manager, G_TYPE_OBJECT)
 
-#define NM_RFKILL_MANAGER_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, NMRfkillManager, NM_IS_RFKILL_MANAGER)
+#define BYX_RFKILL_MANAGER_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxRfkillManager, BYX_IS_RFKILL_MANAGER)
 
 /*****************************************************************************/
 
@@ -70,12 +70,12 @@ typedef struct {
 } Killswitch;
 
 RfKillState
-nm_rfkill_manager_get_rfkill_state (NMRfkillManager *self, RfKillType rtype)
+byx_rfkill_manager_get_rfkill_state (ByxRfkillManager *self, RfKillType rtype)
 {
 	g_return_val_if_fail (self != NULL, RFKILL_UNBLOCKED);
 	g_return_val_if_fail (rtype < RFKILL_TYPE_MAX, RFKILL_UNBLOCKED);
 
-	return NM_RFKILL_MANAGER_GET_PRIVATE (self)->rfkill_states[rtype];
+	return BYX_RFKILL_MANAGER_GET_PRIVATE (self)->rfkill_states[rtype];
 }
 
 static const char *
@@ -175,9 +175,9 @@ sysfs_state_to_nm_state (gint sysfs_state)
 }
 
 static void
-recheck_killswitches (NMRfkillManager *self)
+recheck_killswitches (ByxRfkillManager *self)
 {
-	NMRfkillManagerPrivate *priv = NM_RFKILL_MANAGER_GET_PRIVATE (self);
+	ByxRfkillManagerPrivate *priv = BYX_RFKILL_MANAGER_GET_PRIVATE (self);
 	GSList *iter;
 	RfKillState poll_states[RFKILL_TYPE_MAX];
 	RfKillState platform_states[RFKILL_TYPE_MAX];
@@ -246,9 +246,9 @@ recheck_killswitches (NMRfkillManager *self)
 }
 
 static Killswitch *
-killswitch_find_by_name (NMRfkillManager *self, const char *name)
+killswitch_find_by_name (ByxRfkillManager *self, const char *name)
 {
-	NMRfkillManagerPrivate *priv = NM_RFKILL_MANAGER_GET_PRIVATE (self);
+	ByxRfkillManagerPrivate *priv = BYX_RFKILL_MANAGER_GET_PRIVATE (self);
 	GSList *iter;
 
 	g_return_val_if_fail (name != NULL, NULL);
@@ -276,9 +276,9 @@ rfkill_type_to_enum (const char *str)
 }
 
 static void
-add_one_killswitch (NMRfkillManager *self, struct udev_device *device)
+add_one_killswitch (ByxRfkillManager *self, struct udev_device *device)
 {
-	NMRfkillManagerPrivate *priv = NM_RFKILL_MANAGER_GET_PRIVATE (self);
+	ByxRfkillManagerPrivate *priv = BYX_RFKILL_MANAGER_GET_PRIVATE (self);
 	const char *str_type;
 	RfKillType rtype;
 	Killswitch *ks;
@@ -300,7 +300,7 @@ add_one_killswitch (NMRfkillManager *self, struct udev_device *device)
 }
 
 static void
-rfkill_add (NMRfkillManager *self, struct udev_device *device)
+rfkill_add (ByxRfkillManager *self, struct udev_device *device)
 {
 	const char *name;
 
@@ -313,10 +313,10 @@ rfkill_add (NMRfkillManager *self, struct udev_device *device)
 }
 
 static void
-rfkill_remove (NMRfkillManager *self,
+rfkill_remove (ByxRfkillManager *self,
                struct udev_device *device)
 {
-	NMRfkillManagerPrivate *priv = NM_RFKILL_MANAGER_GET_PRIVATE (self);
+	ByxRfkillManagerPrivate *priv = BYX_RFKILL_MANAGER_GET_PRIVATE (self);
 	GSList *iter;
 	const char *name;
 
@@ -341,7 +341,7 @@ handle_uevent (ByxUdevClient *client,
                struct udev_device *device,
                gpointer user_data)
 {
-	NMRfkillManager *self = NM_RFKILL_MANAGER (user_data);
+	ByxRfkillManager *self = BYX_RFKILL_MANAGER (user_data);
 	const char *subsys;
 	const char *action;
 
@@ -367,9 +367,9 @@ handle_uevent (ByxUdevClient *client,
 /*****************************************************************************/
 
 static void
-nm_rfkill_manager_init (NMRfkillManager *self)
+byx_rfkill_manager_init (ByxRfkillManager *self)
 {
-	NMRfkillManagerPrivate *priv = NM_RFKILL_MANAGER_GET_PRIVATE (self);
+	ByxRfkillManagerPrivate *priv = BYX_RFKILL_MANAGER_GET_PRIVATE (self);
 	struct udev_enumerate *enumerate;
 	struct udev_list_entry *iter;
 	guint i;
@@ -399,17 +399,17 @@ nm_rfkill_manager_init (NMRfkillManager *self)
 	recheck_killswitches (self);
 }
 
-NMRfkillManager *
-nm_rfkill_manager_new (void)
+ByxRfkillManager *
+byx_rfkill_manager_new (void)
 {
-	return NM_RFKILL_MANAGER (g_object_new (NM_TYPE_RFKILL_MANAGER, NULL));
+	return BYX_RFKILL_MANAGER (g_object_new (BYX_TYPE_RFKILL_MANAGER, NULL));
 }
 
 static void
 dispose (GObject *object)
 {
-	NMRfkillManager *self = NM_RFKILL_MANAGER (object);
-	NMRfkillManagerPrivate *priv = NM_RFKILL_MANAGER_GET_PRIVATE (self);
+	ByxRfkillManager *self = BYX_RFKILL_MANAGER (object);
+	ByxRfkillManagerPrivate *priv = BYX_RFKILL_MANAGER_GET_PRIVATE (self);
 
 	if (priv->killswitches) {
 		g_slist_free_full (priv->killswitches, (GDestroyNotify) killswitch_destroy);
@@ -418,18 +418,18 @@ dispose (GObject *object)
 
 	priv->udev_client = byx_udev_client_unref (priv->udev_client);
 
-	G_OBJECT_CLASS (nm_rfkill_manager_parent_class)->dispose (object);
+	G_OBJECT_CLASS (byx_rfkill_manager_parent_class)->dispose (object);
 }
 
 static void
-nm_rfkill_manager_class_init (NMRfkillManagerClass *klass)
+byx_rfkill_manager_class_init (ByxRfkillManagerClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
 	object_class->dispose = dispose;
 
 	signals[RFKILL_CHANGED] =
-	    g_signal_new (NM_RFKILL_MANAGER_SIGNAL_RFKILL_CHANGED,
+	    g_signal_new (BYX_RFKILL_MANAGER_SIGNAL_RFKILL_CHANGED,
 	                  G_OBJECT_CLASS_TYPE (object_class),
 	                  G_SIGNAL_RUN_FIRST,
 	                  0,

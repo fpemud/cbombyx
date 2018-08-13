@@ -49,10 +49,10 @@ typedef struct _NMIP6Config          NMIP6Config;
 typedef struct _ByxManager            ByxManager;
 typedef struct _NMNetns              NMNetns;
 typedef struct _NMPolicy             NMPolicy;
-typedef struct _NMRfkillManager      NMRfkillManager;
+typedef struct _ByxRfkillManager      ByxRfkillManager;
 typedef struct _NMPacrunnerManager   NMPacrunnerManager;
 typedef struct _NMSessionMonitor     NMSessionMonitor;
-typedef struct _NMSleepMonitor       NMSleepMonitor;
+typedef struct _ByxSleepMonitor       ByxSleepMonitor;
 typedef struct _NMLldpListener       NMLldpListener;
 typedef struct _ByxConfigDeviceStateData ByxConfigDeviceStateData;
 

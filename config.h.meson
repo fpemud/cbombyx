@@ -40,9 +40,6 @@
 /* Define to 1 to use systemd suspend api */
 #mesondefine SUSPEND_RESUME_SYSTEMD
 
-/* Define to 1 to use UPower suspend api */
-#mesondefine SUSPEND_RESUME_UPOWER
-
 /* Define to 1 if libsystemd-journald is available */
 #mesondefine SYSTEMD_JOURNAL
 

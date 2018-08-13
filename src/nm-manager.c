@@ -163,7 +163,7 @@ typedef struct {
 		GDBusConnection *connection;
 		guint            id;
 	} prop_filter;
-	NMRfkillManager *rfkill_mgr;
+	ByxRfkillManager *rfkill_mgr;
 
 	CList link_cb_lst;
 
@@ -172,7 +172,7 @@ typedef struct {
 	RadioState radio_states[RFKILL_TYPE_MAX];
 	ByxServiceManager *service_manager;
 
-	NMSleepMonitor *sleep_monitor;
+	ByxSleepMonitor *sleep_monitor;
 
 	GHashTable *device_route_metrics;
 
@@ -2029,9 +2029,9 @@ manager_update_radio_enabled (ByxManager *self,
 }
 
 static void
-update_rstate_from_rfkill (NMRfkillManager *rfkill_mgr, RadioState *rstate)
+update_rstate_from_rfkill (ByxRfkillManager *rfkill_mgr, RadioState *rstate)
 {
-	switch (nm_rfkill_manager_get_rfkill_state (rfkill_mgr, rstate->rtype)) {
+	switch (byx_rfkill_manager_get_rfkill_state (rfkill_mgr, rstate->rtype)) {
 	case RFKILL_UNBLOCKED:
 		rstate->sw_enabled = TRUE;
 		rstate->hw_enabled = TRUE;
@@ -3064,7 +3064,7 @@ platform_query_devices (ByxManager *self)
 }
 
 static void
-rfkill_manager_rfkill_changed_cb (NMRfkillManager *rfkill_mgr,
+rfkill_manager_rfkill_changed_cb (ByxRfkillManager *rfkill_mgr,
                                   RfKillType rtype,
                                   RfKillState udev_state,
                                   gpointer user_data)
@@ -5003,16 +5003,16 @@ static gboolean
 sleep_devices_add (ByxManager *self, NMDevice *device, gboolean suspending)
 {
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMSleepMonitorInhibitorHandle *handle = NULL;
+	ByxSleepMonitorInhibitorHandle *handle = NULL;
 
 	if (g_hash_table_lookup_extended (priv->sleep_devices, device, NULL, (gpointer *) &handle)) {
 		if (suspending) {
 			/* if we are suspending, always insert a new handle in sleep_devices.
 			 * Even if we had an old handle, it might be stale by now. */
 			g_hash_table_insert (priv->sleep_devices, device,
-			                     nm_sleep_monitor_inhibit_take (priv->sleep_monitor));
+			                     byx_sleep_monitor_inhibit_take (priv->sleep_monitor));
 			if (handle)
-				nm_sleep_monitor_inhibit_release (priv->sleep_monitor, handle);
+				byx_sleep_monitor_inhibit_release (priv->sleep_monitor, handle);
 		}
 		return FALSE;
 	}
@@ -5020,7 +5020,7 @@ sleep_devices_add (ByxManager *self, NMDevice *device, gboolean suspending)
 	g_hash_table_insert (priv->sleep_devices,
 	                     g_object_ref (device),
 	                     suspending
-	                         ? nm_sleep_monitor_inhibit_take (priv->sleep_monitor)
+	                         ? byx_sleep_monitor_inhibit_take (priv->sleep_monitor)
 	                         : NULL);
 	g_signal_connect (device, "notify::" NM_DEVICE_STATE, (GCallback) device_sleep_cb, self);
 	return TRUE;
@@ -5030,13 +5030,13 @@ static gboolean
 sleep_devices_remove (ByxManager *self, NMDevice *device)
 {
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
-	NMSleepMonitorInhibitorHandle *handle;
+	ByxSleepMonitorInhibitorHandle *handle;
 
 	if (!g_hash_table_lookup_extended (priv->sleep_devices, device, NULL, (gpointer *) &handle))
 		return FALSE;
 
 	if (handle)
-		nm_sleep_monitor_inhibit_release (priv->sleep_monitor, handle);
+		byx_sleep_monitor_inhibit_release (priv->sleep_monitor, handle);
 
 	/* Remove device from hash */
 	g_signal_handlers_disconnect_by_func (device, device_sleep_cb, self);
@@ -5050,7 +5050,7 @@ sleep_devices_clear (ByxManager *self)
 {
 	ByxManagerPrivate *priv = BYX_MANAGER_GET_PRIVATE (self);
 	NMDevice *device;
-	NMSleepMonitorInhibitorHandle *handle;
+	ByxSleepMonitorInhibitorHandle *handle;
 	GHashTableIter iter;
 
 	if (!priv->sleep_devices)
@@ -5060,7 +5060,7 @@ sleep_devices_clear (ByxManager *self)
 	while (g_hash_table_iter_next (&iter, (gpointer *) &device, (gpointer *) &handle)) {
 		g_signal_handlers_disconnect_by_func (device, device_sleep_cb, self);
 		if (handle)
-			nm_sleep_monitor_inhibit_release (priv->sleep_monitor, handle);
+			byx_sleep_monitor_inhibit_release (priv->sleep_monitor, handle);
 		g_object_unref (device);
 		g_hash_table_iter_remove (&iter);
 	}
@@ -5264,7 +5264,7 @@ impl_manager_sleep (ByxDBusObject *obj,
 }
 
 static void
-sleeping_cb (NMSleepMonitor *monitor, gboolean is_about_to_suspend, gpointer user_data)
+sleeping_cb (ByxSleepMonitor *monitor, gboolean is_about_to_suspend, gpointer user_data)
 {
 	ByxManager *self = user_data;
 
@@ -6179,9 +6179,9 @@ constructed (GObject *object)
 	priv->radio_states[RFKILL_TYPE_WLAN].user_enabled = state->wifi_enabled;
 	priv->radio_states[RFKILL_TYPE_WWAN].user_enabled = state->wwan_enabled;
 
-	priv->rfkill_mgr = nm_rfkill_manager_new ();
+	priv->rfkill_mgr = byx_rfkill_manager_new ();
 	g_signal_connect (priv->rfkill_mgr,
-	                  NM_RFKILL_MANAGER_SIGNAL_RFKILL_CHANGED,
+	                  BYX_RFKILL_MANAGER_SIGNAL_RFKILL_CHANGED,
 	                  G_CALLBACK (rfkill_manager_rfkill_changed_cb),
 	                  self);
 
@@ -6235,8 +6235,8 @@ byx_manager_init (ByxManager *self)
 	priv->startup = TRUE;
 
 	/* sleep/wake handling */
-	priv->sleep_monitor = nm_sleep_monitor_new ();
-	g_signal_connect (priv->sleep_monitor, NM_SLEEP_MONITOR_SLEEPING,
+	priv->sleep_monitor = byx_sleep_monitor_new ();
+	g_signal_connect (priv->sleep_monitor, BYX_SLEEP_MONITOR_SIGNAL_SLEEPING,
 	                  G_CALLBACK (sleeping_cb), self);
 
 	/* Update timestamps in active connections */

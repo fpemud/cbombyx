@@ -8,7 +8,6 @@ option('dnsmasq', type: 'array', value: ['dnsmasq', '/sbin/dnsmasq', '/usr/sbin/
 option('dnssec_trigger', type: 'array', value: ['dnssec-trigger-script', '/usr/local/libexec/dnssec-trigger-script', '/usr/local/lib/dnssec-trigger-script', '/usr/local/lib/dnssec-trigger/dnssec-trigger-script', '/usr/libexec/dnssec-trigger-script', '/usr/lib/dnssec-trigger-script', '/usr/lib/dnssec-trigger/dnssec-trigger-script'], description: 'path to unbound dnssec-trigger-script')
 
 # platform
-option('suspend_resume', type: 'boolean', value: true, description: 'Build NetworkManager with specific suspend/resume support')
 option('modify_system', type: 'boolean', value: false, description: 'Allow users to modify system connections')
 option('selinux', type: 'boolean', value: true, description: 'Build with SELinux')
 option('systemd_journal', type: 'boolean', value: true, description: 'Use systemd journal for logging')

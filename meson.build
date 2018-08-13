@@ -117,12 +117,12 @@ add_project_arguments(common_flags, language: 'c')
 add_project_link_arguments(common_ldflags, language: 'c')
 
 uuid_dep = dependency('uuid')
-libelogind_dep = dependency('libelogind', version: '>= 219', required: false)
 libudev_dep = dependency('libudev', version: '>= 175')
 dbus_dep = dependency('dbus-1', version: '>= 1.1')
 libndp_dep = dependency('libndp')
 
 libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
+libelogind_dep = dependency('libelogind', version: '>= 219', required: false)
 systemd_dep = dependency('systemd', required: false)
 
 gio_unix_dep = dependency('gio-unix-2.0', version: '>= 2.40')
@@ -178,28 +178,15 @@ if config_logging_backend_default == 'default'
 endif
 config_h.set_quoted('BYX_CONFIG_DEFAULT_LOGGING_BACKEND', config_logging_backend_default)
 
-enable_suspend_resume = get_option('suspend_resume')
 suspend_resume = ''
-
-if enable_suspend_resume
-  if libsystemd_dep.found()
-    system_inhibit_dep = libsystemd_dep
-    suspend_resume = 'systemd'
-    config_h.set('SUSPEND_RESUME_SYSTEMD', true)
-  else
-    system_inhibit_dep = dependency('libsystemd-login', version: '>= 183', required: false)
-    if system_inhibit_dep.found()
-      suspend_resume = 'systemd'
-      config_h.set('SUSPEND_RESUME_SYSTEMD', true)
-    elif libelogind_dep.found()
-      system_inhibit_dep = libelogind_dep
-      suspend_resume = 'elogind'
-      config_h.set('SUSPEND_RESUME_ELOGIND', true)
-    else
-      suspend_resume = 'upower'
-      config_h.set('SUSPEND_RESUME_UPOWER', true)
-    endif
-  endif
+if libsystemd_dep.found()
+  suspend_resume = 'systemd'
+  config_h.set('SUSPEND_RESUME_SYSTEMD', true)
+elif libelogind_dep.found()
+  suspend_resume = 'elogind'
+  config_h.set('SUSPEND_RESUME_ELOGIND', true)
+else
+  ERROR    # FIXME
 endif
 
 # crypto
