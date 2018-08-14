@@ -114,3 +114,9 @@ service can provide pac file to bombyx, which has a higher priority than pac fil
 bombyx should merge all the pac file from different service. how to do that?
 user can provide proxy info, which has a higher priority than pac file from service.
 
+
+
+active connection should be deactived when suspend occurs, interface should be shutdown.
+if there's WoL or WoWLAN on some interface, connection on that interface should be deactivated,
+interface should keep up and WoL config should be set, WoL config should be removed after resume.
+
