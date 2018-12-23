@@ -219,10 +219,6 @@ config_h.set_quoted('IPTABLES_PATH', find_program(get_option('iptables')).path()
 # dnsmasq path
 config_h.set_quoted('DNSMASQ_PATH', find_program(get_option('dnsmasq')).path())
 
-# dnssec-trigger-script path
-dnssec_trigger_script = find_program(get_option('dnssec_trigger'), required: false)
-config_h.set_quoted('DNSSEC_TRIGGER_SCRIPT', (dnssec_trigger_script.found() ? dnssec_trigger_script.path() : '/usr/libexec/dnssec-trigger-script'))
-
 # system CA certificates path
 system_ca_path = get_option('system_ca_path')
 config_h.set_quoted('SYSTEM_CA_PATH', system_ca_path)
