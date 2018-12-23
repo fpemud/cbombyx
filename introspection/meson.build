@@ -28,18 +28,3 @@ install_data(
   ifaces_xmls,
   install_dir: dbus_ifaces_dir
 )
-
-libnmdbus = static_library(
-  'nmdbus',
-  sources: sources,
-  include_directories: top_inc,
-  dependencies: glib_dep
-)
-
-libnmdbus_dep = declare_dependency(
-  # FIXME: only headers should be added here to resolve dependencies on
-  #        libBombyxBase and libBombyx
-  #sources: sources,
-  include_directories: include_directories('.'),
-  link_with: libnmdbus
-)

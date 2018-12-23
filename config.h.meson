@@ -43,9 +43,6 @@
 /* Define to path to system CA certificates */
 #mesondefine SYSTEM_CA_PATH
 
-/* Define python path for test binary */
-#mesondefine TEST_NM_PYTHON
-
 /* Enable extensions on AIX 3, Interix.  */
 #ifndef _ALL_SOURCE
 # define _ALL_SOURCE 1
@@ -79,12 +76,6 @@
 
 /* Define if you want connectivity checking support */
 #mesondefine WITH_CONCHECK
-
-/* Define for libnm to prevent GIR from loading libnm-glib */
-#mesondefine WITH_FAKE_TYPELIBS
-
-/* Define if you have libpsl */
-#mesondefine WITH_LIBPSL
 
 /* Define whether the compiler support gcc __auto_type */
 #mesondefine _NM_CC_SUPPORT_AUTO_TYPE

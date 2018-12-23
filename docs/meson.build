@@ -3,7 +3,6 @@ version_conf.set('VERSION', nm_version)
 
 version_xml = 'version.xml'
 
-subdir('libnm')
 subdir('api')
 
 test(

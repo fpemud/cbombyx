@@ -115,7 +115,6 @@ deps = [
   libndp_dep,
   # FIXME: Some files use introspection/dbus* headers, so
   #        this dependency might be needed
-  #libnmdbus_dep,
   libudev_dep,
   nm_core_dep,
   shared_n_acd_dep

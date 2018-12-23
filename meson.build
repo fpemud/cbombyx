@@ -45,8 +45,6 @@ nm_build_cflags = [
   '-DNM_BUILD_BUILDDIR="@0@"'.format(meson.build_root()),
 ]
 
-libnm_name = 'libnm'
-
 nm_debug = get_option('buildtype').contains('debug')
 
 cc = meson.get_compiler('c')
@@ -223,12 +221,6 @@ config_h.set_quoted('DNSMASQ_PATH', find_program(get_option('dnsmasq')).path())
 system_ca_path = get_option('system_ca_path')
 config_h.set_quoted('SYSTEM_CA_PATH', system_ca_path)
 
-enable_libpsl = get_option('libpsl')
-if enable_libpsl
-  libpsl_dep = dependency('libpsl', version: '>= 0.1')
-endif
-config_h.set10('WITH_LIBPSL', enable_libpsl)
-
 enable_concheck = get_option('concheck')
 if enable_concheck
   libcurl_dep = dependency('libcurl', version: '>= 7.24.0', required: false)
@@ -255,19 +247,10 @@ config_h.set10('_NM_CC_SUPPORT_GENERIC', cc.compiles(generic_support_src))
 auto_support_src = 'int main() { int a = 0; __auto_type b = a; return b + a; };'
 config_h.set10('_NM_CC_SUPPORT_AUTO_TYPE', cc.compiles(auto_support_src))
 
-# Vala bindings
-enable_vapi = get_option('vapi')
-if enable_vapi
-  vala_req_version = '>= 0.17.1.24'
-  assert(add_languages('vala', required: false), 'vala is required to build. Use -Dvapi=false to disable it')
-  assert(meson.get_compiler('vala').version().version_compare(vala_req_version), 'vala ' + vala_req_version + ' is required to build. Use -Dvapi=false to disable it')
-endif
-
 # Tests, utilities and documentation
 tests = get_option('tests')
 enable_tests = (tests != 'no')
 require_root_tests = (tests == 'root')
-test_script = find_program(join_paths(meson.source_root(), 'tools', 'run-nm-test.sh'))
 
 # valgrind
 locations = get_option('valgrind')
@@ -295,10 +278,6 @@ test_args = [
 
 py3 = import('python3')
 python = py3.find_python()
-
-if python.found()
-  config_h.set_quoted('TEST_NM_PYTHON', python.path())
-endif
 
 # check if we can build setting property documentation
 '''
@@ -346,8 +325,6 @@ intltool_xml_cmd = [intltool_merge, '-x', '-u', '-c', intltool_cache, po_dir, '@
 perl = find_program('perl')
 xsltproc = find_program('xsltproc')
 
-check_exports = find_program(join_paths(meson.source_root(), 'tools', 'check-exports.sh'))
-
 content_files = []
 
 # FIXME: every plugin calls to this:
@@ -366,14 +343,9 @@ check_so_symbols = \
 top_inc = include_directories('.')
 
 subdir('introspection')
-subdir('shared')
 subdir('src')
 subdir('data')
 subdir('po')
-
-if enable_vapi
-  subdir('vapi')
-endif
 
 subdir('examples/C/glib')
 
@@ -447,5 +419,4 @@ output += '  code coverage: ' + get_option('b_coverage').to_string() + '\n'
 output += '  LTO: ' + get_option('b_lto').to_string() + '\n'
 output += '  Linker garbage collection: ' + enable_ld_gc.to_string() + '\n'
 output += '  sanitizers: ' + get_option('b_sanitize') + '\n'
-output += '  Mozilla Public Suffix List: ' + enable_libpsl.to_string() + '\n'
 message(output)
