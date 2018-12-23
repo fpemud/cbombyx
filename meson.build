@@ -427,7 +427,6 @@ output += '\nPlatform:\n'
 output += '  suspend/resume: ' + suspend_resume + '\n'
 output += '\n'
 output += '  systemd-journald: ' + enable_systemd_journal.to_string() + ' (default: logging.backend=' + config_logging_backend_default + ')\n'
-endif
 output += '\n'
 output += '  concheck: ' + enable_concheck.to_string() + '\n'
 output += '  config-dns-rc-manager-default: ' + config_dns_rc_manager_default + '\n'
