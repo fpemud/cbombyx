@@ -1,7 +1,7 @@
 src_inc = include_directories('.')
 
 install_data(
-  'org.freedesktop.Bombyx.conf',
+  'org.fpemud.Bombyx.conf',
   install_dir: dbus_conf_dir
 )
 

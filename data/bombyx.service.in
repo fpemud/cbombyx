@@ -6,7 +6,7 @@ Before=network.target @DISTRO_NETWORK_SERVICE@
 
 [Service]
 Type=dbus
-BusName=org.freedesktop.Bombyx
+BusName=org.fpemud.Bombyx
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStart=@sbindir@/bombyx --no-daemon
 Restart=on-failure

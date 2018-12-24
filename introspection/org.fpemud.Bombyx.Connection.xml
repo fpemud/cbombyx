@@ -2,7 +2,7 @@
 <node name="/">
 
   <!--
-      org.freedesktop.Bombyx.Connection:
+      org.fpemud.Bombyx.Connection:
       @short_description: Bombyx Connection
 
       Objects that implement the Connection interface represent an
@@ -20,7 +20,7 @@
       settings-connection as they are waiting to be activated or to be
       deactivated.
   -->
-  <interface name="org.freedesktop.Bombyx.Connection">
+  <interface name="org.fpemud.Bombyx.Connection">
     <annotation name="org.gtk.GDBus.C.Name" value="ActiveConnection"/>
 
     <!--

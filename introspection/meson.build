@@ -1,6 +1,6 @@
 ifaces = [
-  'org.freedesktop.Bombyx',
-  'org.freedesktop.Bombyx.Connection',
+  'org.fpemud.Bombyx',
+  'org.fpemud.Bombyx.Connection',
 ]
 
 ifaces_xmls = []
@@ -15,7 +15,7 @@ foreach iface: ifaces
   sources += gnome.gdbus_codegen(
     iface,
     iface_xml,
-    interface_prefix: 'org.freedesktop.Bombyx',
+    interface_prefix: 'org.fpemud.Bombyx',
     namespace: 'NMDBus',
     docbook: 'dbus'
   )
