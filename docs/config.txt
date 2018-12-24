@@ -1,5 +1,0 @@
-connection config should be in:
-1. /usr/share/bombyx/connections
-2. /etc/bombyx/connections
-
-you can hide connection in (2) by symlink to /dev/null

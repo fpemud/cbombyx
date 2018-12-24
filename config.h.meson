@@ -4,9 +4,6 @@
 /* Gettext package */
 #mesondefine GETTEXT_PACKAGE
 
-/* has getrandom */
-#mesondefine HAVE_GETRANDOM
-
 /* Define if systemd support is available */
 #mesondefine HAVE_SYSTEMD
 
@@ -18,9 +15,6 @@
 
 /* Default configuration option for logging.backend */
 #mesondefine BYX_CONFIG_DEFAULT_LOGGING_BACKEND
-
-/* Default value for main.rc-manager setting */
-#mesondefine BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER
 
 /* Define if more asserts are enabled */
 #mesondefine NM_MORE_ASSERTS
@@ -39,9 +33,6 @@
 
 /* Define to 1 if libsystemd-journald is available */
 #mesondefine SYSTEMD_JOURNAL
-
-/* Define to path to system CA certificates */
-#mesondefine SYSTEM_CA_PATH
 
 /* Enable extensions on AIX 3, Interix.  */
 #ifndef _ALL_SOURCE
@@ -67,9 +58,6 @@
 #ifndef __EXTENSIONS__
 # define __EXTENSIONS__ 1
 #endif
-
-/* sys/random.h is usable */
-#mesondefine USE_SYS_RANDOM_H
 
 /* Version number of package */
 #mesondefine VERSION

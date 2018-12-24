@@ -5,20 +5,18 @@ data_conf.set('sbindir', byx_sbindir)
 data_conf.set('sysconfdir', byx_sysconfdir)
 data_conf.set('DISTRO_NETWORK_SERVICE', ((distro == 'redhat') ? 'network.service' : ''))
 
-server = 'server.conf'
-
 configure_file(
-  input: server + '.in',
-  output: server,
+  input: 'server.conf.in',
+  output: 'server.conf',
   install: true,
-  install_dir: join_paths(byx_datadir, 'doc', nm_name, 'examples'),
+  install_dir: join_paths(byx_datadir, 'doc', byx_name, 'examples'),
   configuration: data_conf
 )
 
 if install_systemd_unit_dir
   services = [
-    ['NetworkManager.service', systemd_system_unit_dir],
-    ['NetworkManager-wait-online.service', systemd_system_unit_dir],
+    ['bombyx.service', systemd_system_unit_dir],
+    ['bombyx-wait-online.service', systemd_system_unit_dir],
   ]
 
   foreach service: services
@@ -32,3 +30,8 @@ if install_systemd_unit_dir
   endforeach
 
 endif
+
+install_data(
+  'org.fpemud.Bombyx.conf',
+  install_dir: dbus_conf_dir
+)

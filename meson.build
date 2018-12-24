@@ -8,12 +8,12 @@ project('Bombyx', 'c',
           meson_version: '>= 0.44.0'
 )
 
-nm_name = meson.project_name()
+byx_name = meson.project_name()
 
-nm_version = meson.project_version()
-byx_major_version = nm_version.split('.')[0].to_int()
-byx_minor_version = nm_version.split('.')[1].to_int()
-byx_micro_version = nm_version.split('.')[2].to_int()
+byx_version = meson.project_version()
+byx_major_version = byx_version.split('.')[0].to_int()
+byx_minor_version = byx_version.split('.')[1].to_int()
+byx_micro_version = byx_version.split('.')[2].to_int()
 
 byx_gir_version = '1.0'
 
@@ -30,36 +30,39 @@ byx_runstatedir = join_paths(byx_localstatedir, 'run')
 byx_sbindir = join_paths(byx_prefix, get_option('sbindir'))
 byx_sysconfdir = join_paths(byx_prefix, get_option('sysconfdir'))
 
-nm_pkgsbindir = join_paths(byx_sbindir, nm_name)
-nm_pkgconfdir = join_paths(byx_sysconfdir, nm_name)
-nm_pkgdatadir = join_paths(byx_datadir, nm_name)
-nm_pkgincludedir = join_paths(byx_includedir, nm_name)
-nm_pkglibdir = join_paths(byx_prefix, 'lib', nm_name)
-nm_pkgrundir = join_paths(byx_runstatedir, nm_name)
-nm_pkgstatedir = join_paths(byx_localstatedir, nm_name)
-nm_vpndir = join_paths(byx_libdir, nm_name)
-nm_plugindir = join_paths(byx_libdir, nm_name, nm_version)
+byx_pkgsbindir = join_paths(byx_sbindir, byx_name)
+byx_pkgconfdir = join_paths(byx_sysconfdir, byx_name)
+byx_pkgdatadir = join_paths(byx_datadir, byx_name)
+byx_pkgincludedir = join_paths(byx_includedir, byx_name)
+byx_pkglibdir = join_paths(byx_prefix, 'lib', byx_name)
+byx_pkgrundir = join_paths(byx_runstatedir, byx_name)
+byx_pkgstatedir = join_paths(byx_localstatedir, byx_name)
+byx_plugindir = join_paths(byx_libdir, byx_name, byx_version)
 
-nm_build_cflags = [
-  '-DNM_BUILD_SRCDIR="@0@"'.format(meson.source_root()),
-  '-DNM_BUILD_BUILDDIR="@0@"'.format(meson.build_root()),
-]
+byx_debug = get_option('buildtype').contains('debug')
 
-nm_debug = get_option('buildtype').contains('debug')
+if run_command('test', '-e', '/etc/sysconfig/network-scripts').returncode() == 0
+  distro = 'redhat'
+elif run_command('test', '-e', '/etc/SuSE-release').returncode() == 0
+  distro = 'suse'
+elif run_command('test', '-e', '/etc/debian_version').returncode() == 0
+  distro = 'debian'
+elif run_command('test', '-e', '/etc/gentoo-release').returncode() == 0
+  distro = 'gentoo'
+else
+  distro = 'unknown'
+endif
 
 cc = meson.get_compiler('c')
+
+cc.has_function('getrandom', prefix: '#include <sys/random.h>')
 
 config_h = configuration_data()
 
 # defines
-config_h.set_quoted('GETTEXT_PACKAGE', nm_name)
-config_h.set_quoted('PACKAGE_STRING', '@0@ @1@'.format(nm_name, nm_version))
-config_h.set_quoted('VERSION', nm_version)
-
-# headers
-use_sys_random = cc.has_function('getrandom', prefix: '#include <sys/random.h>')
-config_h.set10('USE_SYS_RANDOM_H', use_sys_random)
-config_h.set10('HAVE_GETRANDOM', use_sys_random or cc.has_function('getrandom', prefix: '#include <linux/random.h>'))
+config_h.set_quoted('GETTEXT_PACKAGE', byx_name)
+config_h.set_quoted('PACKAGE_STRING', '@0@ @1@'.format(byx_name, byx_version))
+config_h.set_quoted('VERSION', byx_version)
 
 # compiler flags
 common_flags = []
@@ -82,7 +85,7 @@ if enable_ld_gc
   common_ldflags += test_ldflags
 endif
 
-if nm_debug
+if byx_debug
   test_cflags = [
     '-fno-strict-aliasing',
     '-Wdeclaration-after-statement',
@@ -115,12 +118,16 @@ add_project_arguments(common_flags, language: 'c')
 add_project_link_arguments(common_ldflags, language: 'c')
 
 uuid_dep = dependency('uuid')
+
 libudev_dep = dependency('libudev', version: '>= 175')
+
 dbus_dep = dependency('dbus-1', version: '>= 1.1')
+
 libndp_dep = dependency('libndp')
 
 libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
 libelogind_dep = dependency('libelogind', version: '>= 219', required: false)
+
 systemd_dep = dependency('systemd', required: false)
 
 gio_unix_dep = dependency('gio-unix-2.0', version: '>= 2.40')
@@ -135,25 +142,6 @@ glib_dep = declare_dependency(
     '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_40'
   ]
 )
-
-if run_command('test', '-e', '/etc/sysconfig/network-scripts').returncode() == 0
-  distro = 'redhat'
-elif run_command('test', '-e', '/etc/SuSE-release').returncode() == 0
-  distro = 'suse'
-elif run_command('test', '-e', '/etc/debian_version').returncode() == 0
-  distro = 'debian'
-elif run_command('test', '-e', '/etc/gentoo-release').returncode() == 0
-  distro = 'gentoo'
-else
-  distro = 'unknown'
-endif
-
-# introspection support
-enable_introspection = get_option('introspection')
-if enable_introspection
-  gir_dep = dependency('gobject-introspection-1.0', version: '>= 0.9.6', required: false)
-  assert(gir_dep.found(), 'introspection support was requested, but the gobject-introspection library is not available. Use -Dintrospection=false to build without it.')
-endif
 
 systemd_system_unit_dir = get_option('systemdsystemunitdir')
 install_systemd_unit_dir = (systemd_system_unit_dir != 'no')
@@ -187,7 +175,6 @@ else
   ERROR    # FIXME
 endif
 
-# crypto
 crypto = get_option('crypto')
 if crypto == 'nss'
   crypto_dep = dependency('nss')
@@ -207,19 +194,11 @@ if dbus_ifaces_dir == ''
   dbus_ifaces_dir = dbus_dep.get_pkgconfig_variable('interfaces_dir')
 endif
 
-config_dns_rc_manager_default = get_option('config_dns_rc_manager_default')
-
-config_h.set_quoted('BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER', config_dns_rc_manager_default)
-
 # iptables path
 config_h.set_quoted('IPTABLES_PATH', find_program(get_option('iptables')).path())
 
 # dnsmasq path
 config_h.set_quoted('DNSMASQ_PATH', find_program(get_option('dnsmasq')).path())
-
-# system CA certificates path
-system_ca_path = get_option('system_ca_path')
-config_h.set_quoted('SYSTEM_CA_PATH', system_ca_path)
 
 enable_concheck = get_option('concheck')
 if enable_concheck
@@ -311,7 +290,6 @@ else
 fi
 '''
 
-gnome = import('gnome')
 i18n = import('i18n')
 pkg = import('pkgconfig')
 
@@ -342,25 +320,13 @@ check_so_symbols = \
 
 top_inc = include_directories('.')
 
-subdir('introspection')
 subdir('src')
 subdir('data')
 subdir('po')
 
-subdir('examples/C/glib')
-
-enable_qt = get_option('qt')
-if enable_qt
-  add_languages('cpp')
-  subdir('examples/C/qt')
-endif
-
 enable_docs = get_option('docs')
 if enable_docs
   subdir('man')
-
-  #assert(enable_introspection, '-Dgtk_doc=true requires -Dintrospection=true')
-
   subdir('docs')
 endif
 
@@ -372,39 +338,36 @@ configure_file(
   configuration: config_h
 )
 
-meson.add_install_script(
-  'meson_post_install.py',
-  byx_datadir,
-  byx_bindir,
-  nm_pkgconfdir,
-  nm_pkglibdir,
-  byx_localstatedir,
-  enable_docs ? 'install_docs' : '',
-  byx_mandir
-)
+#meson.add_install_script(
+#  'meson_post_install.py',
+#  byx_datadir,
+#  byx_bindir,
+#  byx_pkgconfdir,
+#  byx_pkglibdir,
+#  byx_localstatedir,
+#  enable_docs ? 'install_docs' : '',
+#  byx_mandir
+#)
 
-output = '\nSystem paths:\n'
+output = '\n'
+output += 'System paths:\n'
 output += '  prefix: ' + byx_prefix + '\n'
 output += '  exec_prefix: ' + byx_prefix + '\n'
 output += '  systemdunitdir: ' + systemd_system_unit_dir + '\n'
-output += '  nmbinary: ' + nm_pkgsbindir + '\n'
-output += '  nmconfdir: ' + nm_pkgconfdir + '\n'
-output += '  nmlibdir: ' + nm_pkglibdir + '\n'
-output += '  nmdatadir: ' + nm_pkgdatadir + '\n'
-output += '  nmstatedir: ' + nm_pkgstatedir + '\n'
-output += '  nmrundir: ' + nm_pkgrundir + '\n'
-output += '  nmvpndir: ' + nm_vpndir + '\n'
-output += '  nmplugindir: ' + nm_plugindir + '\n'
-output += '\nPlatform:\n'
+output += '  binary: ' + byx_pkgsbindir + '\n'
+output += '  confdir: ' + byx_pkgconfdir + '\n'
+output += '  libdir: ' + byx_pkglibdir + '\n'
+output += '  datadir: ' + byx_pkgdatadir + '\n'
+output += '  statedir: ' + byx_pkgstatedir + '\n'
+output += '  rundir: ' + byx_pkgrundir + '\n'
+output += '  plugindir: ' + byx_plugindir + '\n'
+output += '\n'
+output += 'Platform:\n'
 output += '  suspend/resume: ' + suspend_resume + '\n'
-output += '\n'
 output += '  systemd-journald: ' + enable_systemd_journal.to_string() + ' (default: logging.backend=' + config_logging_backend_default + ')\n'
-output += '\n'
 output += '  concheck: ' + enable_concheck.to_string() + '\n'
-output += '  config-dns-rc-manager-default: ' + config_dns_rc_manager_default + '\n'
 output += '\n'
-output += '\nMiscellaneous:\n'
-output += '  have introspection: ' + enable_introspection.to_string() + '\n'
+output += 'Miscellaneous:\n'
 output += '  build documentation and manpages: ' + enable_docs.to_string() + '\n'
 output += '  tests: ' + tests + '\n'
 output += '  more-asserts: @0@\n'.format(more_asserts)

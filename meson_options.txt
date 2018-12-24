@@ -1,6 +1,5 @@
 # system paths
 option('systemdsystemunitdir', type: 'string', value: '', description: 'Directory for systemd service files')
-option('system_ca_path', type: 'string', value: '/etc/ssl/certs', description: 'path to system CA certificates')
 option('dbus_conf_dir', type: 'string', value: '', description: 'where D-Bus system.d directory is')
 option('dbus_ifaces_dir', type: 'string', value: '', description: 'where D-Bus interfaces directory is')
 option('iptables', type: 'array', value: ['iptables', '/sbin/iptables', '/usr/sbin/iptables'], description: 'path to iptables')
@@ -20,12 +19,7 @@ option('bluez5_dun', type: 'boolean', value: false, description: 'enable Bluez5 
 # configuration plugins
 option('config_plugins_default', type: 'string', value: '', description: 'Default configuration option for main.plugins setting, used as fallback if the configuration option is unset')
 
-# handlers for resolv.conf
-option('config_dns_rc_manager_default', type: 'combo', choices: ['symlink', 'file'], value: 'symlink', description: 'Configure default value for main.rc-manager setting')
-
 # miscellaneous
-option('introspection', type: 'boolean', value: true, description: 'Enable introspection for this build')
-option('docs', type: 'boolean', value: false, description: 'use to build documentation')
 option('tests', type: 'combo', choices: ['yes', 'no', 'root'], value: 'yes', description: 'Build NetworkManager tests')
 option('more_asserts', type: 'string', value: 'all', description: 'Enable more assertions for debugging (0 = none, 100 = all, default: all)')
 option('more_logging', type: 'boolean', value: true, description: 'Enable more debug logging')
@@ -33,5 +27,5 @@ option('valgrind', type: 'array', value: ['no'], description: 'Use valgrind to m
 option('valgrind_suppressions', type: 'string', value: '', description: 'Use specific valgrind suppression file')
 option('ld_gc', type: 'boolean', value: true, description: 'Enable garbage collection of unused symbols on linking')
 option('crypto', type: 'combo', choices: ['nss', 'gnutls'], value: 'nss', description: 'Cryptography library to use for certificate and key operations')
-option('qt', type: 'boolean', value: true, description: 'enable Qt examples')
+option('network_share', type: 'boolean', value: false, description: 'enable network sharing function')
 option('check_settings_docs', type: 'boolean', value: false, description: 'compare check settings-docs.h file')

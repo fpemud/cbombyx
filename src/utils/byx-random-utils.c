@@ -24,12 +24,7 @@
 #include "byx-random-utils.h"
 
 #include <fcntl.h>
-
-#if USE_SYS_RANDOM_H
 #include <sys/random.h>
-#else
-#include <linux/random.h>
-#endif
 
 #include "nm-shared-utils.h"
 
@@ -69,7 +64,6 @@ byx_utils_random_bytes (void *p, size_t n)
 	g_return_val_if_fail (p, FALSE);
 	g_return_val_if_fail (n > 0, FALSE);
 
-#if HAVE_GETRANDOM
 	{
 		static gboolean have_syscall = TRUE;
 
@@ -108,7 +102,6 @@ byx_utils_random_bytes (void *p, size_t n)
 			}
 		}
 	}
-#endif
 
 	urandom_success = FALSE;
 	if (!avoid_urandom) {

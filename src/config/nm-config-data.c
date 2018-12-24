@@ -547,7 +547,6 @@ static const struct {
 	const char *key;
 	const char *value;
 } default_values[] = {
-	{ BYX_CONFIG_KEYFILE_GROUP_MAIN,    "rc-manager",                           BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER },
 	{ BYX_CONFIG_KEYFILE_GROUP_LOGGING, "backend",                              BYX_CONFIG_DEFAULT_LOGGING_BACKEND },
 };
 

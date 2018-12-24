@@ -190,7 +190,8 @@ domain_is_routing (const char *domain)
 
 /*****************************************************************************/
 
-NM_UTILS_LOOKUP_STR_DEFINE_STATIC (_rc_manager_to_string, NMDnsManagerResolvConfManager,
+NM_UTILS_LOOKUPNM_UTILS_LOOKUP_STR_DEFINE_STATIC (_rc_manager_to_string, NMDnsManagerResolvConfManager,
+_STR_DEFINE_STATIC (_rc_manager_to_string, NMDnsManagerResolvConfManager,
 	NM_UTILS_LOOKUP_DEFAULT_WARN (NULL),
 	NM_UTILS_LOOKUP_STR_ITEM (NM_DNS_MANAGER_RESOLV_CONF_MAN_UNKNOWN,        "unknown"),
 	NM_UTILS_LOOKUP_STR_ITEM (NM_DNS_MANAGER_RESOLV_CONF_MAN_UNMANAGED,      "unmanaged"),
@@ -1722,108 +1723,6 @@ _resolvconf_resolved_managed (void)
 }
 
 static void
-init_resolv_conf_mode (NMDnsManager *self, gboolean force_reload_plugin)
-{
-	NMDnsManagerPrivate *priv = NM_DNS_MANAGER_GET_PRIVATE (self);
-	NMDnsManagerResolvConfManager rc_manager;
-	const char *mode;
-	gboolean param_changed = FALSE, plugin_changed = FALSE;
-
-	mode = byx_config_data_get_dns_mode (byx_config_get_data (priv->config));
-
-	if (nm_streq0 (mode, "none"))
-		rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_UNMANAGED;
-	else {
-		const char *man;
-
-		rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_UNKNOWN;
-		man = byx_config_data_get_rc_manager (byx_config_get_data (priv->config));
-
-again:
-		if (!man) {
-			/* nop */
-		} else if (NM_IN_STRSET (man, "symlink", "none"))
-			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_SYMLINK;
-		else if (nm_streq (man, "file"))
-			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_FILE;
-		else if (nm_streq (man, "unmanaged"))
-			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_UNMANAGED;
-
-		if (rc_manager == NM_DNS_MANAGER_RESOLV_CONF_MAN_UNKNOWN) {
-			if (man) {
-				_LOGW ("init: unknown resolv.conf manager \"%s\", fallback to \"%s\"",
-				       man, ""BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER);
-			}
-			man = ""BYX_CONFIG_DEFAULT_MAIN_RC_MANAGER;
-			rc_manager = NM_DNS_MANAGER_RESOLV_CONF_MAN_SYMLINK;
-			goto again;
-		}
-	}
-
-	rc_manager = _check_resconf_immutable (rc_manager);
-
-	if (   (!mode && _resolvconf_resolved_managed ())
-	    || nm_streq0 (mode, "systemd-resolved")) {
-		if (   force_reload_plugin
-		    || !NM_IS_DNS_SYSTEMD_RESOLVED (priv->plugin)) {
-			_clear_plugin (self);
-			priv->plugin = nm_dns_systemd_resolved_new ();
-			plugin_changed = TRUE;
-		}
-		mode = "systemd-resolved";
-	} else if (nm_streq0 (mode, "dnsmasq")) {
-		if (force_reload_plugin || !NM_IS_DNS_DNSMASQ (priv->plugin)) {
-			_clear_plugin (self);
-			priv->plugin = nm_dns_dnsmasq_new ();
-			plugin_changed = TRUE;
-		}
-	} else if (nm_streq0 (mode, "unbound")) {
-		if (force_reload_plugin || !NM_IS_DNS_UNBOUND (priv->plugin)) {
-			_clear_plugin (self);
-			priv->plugin = nm_dns_unbound_new ();
-			plugin_changed = TRUE;
-		}
-	} else {
-		if (!NM_IN_STRSET (mode, "none", "default")) {
-			if (mode)
-				_LOGW ("init: unknown dns mode '%s'", mode);
-			mode = "default";
-		}
-		if (_clear_plugin (self))
-			plugin_changed = TRUE;
-	}
-
-	if (plugin_changed && priv->plugin) {
-		g_signal_connect (priv->plugin, NM_DNS_PLUGIN_FAILED, G_CALLBACK (plugin_failed), self);
-		g_signal_connect (priv->plugin, NM_DNS_PLUGIN_CHILD_QUIT, G_CALLBACK (plugin_child_quit), self);
-	}
-
-	g_object_freeze_notify (G_OBJECT (self));
-
-	if (!nm_streq0 (priv->mode, mode)) {
-		g_free (priv->mode);
-		priv->mode = g_strdup (mode);
-		param_changed = TRUE;
-		_notify (self, PROP_MODE);
-	}
-
-	if (priv->rc_manager != rc_manager) {
-		priv->rc_manager = rc_manager;
-		param_changed = TRUE;
-		_notify (self, PROP_RC_MANAGER);
-	}
-
-	if (param_changed || plugin_changed) {
-		_LOGI ("init: dns=%s, rc-manager=%s%s%s%s",
-		       mode, _rc_manager_to_string (rc_manager),
-		       NM_PRINT_FMT_QUOTED (priv->plugin, ", plugin=",
-		                            nm_dns_plugin_get_name (priv->plugin), "", ""));
-	}
-
-	g_object_thaw_notify (G_OBJECT (self));
-}
-
-static void
 config_changed_cb (ByxConfig *config,
                    ByxConfigData *config_data,
                    ByxConfigChangeFlags changes,
@@ -2058,7 +1957,6 @@ nm_dns_manager_init (NMDnsManager *self)
 	                  BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
 	                  G_CALLBACK (config_changed_cb),
 	                  self);
-	init_resolv_conf_mode (self, TRUE);
 }
 
 static void

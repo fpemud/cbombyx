@@ -25,7 +25,7 @@ cflags = nm_cflags + [
   '-DRUNDIR="@0@"'.format(nm_pkgrundir),
   '-DNMCONFDIR="@0@"'.format(nm_pkgconfdir),
   '-DNMLOCALEDIR="@0@"'.format(byx_localedir),
-  '-DNMPLUGINDIR="@0@"'.format(nm_plugindir),
+  '-DNMPLUGINDIR="@0@"'.format(byx_plugindir),
   '-DNMRUNDIR="@0@"'.format(nm_pkgrundir),
   '-DNMSTATEDIR="@0@"'.format(nm_pkgstatedir),
   '-DNMLIBDIR="@0@"'.format(nm_pkglibdir)
@@ -60,7 +60,7 @@ deps = [
 ]
 
 libnetwork_manager_base = static_library(
-  nm_name + 'Base',
+  byx_name + 'Base',
   sources: sources,
   dependencies: deps,
   c_args: cflags,
@@ -113,8 +113,6 @@ sources = files(
 deps = [
   dl_dep,
   libndp_dep,
-  # FIXME: Some files use introspection/dbus* headers, so
-  #        this dependency might be needed
   libudev_dep,
   nm_core_dep,
   shared_n_acd_dep
@@ -129,7 +127,7 @@ if enable_libpsl
 endif
 
 libnetwork_manager = static_library(
-  nm_name,
+  byx_name,
   sources: sources,
   dependencies: deps,
   c_args: cflags,
@@ -165,7 +163,7 @@ ldflags += '-Wl,--version-script,@0@'.format(linker_script)
 '''
 
 network_manager = executable(
-  nm_name,
+  byx_name,
   'main.c',
   dependencies: deps,
   c_args: cflags,
