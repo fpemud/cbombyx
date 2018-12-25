@@ -1,10 +1,5 @@
 src_inc = include_directories('.')
 
-install_data(
-  'org.fpemud.Bombyx.conf',
-  install_dir: dbus_conf_dir
-)
-
 nm_cflags = ['-DNETWORKMANAGER_COMPILATION=NM_NETWORKMANAGER_COMPILATION_DAEMON']
 
 nm_dep = declare_dependency(

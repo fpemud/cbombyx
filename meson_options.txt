@@ -1,23 +1,18 @@
 # system paths
-option('systemdsystemunitdir', type: 'string', value: '', description: 'Directory for systemd service files')
+option('systemd_system_unit_dir', type: 'string', value: '', description: 'Directory for systemd service files')
 option('dbus_conf_dir', type: 'string', value: '', description: 'where D-Bus system.d directory is')
 option('dbus_ifaces_dir', type: 'string', value: '', description: 'where D-Bus interfaces directory is')
 option('iptables', type: 'array', value: ['iptables', '/sbin/iptables', '/usr/sbin/iptables'], description: 'path to iptables')
 option('dnsmasq', type: 'array', value: ['dnsmasq', '/sbin/dnsmasq', '/usr/sbin/dnsmasq'], description: 'path to dnsmasq')
 
 # platform
-option('modify_system', type: 'boolean', value: false, description: 'Allow users to modify system connections')
-option('selinux', type: 'boolean', value: true, description: 'Build with SELinux')
-option('systemd_journal', type: 'boolean', value: true, description: 'Use systemd journal for logging')
-option('config_logging_backend_default', type: 'combo', choices: ['default', 'syslog', 'journal'], value: 'default', description: 'Default value for logging.backend')
-option('libaudit', type: 'combo', choices: ['yes', 'yes-disabled-by-default', 'no'], value: 'yes', description: 'Build with audit daemon support. yes-disabled-by-default enables support, but disables it unless explicitly configured via NetworkManager.conf')
+option('logging_backend', type: 'combo', choices: ['journal', 'syslog'], value: 'journal', description: 'Use systemd-journal or syslog for logging')
+option('logind_backend', type: 'combo', choices: ['systemd', 'elogind'], description: 'Use systemd-logind or elogind')
+option('crypto', type: 'combo', choices: ['nss', 'gnutls'], value: 'nss', description: 'Cryptography library to use for certificate and key operations')
 
 # features
 option('concheck', type: 'boolean', value: true, description: 'enable connectivity checking support')
-option('bluez5_dun', type: 'boolean', value: false, description: 'enable Bluez5 DUN support')
-
-# configuration plugins
-option('config_plugins_default', type: 'string', value: '', description: 'Default configuration option for main.plugins setting, used as fallback if the configuration option is unset')
+option('network_sharing', type: 'boolean', value: false, description: 'enable network sharing function')
 
 # miscellaneous
 option('tests', type: 'combo', choices: ['yes', 'no', 'root'], value: 'yes', description: 'Build NetworkManager tests')
@@ -25,7 +20,3 @@ option('more_asserts', type: 'string', value: 'all', description: 'Enable more a
 option('more_logging', type: 'boolean', value: true, description: 'Enable more debug logging')
 option('valgrind', type: 'array', value: ['no'], description: 'Use valgrind to memory-check the tests')
 option('valgrind_suppressions', type: 'string', value: '', description: 'Use specific valgrind suppression file')
-option('ld_gc', type: 'boolean', value: true, description: 'Enable garbage collection of unused symbols on linking')
-option('crypto', type: 'combo', choices: ['nss', 'gnutls'], value: 'nss', description: 'Cryptography library to use for certificate and key operations')
-option('network_share', type: 'boolean', value: false, description: 'enable network sharing function')
-option('check_settings_docs', type: 'boolean', value: false, description: 'compare check settings-docs.h file')

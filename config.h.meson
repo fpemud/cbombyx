@@ -4,9 +4,6 @@
 /* Gettext package */
 #mesondefine GETTEXT_PACKAGE
 
-/* Define if systemd support is available */
-#mesondefine HAVE_SYSTEMD
-
 /* Define if you have Linux Wireless Extensions support */
 #mesondefine HAVE_WEXT
 
@@ -62,10 +59,13 @@
 /* Version number of package */
 #mesondefine VERSION
 
+/* Define if you want network sharing support */
+#mesondefine WITH_NETWORK_SHARING
+
 /* Define if you want connectivity checking support */
 #mesondefine WITH_CONCHECK
 
-/* Define whether the compiler support gcc __auto_type */
+/* Define whether the compiler support gcc __auto_type` */
 #mesondefine _NM_CC_SUPPORT_AUTO_TYPE
 
 /* Define whether the compiler supports C11 _Generic() */

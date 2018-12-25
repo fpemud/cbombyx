@@ -5,7 +5,7 @@ project('Bombyx', 'c',
           'buildtype=debugoptimized',
           'c_std=gnu99'
         ],
-          meson_version: '>= 0.44.0'
+          meson_version: '>= 0.48.0'
 )
 
 byx_name = meson.project_name()
@@ -68,23 +68,6 @@ config_h.set_quoted('VERSION', byx_version)
 common_flags = []
 common_ldflags = []
 
-enable_ld_gc = get_option('ld_gc')
-if enable_ld_gc
-  test_cflags = [
-    '-fdata-sections',
-    '-ffunction-sections',
-  ]
-
-  test_ldflags = ['-Wl,--gc-sections']
-
-  foreach cflag: test_cflags + test_ldflags
-    assert(cc.has_argument(cflag), 'Unused symbol eviction requested but not supported. Use -Dld_gc=false to build without it.')
-  endforeach
-
-  common_flags += test_cflags
-  common_ldflags += test_ldflags
-endif
-
 if byx_debug
   test_cflags = [
     '-fno-strict-aliasing',
@@ -130,11 +113,9 @@ libelogind_dep = dependency('libelogind', version: '>= 219', required: false)
 
 systemd_dep = dependency('systemd', required: false)
 
-gio_unix_dep = dependency('gio-unix-2.0', version: '>= 2.40')
-
 glib_dep = declare_dependency(
   dependencies: [
-    gio_unix_dep,
+    dependency('gio-unix-2.0', version: '>= 2.40'),
     dependency('gmodule-2.0')
   ],
   compile_args: [
@@ -143,32 +124,26 @@ glib_dep = declare_dependency(
   ]
 )
 
-systemd_system_unit_dir = get_option('systemdsystemunitdir')
+systemd_system_unit_dir = get_option('systemd_system_unit_dir')
 install_systemd_unit_dir = (systemd_system_unit_dir != 'no')
 
 if install_systemd_unit_dir and systemd_system_unit_dir == ''
   assert(systemd_dep.found(), 'systemd required but not found, please provide a valid systemd user unit dir or disable it')
-  systemd_system_unit_dir = systemd_dep.get_pkgconfig_variable('systemdsystemunitdir')
+  systemd_system_unit_dir = systemd_dep.get_pkgconfig_variable('systemd_system_unit_dir')
 endif
-config_h.set10('HAVE_SYSTEMD', install_systemd_unit_dir)
 
-enable_systemd_journal = get_option('systemd_journal')
-if enable_systemd_journal
+logging_backend = get_option('logging_backend')
+if logging_backend == 'journal'
   assert(libsystemd_dep.found(), 'Missing systemd-journald support')
+  config_h.set10('SYSTEMD_JOURNAL', 1)
 endif
-config_h.set10('SYSTEMD_JOURNAL', enable_systemd_journal)
-
-config_logging_backend_default = get_option('config_logging_backend_default')
-if config_logging_backend_default == 'default'
-  config_logging_backend_default = (enable_systemd_journal ? 'journal' : 'syslog')
-endif
-config_h.set_quoted('BYX_CONFIG_DEFAULT_LOGGING_BACKEND', config_logging_backend_default)
+config_h.set_quoted('BYX_CONFIG_DEFAULT_LOGGING_BACKEND', logging_backend)
 
 suspend_resume = ''
-if libsystemd_dep.found()
+if get_option('logind_backend') == 'systemd'
   suspend_resume = 'systemd'
   config_h.set('SUSPEND_RESUME_SYSTEMD', true)
-elif libelogind_dep.found()
+elif get_option('logind_backend') == 'elogind'
   suspend_resume = 'elogind'
   config_h.set('SUSPEND_RESUME_ELOGIND', true)
 else
@@ -364,7 +339,8 @@ output += '  plugindir: ' + byx_plugindir + '\n'
 output += '\n'
 output += 'Platform:\n'
 output += '  suspend/resume: ' + suspend_resume + '\n'
-output += '  systemd-journald: ' + enable_systemd_journal.to_string() + ' (default: logging.backend=' + config_logging_backend_default + ')\n'
+output += '  logging: ' + logging_backend + '\n'
+output += '  crypto: ' + crypto + '\n'
 output += '  concheck: ' + enable_concheck.to_string() + '\n'
 output += '\n'
 output += 'Miscellaneous:\n'
@@ -380,6 +356,5 @@ endif
 output += '\n'
 output += '  code coverage: ' + get_option('b_coverage').to_string() + '\n'
 output += '  LTO: ' + get_option('b_lto').to_string() + '\n'
-output += '  Linker garbage collection: ' + enable_ld_gc.to_string() + '\n'
 output += '  sanitizers: ' + get_option('b_sanitize') + '\n'
 message(output)
