@@ -190,7 +190,7 @@ nm_hash_update_str (NMHashState *state, const char *str)
 	nm_hash_update (state, str, strlen (str) + 1);
 }
 
-#if _NM_CC_SUPPORT_GENERIC
+#if _BYX_CC_SUPPORT_GENERIC
 /* Like nm_hash_update_str(), but restricted to arrays only. nm_hash_update_str() only works
  * with a @str argument that cannot be NULL. If you have a string pointer, that is never NULL, use
  * nm_hash_update() instead. */

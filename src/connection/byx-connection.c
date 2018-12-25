@@ -14176,7 +14176,7 @@ _set_state_full (ByxConnection *self,
 		/* Schedule the transition to DISCONNECTED.  The device can't transition
 		 * immediately because we can't change states again from the state
 		 * handler for a variety of reasons.
-		 */
+		 */settings_connection_update
 		byx_connection_queue_state (self, BYX_CONNECTION_STATE_DISCONNECTED, BYX_CONNECTION_STATE_REASON_NONE);
 		break;
 	case BYX_CONNECTION_STATE_IP_CHECK:

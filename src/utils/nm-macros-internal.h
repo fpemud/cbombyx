@@ -303,27 +303,27 @@ NM_G_ERROR_MSG (GError *error)
 
 /*****************************************************************************/
 
-#ifndef _NM_CC_SUPPORT_AUTO_TYPE
+#ifndef _BYX_CC_SUPPORT_AUTO_TYPE
 #if (defined (__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9 )))
-#define _NM_CC_SUPPORT_AUTO_TYPE 1
+#define _BYX_CC_SUPPORT_AUTO_TYPE 1
 #else
-#define _NM_CC_SUPPORT_AUTO_TYPE 0
+#define _BYX_CC_SUPPORT_AUTO_TYPE 0
 #endif
 #endif
 
-#ifndef _NM_CC_SUPPORT_GENERIC
+#ifndef _BYX_CC_SUPPORT_GENERIC
 #if (defined (__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9 ))) || (defined (__clang__))
-#define _NM_CC_SUPPORT_GENERIC 1
+#define _BYX_CC_SUPPORT_GENERIC 1
 #else
-#define _NM_CC_SUPPORT_GENERIC 0
+#define _BYX_CC_SUPPORT_GENERIC 0
 #endif
 #endif
 
-#if _NM_CC_SUPPORT_AUTO_TYPE
+#if _BYX_CC_SUPPORT_AUTO_TYPE
 #define _nm_auto_type __auto_type
 #endif
 
-#if _NM_CC_SUPPORT_GENERIC
+#if _BYX_CC_SUPPORT_GENERIC
 #define _NM_CONSTCAST_FULL_1(type, obj_expr, obj) \
 	(_Generic ((obj_expr), \
 	           const void        *const: ((const type *) (obj)), \
@@ -398,7 +398,7 @@ NM_G_ERROR_MSG (GError *error)
 #define NM_CONSTCAST(type, obj, ...) \
 	NM_CONSTCAST_FULL(type, (obj), (obj), ##__VA_ARGS__)
 
-#if _NM_CC_SUPPORT_GENERIC
+#if _BYX_CC_SUPPORT_GENERIC
 #define NM_UNCONST_PTR(type, arg) \
 	_Generic ((arg), \
 	          const type *: ((type *) (arg)), \
@@ -408,7 +408,7 @@ NM_G_ERROR_MSG (GError *error)
 	((type *) (arg))
 #endif
 
-#if _NM_CC_SUPPORT_GENERIC
+#if _BYX_CC_SUPPORT_GENERIC
 #define NM_UNCONST_PPTR(type, arg) \
 	_Generic ((arg), \
 	          const type *     *: ((type **) (arg)), \
@@ -436,7 +436,7 @@ NM_G_ERROR_MSG (GError *error)
 		NM_CONSTCAST_FULL (type, (obj), _obj, GObject, ##__VA_ARGS__); \
 	})
 
-#if _NM_CC_SUPPORT_GENERIC
+#if _BYX_CC_SUPPORT_GENERIC
 /* returns @value, if the type of @value matches @type.
  * This requires support for C11 _Generic(). If no support is
  * present, this returns @value directly.
@@ -448,7 +448,7 @@ NM_G_ERROR_MSG (GError *error)
 #define _NM_ENSURE_TYPE(type, value) (value)
 #endif
 
-#if _NM_CC_SUPPORT_GENERIC
+#if _BYX_CC_SUPPORT_GENERIC
 /* these macros cast (value) to
  *  - "const char **"      (for "MC", mutable-const)
  *  - "const char *const*" (for "CC", const-const)
@@ -483,7 +483,7 @@ NM_G_ERROR_MSG (GError *error)
 #define NM_CAST_STRV_CC(value) ((const char *const*) (value))
 #endif
 
-#if _NM_CC_SUPPORT_GENERIC
+#if _BYX_CC_SUPPORT_GENERIC
 #define NM_PROPAGATE_CONST(test_expr, ptr) \
 	(_Generic ((test_expr), \
 	           const typeof (*(test_expr)) *: ((const typeof (*(ptr)) *) (ptr)), \
@@ -773,7 +773,7 @@ _notify (obj_type *obj, _PropertyEnums prop) \
 /*****************************************************************************/
 
 #define _BYX_GET_PRIVATE(self, type, is_check, ...) (&(NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__)->_priv))
-#if _NM_CC_SUPPORT_AUTO_TYPE
+#if _BYX_CC_SUPPORT_AUTO_TYPE
 #define _BYX_GET_PRIVATE_PTR(self, type, is_check, ...) \
 	({ \
 		_nm_auto_type _self = NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__); \
