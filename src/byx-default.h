@@ -91,16 +91,13 @@
 #error Define NETWORKMANAGER_COMPILATION accordingly
 #endif
 
-#ifndef G_LOG_DOMAIN
+#ifdef G_LOG_DOMAIN
+#error Do not define G_LOG_DOMAIN
+#endif
 #if defined(NETWORKMANAGER_COMPILATION_TEST)
 #define G_LOG_DOMAIN "test"
-#elif NETWORKMANAGER_COMPILATION & NM_NETWORKMANAGER_COMPILATION_WITH_DAEMON
-#define G_LOG_DOMAIN "NetworkManager"
 #else
-#error Need to define G_LOG_DOMAIN
-#endif
-#elif defined (NETWORKMANAGER_COMPILATION_TEST) || (NETWORKMANAGER_COMPILATION & NM_NETWORKMANAGER_COMPILATION_WITH_DAEMON)
-#error Do not define G_LOG_DOMAIN with NM_NETWORKMANAGER_COMPILATION_WITH_DAEMON
+#define G_LOG_DOMAIN "bombyx"
 #endif
 
 /*****************************************************************************/
@@ -285,23 +282,6 @@ _nm_g_return_if_fail_warning (const char *log_domain,
 /* no hash-utils in legacy code. */
 #else
 #include "nm-utils/nm-hash-utils.h"
-#endif
-
-/*****************************************************************************/
-
-#if (NETWORKMANAGER_COMPILATION) & (NM_NETWORKMANAGER_COMPILATION_WITH_LIBNM_CORE | NM_NETWORKMANAGER_COMPILATION_WITH_LIBNM_UTIL)
-#include "nm-version.h"
-#endif
-
-/*****************************************************************************/
-
-#if (NETWORKMANAGER_COMPILATION) & NM_NETWORKMANAGER_COMPILATION_WITH_DAEMON
-#include "nm-types.h"
-#include "nm-logging.h"
-#endif
-
-#if ((NETWORKMANAGER_COMPILATION) & NM_NETWORKMANAGER_COMPILATION_WITH_LIBNM) && !((NETWORKMANAGER_COMPILATION) & (NM_NETWORKMANAGER_COMPILATION_WITH_LIBNM_PRIVATE | NM_NETWORKMANAGER_COMPILATION_WITH_LIBNM_CORE_INTERNAL))
-#include "NetworkManager.h"
 #endif
 
 #endif /* NM_NETWORKMANAGER_COMPILATION_WITH_GLIB */
