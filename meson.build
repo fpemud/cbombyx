@@ -154,13 +154,11 @@ endif
 
 dbus_conf_dir = get_option('dbus_conf_dir')
 if dbus_conf_dir == ''
-  assert(dbus_dep.found(), 'D-Bus required but not found, please provide a valid system bus config dir')
   dbus_conf_dir = join_paths(dbus_dep.get_pkgconfig_variable('sysconfdir'), 'dbus-1', 'system.d')
 endif
 
 dbus_ifaces_dir = get_option('dbus_ifaces_dir')
 if dbus_ifaces_dir == ''
-  assert(dbus_dep.found(), 'D-Bus required but not found, please provide a valid interfaces dir')
   dbus_ifaces_dir = dbus_dep.get_pkgconfig_variable('interfaces_dir')
 endif
 
@@ -191,10 +189,10 @@ more_logging = get_option('more_logging')
 config_h.set10('NM_MORE_LOGGING', more_logging)
 
 generic_support_src = 'int main() { int a = 0; int b = _Generic (a, int: 4); return b + a; };'
-config_h.set10('_NM_CC_SUPPORT_GENERIC', cc.compiles(generic_support_src))
+config_h.set10('_BYX_CC_SUPPORT_GENERIC', cc.compiles(generic_support_src))
 
 auto_support_src = 'int main() { int a = 0; __auto_type b = a; return b + a; };'
-config_h.set10('_NM_CC_SUPPORT_AUTO_TYPE', cc.compiles(auto_support_src))
+config_h.set10('_BYX_CC_SUPPORT_AUTO_TYPE', cc.compiles(auto_support_src))
 
 # Tests, utilities and documentation
 tests = get_option('tests')
@@ -225,83 +223,14 @@ test_args = [
   '--launch-dbus=auto'
 ]
 
-py3 = import('python3')
-python = py3.find_python()
-
-# check if we can build setting property documentation
-'''
-build_docs=no
-if test -n "$INTROSPECTION_MAKEFILE"; then
-  # If g-i is installed we know we have python, but we might not have pygobject
-  if ! "$PYTHON" -c 'from gi.repository import GObject' >& /dev/null; then
-    AC_MSG_ERROR(["--enable-introspection aims to build the settings documentation. This requires GObject introspection for python (pygobject)])
-  fi
-
-  AC_PATH_PROG(PERL, perl)
-  if test -z "$PERL"; then
-    AC_MSG_ERROR([--enable-introspection requires perl])
-  fi
-  AC_PATH_PROG(XSLTPROC, xsltproc)
-  if test -z "$XSLTPROC"; then
-    AC_MSG_ERROR([--enable-introspection requires xsltproc])
-  fi
-
-  have_introspection=yes
-  if test "$enable_gtk_doc" = "yes"; then
-    build_docs=yes
-  fi
-else
-  if test "$enable_gtk_doc" = "yes"; then
-    # large parts of the documentation require introspection/pygobject to extract
-    # the documentation out of the source files. You cannot enable gtk-doc without alone.
-    AC_MSG_ERROR(["--with-gtk-doc requires --enable-introspection"])
-  fi
-  have_introspection=no
-fi
-'''
-
 i18n = import('i18n')
 pkg = import('pkgconfig')
-
-po_dir = join_paths(meson.source_root(), 'po')
-
-intltool_merge = find_program('intltool-merge')
-intltool_cache = join_paths(po_dir, '.intltool-merge-cache')
-intltool_desktop_cmd = [intltool_merge, '-d', '-u', '-c', intltool_cache, po_dir, '@INPUT@', '@OUTPUT@']
-intltool_xml_cmd = [intltool_merge, '-x', '-u', '-c', intltool_cache, po_dir, '@INPUT@', '@OUTPUT@']
-
-perl = find_program('perl')
-xsltproc = find_program('xsltproc')
-
-content_files = []
-
-# FIXME: every plugin calls to this:
-'''
-set_sanitizer_env = \
-        [ -n "$(SANITIZER_ENV)" ] && export $(SANITIZER_ENV) ; \
-        if [ -n "$(1)" ] && echo $(CFLAGS) | grep -e -fsanitize=address ; then \
-                export LD_PRELOAD="$${LD_PRELOAD}:$$(ldd $(1) | grep libasan\.so\.. -o | head -n 1)"; \
-        fi
-
-check_so_symbols = \
-        $(call set_sanitizer_env,$(1)); \
-        LD_BIND_NOW=1 LD_PRELOAD=$${LD_PRELOAD}:$(1) $(builddir)/src/NetworkManager --version >/dev/null
-'''
-
-top_inc = include_directories('.')
 
 subdir('src')
 subdir('data')
 subdir('po')
 
-enable_docs = get_option('docs')
-if enable_docs
-  subdir('man')
-  subdir('docs')
-endif
-
 config = 'config.h'
-
 configure_file(
   input: config + '.meson',
   output: config,

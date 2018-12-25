@@ -69,7 +69,7 @@
 #mesondefine _NM_CC_SUPPORT_AUTO_TYPE
 
 /* Define whether the compiler supports C11 _Generic() */
-#mesondefine _NM_CC_SUPPORT_GENERIC
+#mesondefine _BYX_CC_SUPPORT_GENERIC
 
 /* Define to `int' if <sys/types.h> does not define. */
 #mesondefine pid_t
