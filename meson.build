@@ -108,9 +108,6 @@ dbus_dep = dependency('dbus-1', version: '>= 1.1')
 
 libndp_dep = dependency('libndp')
 
-libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
-libelogind_dep = dependency('libelogind', version: '>= 219', required: false)
-
 systemd_dep = dependency('systemd', required: false)
 
 glib_dep = declare_dependency(
@@ -134,20 +131,20 @@ endif
 
 logging_backend = get_option('logging_backend')
 if logging_backend == 'journal'
-  assert(libsystemd_dep.found(), 'Missing systemd-journald support')
+  liblogind_dep = dependency('libsystemd', version: '>= 209')
   config_h.set10('SYSTEMD_JOURNAL', 1)
+else
+  liblogind_dep = dependency('libelogind', version: '>= 219')
 endif
 config_h.set_quoted('BYX_CONFIG_DEFAULT_LOGGING_BACKEND', logging_backend)
 
 suspend_resume = ''
 if get_option('logind_backend') == 'systemd'
-  suspend_resume = 'systemd'
+  suspend_resume = 'systemd-logind'
   config_h.set('SUSPEND_RESUME_SYSTEMD', true)
-elif get_option('logind_backend') == 'elogind'
+else
   suspend_resume = 'elogind'
   config_h.set('SUSPEND_RESUME_ELOGIND', true)
-else
-  ERROR    # FIXME
 endif
 
 crypto = get_option('crypto')

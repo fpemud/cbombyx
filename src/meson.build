@@ -49,7 +49,7 @@ sources = files(
 )
 
 deps = [
-  libsystemd_dep,
+  liblogind_dep,
   libudev_dep,
   nm_core_dep
 ]
