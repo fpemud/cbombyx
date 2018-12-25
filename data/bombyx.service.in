@@ -16,9 +16,3 @@ ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target
-
-# We want to enable bombyx-wait-online.service whenever this service
-# is enabled. bombyx-wait-online.service has
-# WantedBy=network-online.target, so enabling it only has an effect if
-# network-online.target itself is enabled or pulled in by some other unit.
-Also=bombyx-wait-online.service

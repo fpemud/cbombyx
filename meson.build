@@ -108,12 +108,9 @@ dbus_dep = dependency('dbus-1', version: '>= 1.1')
 
 libndp_dep = dependency('libndp')
 
-systemd_dep = dependency('systemd', required: false)
-
 glib_dep = declare_dependency(
   dependencies: [
     dependency('gio-unix-2.0', version: '>= 2.40'),
-    dependency('gmodule-2.0')
   ],
   compile_args: [
     '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40',
@@ -121,12 +118,13 @@ glib_dep = declare_dependency(
   ]
 )
 
-systemd_system_unit_dir = get_option('systemd_system_unit_dir')
-install_systemd_unit_dir = (systemd_system_unit_dir != 'no')
-
-if install_systemd_unit_dir and systemd_system_unit_dir == ''
-  assert(systemd_dep.found(), 'systemd required but not found, please provide a valid systemd user unit dir or disable it')
-  systemd_system_unit_dir = systemd_dep.get_pkgconfig_variable('systemd_system_unit_dir')
+install_service = get_option('install_service')
+if install_service
+  systemd_dep = dependency('systemd')
+  systemd_system_unit_dir = get_option('systemd_system_unit_dir')
+  if systemd_system_unit_dir == ''
+    systemd_system_unit_dir = systemd_dep.get_pkgconfig_variable('systemdsystemunitdir')
+  endif
 endif
 
 logging_backend = get_option('logging_backend')

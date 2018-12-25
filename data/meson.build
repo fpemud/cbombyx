@@ -13,22 +13,14 @@ configure_file(
   configuration: data_conf
 )
 
-if install_systemd_unit_dir
-  services = [
-    ['bombyx.service', systemd_system_unit_dir],
-    ['bombyx-wait-online.service', systemd_system_unit_dir],
-  ]
-
-  foreach service: services
-    configure_file(
-      input: service[0] + '.in',
-      output: service[0],
-      install: true,
-      install_dir: service[1],
-      configuration: data_conf
-    )
-  endforeach
-
+if install_service
+  configure_file(
+    input: 'bombyx.service.in',
+    output: 'bombyx.service',
+    install: true,
+    install_dir: systemd_system_unit_dir,
+    configuration: data_conf
+  )
 endif
 
 install_data(

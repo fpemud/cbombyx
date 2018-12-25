@@ -6,6 +6,7 @@ option('iptables', type: 'array', value: ['iptables', '/sbin/iptables', '/usr/sb
 option('dnsmasq', type: 'array', value: ['dnsmasq', '/sbin/dnsmasq', '/usr/sbin/dnsmasq'], description: 'path to dnsmasq')
 
 # platform
+option('install_service', type: 'boolean', value: true, description: 'install service files')
 option('logging_backend', type: 'combo', choices: ['journal', 'syslog'], value: 'journal', description: 'Use systemd-journal or syslog for logging')
 option('logind_backend', type: 'combo', choices: ['systemd', 'elogind'], description: 'Use systemd-logind or elogind')
 option('crypto', type: 'combo', choices: ['nss', 'gnutls'], value: 'nss', description: 'Cryptography library to use for certificate and key operations')
