@@ -35,10 +35,6 @@
 
 #include <linux/fs.h>
 
-#if WITH_LIBPSL
-#include <libpsl.h>
-#endif
-
 #include "nm-utils.h"
 #include "nm-core-internal.h"
 #include "nm-dns-manager.h"
@@ -175,10 +171,6 @@ domain_is_valid (const char *domain, gboolean check_public_suffix)
 {
 	if (*domain == '\0')
 		return FALSE;
-#if WITH_LIBPSL
-	if (check_public_suffix && psl_is_public_suffix (psl_builtin (), domain))
-		return FALSE;
-#endif
 	return TRUE;
 }
 

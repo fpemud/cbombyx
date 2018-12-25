@@ -1,14 +1,6 @@
 src_inc = include_directories('.')
 
-nm_cflags = ['-DNETWORKMANAGER_COMPILATION=NM_NETWORKMANAGER_COMPILATION_DAEMON']
-
-nm_dep = declare_dependency(
-  include_directories: src_inc,
-  dependencies: nm_core_dep,
-  compile_args: nm_cflags
-)
-
-cflags = nm_cflags + [
+cflags = [
   '-DPREFIX="@0@"'.format(byx_prefix),
   '-DBINDIR="@0@"'.format(byx_bindir),
   '-DDATADIR="@0@"'.format(byx_datadir),
@@ -17,13 +9,13 @@ cflags = nm_cflags + [
   '-DRUNSTATEDIR="@0@"'.format(byx_runstatedir),
   '-DSBINDIR="@0@"'.format(byx_sbindir),
   '-DSYSCONFDIR="@0@"'.format(byx_sysconfdir),
-  '-DRUNDIR="@0@"'.format(nm_pkgrundir),
-  '-DNMCONFDIR="@0@"'.format(nm_pkgconfdir),
+  '-DRUNDIR="@0@"'.format(byx_pkgrundir),
+  '-DNMCONFDIR="@0@"'.format(byx_pkgconfdir),
   '-DNMLOCALEDIR="@0@"'.format(byx_localedir),
   '-DNMPLUGINDIR="@0@"'.format(byx_plugindir),
-  '-DNMRUNDIR="@0@"'.format(nm_pkgrundir),
-  '-DNMSTATEDIR="@0@"'.format(nm_pkgstatedir),
-  '-DNMLIBDIR="@0@"'.format(nm_pkglibdir)
+  '-DNMRUNDIR="@0@"'.format(byx_pkgrundir),
+  '-DNMSTATEDIR="@0@"'.format(byx_pkgstatedir),
+  '-DNMLIBDIR="@0@"'.format(byx_pkglibdir)
 ]
 
 sources = files(
@@ -49,9 +41,8 @@ sources = files(
 )
 
 deps = [
-  liblogind_dep,
   libudev_dep,
-  nm_core_dep
+  liblogind_dep,
 ]
 
 libnetwork_manager_base = static_library(
@@ -117,10 +108,6 @@ if enable_concheck
   deps += libcurl_dep
 endif
 
-if enable_libpsl
-  deps += libpsl_dep
-endif
-
 libnetwork_manager = static_library(
   byx_name,
   sources: sources,
@@ -157,7 +144,7 @@ linker_script = custom_target(
 ldflags += '-Wl,--version-script,@0@'.format(linker_script)
 '''
 
-network_manager = executable(
+bombyx_daemon = executable(
   byx_name,
   'main.c',
   dependencies: deps,
