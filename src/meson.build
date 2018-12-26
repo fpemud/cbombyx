@@ -23,7 +23,6 @@ ldflags = [
 ]
 
 sources = files(
-  'nm-manager.c',
   'main.c',
 )
 

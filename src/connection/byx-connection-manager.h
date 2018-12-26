@@ -39,11 +39,14 @@ GType byx_connection_manager_get_type (void);
 
 ByxConnectionManager *byx_connection_manager_get (void);
 
-gboolean nm_connection_manager_activate_connection (ByxConnectionManager *manager,
-                                                    ByxConnection *vpn,
-                                                    GError **error);
+CList *byx_connection_manager_get_activatable_connections (ByxConnectionManager *manager,
+                                                           gboolean sort);
 
-gboolean nm_connection_manager_deactivate_all_connections (ByxConnectionManager *manager,
-                                                           GError **error);
+gboolean byx_connection_manager_activate_connection (ByxConnectionManager *manager,
+                                                     ByxConnection *connection,
+                                                     GError **error);
+
+gboolean byx_connection_manager_deactivate_all_connections (ByxConnectionManager *manager,
+                                                            GError **error);
 
 #endif /* __BYX_CONNECTION_MANAGER_H__ */

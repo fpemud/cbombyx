@@ -37,16 +37,7 @@
 #include <sys/resource.h>
 
 #include "main-utils.h"
-#include "nm-manager.h"
-#include "platform/nm-linux-platform.h"
-#include "devices/nm-device.h"
-#include "nm-config.h"
-#include "nm-session-monitor.h"
-#include "settings/nm-settings.h"
-#include "nm-core-internal.h"
-#include "nm-connectivity.h"
-#include "systemd/nm-sd.h"
-#include "nm-netns.h"
+#include "config/byx-config.h"
 
 #define BYX_DEFAULT_PID_FILE          NMRUNDIR "/bombyx.pid"
 #define BYX_DEFAULT_SYSTEM_STATE_FILE NMSTATEDIR "/bombyx.state"

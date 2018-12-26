@@ -27,9 +27,6 @@
 #include <linux/if_link.h>
 #include <linux/ip6_tunnel.h>
 
-#include "nm-dbus-interface.h"
-#include "nm-core-types-internal.h"
-
 #include "nm-core-utils.h"
 #include "nm-setting-vlan.h"
 #include "nm-setting-wired.h"

@@ -20,8 +20,8 @@
  * Copyright (C) 2006 - 2008 Novell, Inc.
  */
 
-#ifndef __NM_VPN_CONNECTION_H__
-#define __NM_VPN_CONNECTION_H__
+#ifndef __BYX_SERVICE_H__
+#define __BYX_SERVICE_H__
 
 #include "nm-vpn-dbus-interface.h"
 #include "devices/nm-device.h"
@@ -81,4 +81,4 @@ struct in6_addr *    nm_vpn_connection_get_ip6_internal_gateway (ByxService *sel
 guint32              nm_vpn_connection_get_ip4_route_metric (ByxService *self);
 guint32              nm_vpn_connection_get_ip6_route_metric (ByxService *self);
 
-#endif /* __NM_VPN_CONNECTION_H__ */
+#endif /* __BYX_SERVICE_H__ */

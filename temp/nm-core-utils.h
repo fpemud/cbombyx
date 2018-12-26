@@ -25,8 +25,6 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 
-#include "nm-connection.h"
-
 /*****************************************************************************/
 
 #define NM_PLATFORM_LIFETIME_PERMANENT G_MAXUINT32
@@ -115,26 +113,6 @@ byx_utils_ip6_address_same_prefix (const struct in6_addr *addr_a, const struct i
 
 #define NM_CMP_DIRECT_IN6ADDR_SAME_PREFIX(a, b, plen) \
     NM_CMP_RETURN (byx_utils_ip6_address_same_prefix_cmp ((a), (b), (plen)))
-
-static inline void
-nm_hash_update_in6addr (NMHashState *h, const struct in6_addr *addr)
-{
-	nm_assert (addr);
-
-	nm_hash_update (h, addr, sizeof (*addr));
-}
-
-static inline void
-nm_hash_update_in6addr_prefix (NMHashState *h, const struct in6_addr *addr, guint8 plen)
-{
-	struct in6_addr a;
-
-	nm_assert (addr);
-
-	byx_utils_ip6_address_clear_host_address (&a, addr, plen);
-	/* we don't hash plen itself. The caller may want to do that.*/
-	nm_hash_update_in6addr (h, &a);
-}
 
 double byx_utils_exp10 (gint16 e);
 

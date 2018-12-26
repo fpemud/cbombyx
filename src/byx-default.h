@@ -190,11 +190,4 @@ _nm_g_return_if_fail_warning (const char *log_domain,
 
 /*****************************************************************************/
 
-#include "utils/nm-macros-internal.h"
-#include "utils/nm-shared-utils.h"
-
-
-
-/*****************************************************************************/
-
 #endif /* __NM_DEFAULT_H__ */
