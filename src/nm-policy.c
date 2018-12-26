@@ -861,17 +861,12 @@ auto_activate_device (NMPolicy *self,
 	for (i = 0; i < len; i++) {
 		NMSettingsConnection *candidate = NM_SETTINGS_CONNECTION (connections[i]);
 		NMSettingConnection *s_con;
-		const char *permission;
 
 		if (nm_settings_connection_autoconnect_is_blocked (candidate))
 			continue;
 
 		s_con = nm_connection_get_setting_connection (NM_CONNECTION (candidate));
 		if (!nm_setting_connection_get_autoconnect (s_con))
-			continue;
-
-		permission = byx_utils_get_shared_wifi_permission (NM_CONNECTION (candidate));
-		if (permission)
 			continue;
 
 		if (nm_device_can_auto_connect (device, (NMConnection *) candidate, &specific_object)) {

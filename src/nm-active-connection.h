@@ -111,11 +111,6 @@ typedef void (*NMActiveConnectionAuthResultFunc) (NMActiveConnection *self,
                                                   const char *error_desc,
                                                   gpointer user_data);
 
-void          nm_active_connection_authorize (NMActiveConnection *self,
-                                              NMConnection *initial_connection,
-                                              NMActiveConnectionAuthResultFunc result_func,
-                                              gpointer user_data);
-
 NMSettingsConnection *nm_active_connection_get_settings_connection (NMActiveConnection *self);
 NMConnection *nm_active_connection_get_applied_connection (NMActiveConnection *self);
 

@@ -74,7 +74,6 @@
 #include "nm-core-internal.h"
 #include "systemd/nm-sd.h"
 #include "nm-lldp-listener.h"
-#include "nm-audit-manager.h"
 #include "nm-connectivity.h"
 #include "nm-dbus-interface.h"
 #include "nm-device-vlan.h"
@@ -10474,7 +10473,6 @@ reapply_connection (ByxConnection *self, NMConnection *con_old, NMConnection *co
  *   the current settings connection
  * @version_id: either zero, or the current version id for the applied
  *   connection.
- * @audit_args: on return, a string representing the changes
  * @error: the error if %FALSE is returned
  *
  * Change configuration of an already configured device if possible.
@@ -10486,7 +10484,6 @@ static gboolean
 check_and_reapply_connection (ByxConnection *self,
                               NMConnection *connection,
                               guint64 version_id,
-                              char **audit_args,
                               GError **error)
 {
 	ByxConnectionClass *klass = BYX_CONNECTION_GET_CLASS (self);
@@ -10512,13 +10509,6 @@ check_and_reapply_connection (ByxConnection *self,
 	                    NM_SETTING_COMPARE_FLAG_IGNORE_TIMESTAMP |
 	                    NM_SETTING_COMPARE_FLAG_IGNORE_SECRETS,
 	                    &diffs);
-
-	if (audit_args) {
-		if (diffs && nm_audit_manager_audit_enabled (nm_audit_manager_get ()))
-			*audit_args = byx_utils_format_con_diff_for_audit (diffs);
-		else
-			*audit_args = NULL;
-	}
 
 	/**************************************************************************
 	 * check for unsupported changes and reject to reapply
@@ -10648,7 +10638,6 @@ reapply_cb (ByxConnection *self,
 	guint64 version_id = 0;
 	gs_unref_object NMConnection *connection = NULL;
 	GError *local = NULL;
-	gs_free char *audit_args = NULL;
 
 	if (reapply_data) {
 		connection = reapply_data->connection;
@@ -10657,7 +10646,6 @@ reapply_cb (ByxConnection *self,
 	}
 
 	if (error) {
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_REAPPLY, self, FALSE, NULL, subject, error->message);
 		g_dbus_method_invocation_return_gerror (context, error);
 		return;
 	}
@@ -10668,13 +10656,10 @@ reapply_cb (ByxConnection *self,
 	if (!check_and_reapply_connection (self,
 	                                   connection ? : (NMConnection *) byx_connection_get_settings_connection (self),
 	                                   version_id,
-	                                   &audit_args,
 	                                   &local)) {
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_REAPPLY, self, FALSE, audit_args, subject, local->message);
 		g_dbus_method_invocation_take_error (context, local);
 		local = NULL;
 	} else {
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_REAPPLY, self, TRUE, audit_args, subject, NULL);
 		g_dbus_method_invocation_return_value (context, NULL);
 	}
 }
@@ -10705,7 +10690,6 @@ impl_device_reapply (ByxDBusObject *obj,
 		error = g_error_new_literal (BYX_CONNECTION_ERROR,
 		                             BYX_CONNECTION_ERROR_FAILED,
 		                             "Invalid flags specified");
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_REAPPLY, self, FALSE, NULL, invocation, error->message);
 		g_dbus_method_invocation_take_error (invocation, error);
 		return;
 	}
@@ -10714,7 +10698,6 @@ impl_device_reapply (ByxDBusObject *obj,
 		error = g_error_new_literal (BYX_CONNECTION_ERROR,
 		                             BYX_CONNECTION_ERROR_NOT_ACTIVE,
 		                             "Device is not activated");
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_REAPPLY, self, FALSE, NULL, invocation, error->message);
 		g_dbus_method_invocation_take_error (invocation, error);
 		return;
 	}
@@ -10730,7 +10713,6 @@ impl_device_reapply (ByxDBusObject *obj,
 		                                                  &error);
 		if (!connection) {
 			g_prefix_error (&error, "The settings specified are invalid: ");
-			nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_REAPPLY, self, FALSE, NULL, invocation, error->message);
 			g_dbus_method_invocation_take_error (invocation, error);
 			return;
 		}
@@ -10954,7 +10936,6 @@ disconnect_cb (ByxConnection *self,
 
 	if (error) {
 		g_dbus_method_invocation_return_gerror (context, error);
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_DISCONNECT, self, FALSE, NULL, subject, error->message);
 		return;
 	}
 
@@ -10963,7 +10944,6 @@ disconnect_cb (ByxConnection *self,
 		local = g_error_new_literal (BYX_CONNECTION_ERROR,
 		                             BYX_CONNECTION_ERROR_NOT_ACTIVE,
 		                             "Device is not active");
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_DISCONNECT, self, FALSE, NULL, subject, local->message);
 		g_dbus_method_invocation_take_error (context, local);
 	} else {
 		byx_connection_autoconnect_blocked_set (self, BYX_CONNECTION_AUTOCONNECT_BLOCKED_MANUAL_DISCONNECT);
@@ -10972,7 +10952,6 @@ disconnect_cb (ByxConnection *self,
 		                         BYX_CONNECTION_STATE_DEACTIVATING,
 		                         BYX_CONNECTION_STATE_REASON_USER_REQUESTED);
 		g_dbus_method_invocation_return_value (context, NULL);
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_DISCONNECT, self, TRUE, NULL, subject, NULL);
 	}
 }
 
@@ -11033,12 +11012,10 @@ delete_cb (ByxConnection *self,
 
 	if (error) {
 		g_dbus_method_invocation_return_gerror (context, error);
-		nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_DELETE, self, FALSE, NULL, subject, error->message);
 		return;
 	}
 
 	/* Authorized */
-	nm_audit_log_device_op (NM_AUDIT_OP_DEVICE_DELETE, self, TRUE, NULL, subject, NULL);
 	if (byx_connection_unrealize (self, TRUE, &local))
 		g_dbus_method_invocation_return_value (context, NULL);
 	else

@@ -37,37 +37,6 @@
 
 /*****************************************************************************/
 
-/**
- * byx_utils_get_shared_wifi_permission:
- * @connection: the NMConnection to lookup the permission.
- *
- * Returns: a static string of the wifi-permission (if any) or %NULL.
- */
-const char *
-byx_utils_get_shared_wifi_permission (NMConnection *connection)
-{
-	NMSettingWireless *s_wifi;
-	NMSettingWirelessSecurity *s_wsec;
-	const char *method = NULL;
-
-	method = byx_utils_get_ip_config_method (connection, NM_TYPE_SETTING_IP4_CONFIG);
-	if (strcmp (method, NM_SETTING_IP4_CONFIG_METHOD_SHARED) != 0)
-		return NULL;  /* Not shared */
-
-	s_wifi = nm_connection_get_setting_wireless (connection);
-	if (s_wifi) {
-		s_wsec = nm_connection_get_setting_wireless_security (connection);
-		if (s_wsec)
-			return NM_AUTH_PERMISSION_WIFI_SHARE_PROTECTED;
-		else
-			return NM_AUTH_PERMISSION_WIFI_SHARE_OPEN;
-	}
-
-	return NULL;
-}
-
-/*****************************************************************************/
-
 static char *
 get_new_connection_name (NMConnection *const*existing_connections,
                          const char *preferred,

@@ -29,6 +29,7 @@ sources = files(
 deps = [
   libudev_dep,
   liblogind_dep,
+  glib_dep,
 ]
 
 if enable_concheck

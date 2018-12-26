@@ -26,8 +26,6 @@
 
 /*****************************************************************************/
 
-const char *byx_utils_get_shared_wifi_permission (NMConnection *connection);
-
 void byx_utils_complete_generic (NMPlatform *platform,
                                 NMConnection *connection,
                                 const char *ctype,

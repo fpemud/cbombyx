@@ -38,7 +38,6 @@
 #include "nm-agent-manager.h"
 #include "NetworkManagerUtils.h"
 #include "nm-core-internal.h"
-#include "nm-audit-manager.h"
 
 #define SETTINGS_TIMESTAMPS_FILE  NMSTATEDIR "/timestamps"
 #define SETTINGS_SEEN_BSSIDS_FILE NMSTATEDIR "/seen-bssids"
@@ -1496,7 +1495,6 @@ typedef struct {
 	NMAuthSubject *subject;
 	NMConnection *new_settings;
 	NMSettingsUpdate2Flags flags;
-	char *audit_args;
 	bool is_update2:1;
 } UpdateInfo;
 
@@ -1570,13 +1568,9 @@ update_complete (NMSettingsConnection *self,
 	} else
 		g_dbus_method_invocation_return_value (info->context, NULL);
 
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_UPDATE, self, !error, info->audit_args,
-	                            info->subject, error ? error->message : NULL);
-
 	g_clear_object (&info->subject);
 	g_clear_object (&info->agent_mgr);
 	g_clear_object (&info->new_settings);
-	g_free (info->audit_args);
 	g_slice_free (UpdateInfo, info);
 }
 
@@ -1611,20 +1605,6 @@ update_auth_cb (NMSettingsConnection *self,
 			 * they're in the main connection.
 			 */
 			update_agent_secrets_cache (self, info->new_settings);
-		}
-	}
-
-	if (info->new_settings) {
-		if (nm_audit_manager_audit_enabled (nm_audit_manager_get ())) {
-			gs_unref_hashtable GHashTable *diff = NULL;
-			gboolean same;
-
-			same = nm_connection_diff (NM_CONNECTION (self), info->new_settings,
-			                           NM_SETTING_COMPARE_FLAG_EXACT |
-			                           NM_SETTING_COMPARE_FLAG_DIFF_RESULT_NO_DEFAULT,
-			                           &diff);
-			if (!same && diff)
-				info->audit_args = byx_utils_format_con_diff_for_audit (diff);
 		}
 	}
 
@@ -1785,9 +1765,6 @@ settings_connection_update (NMSettingsConnection *self,
 	return;
 
 error:
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_UPDATE, self, FALSE, NULL, subject,
-	                            error->message);
-
 	g_clear_object (&tmp);
 	g_clear_object (&subject);
 
@@ -1925,16 +1902,11 @@ delete_auth_cb (NMSettingsConnection *self,
 	self_keep_alive = g_object_ref (self);
 
 	if (error) {
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_DELETE, self, FALSE, NULL, subject,
-		                            error->message);
 		g_dbus_method_invocation_return_gerror (context, error);
 		return;
 	}
 
 	nm_settings_connection_delete (self, &local);
-
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_DELETE, self,
-	                            !local, NULL, subject, local ? local->message : NULL);
 
 	if (local)
 		g_dbus_method_invocation_return_gerror (context, local);
@@ -1982,7 +1954,6 @@ impl_settings_connection_delete (ByxDBusObject *obj,
 	auth_start (self, invocation, subject, get_modify_permission_basic (self), delete_auth_cb, NULL);
 	return;
 err:
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_DELETE, self, FALSE, NULL, subject, error->message);
 	g_dbus_method_invocation_take_error (invocation, error);
 }
 
@@ -2083,8 +2054,6 @@ dbus_clear_secrets_auth_cb (NMSettingsConnection *self,
 
 	if (error) {
 		g_dbus_method_invocation_return_gerror (context, error);
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_CLEAR_SECRETS, self,
-		                            FALSE, NULL, subject, error->message);
 		return;
 	}
 
@@ -2107,9 +2076,6 @@ dbus_clear_secrets_auth_cb (NMSettingsConnection *self,
 	                               "clear-secrets",
 	                               &local);
 
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_CLEAR_SECRETS, self,
-	                            !local, NULL, subject, local ? local->message : NULL);
-
 	if (local)
 		g_dbus_method_invocation_return_gerror (context, local);
 	else
@@ -2131,8 +2097,6 @@ impl_settings_connection_clear_secrets (ByxDBusObject *obj,
 
 	subject = _new_auth_subject (invocation, &error);
 	if (!subject) {
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_CLEAR_SECRETS, self,
-		                            FALSE, NULL, NULL, error->message);
 		g_dbus_method_invocation_take_error (invocation, error);
 		return;
 	}

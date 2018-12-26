@@ -1,0 +1,6 @@
+#include <stdlib.h>
+#include <glib.h>
+#include <glib/gi18n.h>
+
+connection with permission on it would not participate in auto activate.
+

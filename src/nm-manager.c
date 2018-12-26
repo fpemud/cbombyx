@@ -54,7 +54,6 @@
 #include "nm-act-request.h"
 #include "nm-core-internal.h"
 #include "nm-config.h"
-#include "nm-audit-manager.h"
 #include "nm-dbus-compat.h"
 #include "nm-dbus-object.h"
 #include "NetworkManagerUtils.h"
@@ -1103,13 +1102,6 @@ impl_manager_reload (ByxDBusObject *obj,
 										 BYX_MANAGER_ERROR_INVALID_ARGUMENTS,
 										 "Invalid flags for reload");
 	}
-
-#if 0
-	nm_audit_log_control_op (NM_AUDIT_OP_RELOAD,
-	                         nm_sprintf_buf (s_buf, "%u", flags),
-	                         ret_error == NULL, subject,
-	                         ret_error ? ret_error->message : NULL);
-#endif
 
 	if (ret_error) {
 		g_dbus_method_invocation_take_error (invocation, ret_error);
@@ -4346,14 +4338,7 @@ byx_manager_activate_connection (ByxManager *self,
 	                                 activation_type,
 	                                 activation_reason,
 	                                 error);
-	if (!active)
-		return NULL;
 
-	nm_active_connection_authorize (active,
-	                                NULL,
-	                                _async_op_complete_ac_auth_cb,
-	                                _async_op_data_new_authorize_activate_internal (self,
-	                                                                                active));
 	return active;
 }
 
@@ -4512,13 +4497,9 @@ _activation_auth_done (ByxManager *self,
 	g_dbus_method_invocation_return_value (invocation,
 	                                       g_variant_new ("(o)",
 	                                       nm_dbus_object_get_path (NM_DBUS_OBJECT (active))));
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ACTIVATE, connection, TRUE, NULL,
-	                            subject, NULL);
 	return;
 
 fail:
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ACTIVATE, connection, FALSE, NULL,
-	                            subject, error->message);
 	nm_active_connection_set_state_fail (active,
 	                                     NM_ACTIVE_CONNECTION_STATE_REASON_UNKNOWN,
 	                                     error->message);
@@ -4608,23 +4589,12 @@ impl_manager_activate_connection (ByxDBusObject *obj,
 	if (!active)
 		goto error;
 
-	nm_active_connection_authorize (active,
-	                                NULL,
-	                                _async_op_complete_ac_auth_cb,
-	                                _async_op_data_new_ac_auth_activate_user (self,
-	                                                                          active,
-	                                                                          invocation));
-
 	/* we passed the pointer on to _async_op_data_new_ac_auth_activate_user() */
 	g_steal_pointer (&active);
 
 	return;
 
 error:
-	if (connection) {
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ACTIVATE, connection, FALSE, NULL,
-		                            subject, error->message);
-	}
 	g_dbus_method_invocation_take_error (invocation, error);
 }
 
@@ -4659,12 +4629,6 @@ activation_add_done (NMSettings *settings,
 			    g_variant_new ("(oo)",
 			                   nm_dbus_object_get_path (NM_DBUS_OBJECT (new_connection)),
 			                   nm_dbus_object_get_path (NM_DBUS_OBJECT (active))));
-			nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ADD_ACTIVATE,
-			                            nm_active_connection_get_settings_connection (active),
-			                            TRUE,
-			                            NULL,
-			                            nm_active_connection_get_subject (active),
-			                            NULL);
 			return;
 		}
 		error = local;
@@ -4678,12 +4642,6 @@ activation_add_done (NMSettings *settings,
 	if (new_connection)
 		nm_settings_connection_delete (new_connection, NULL);
 	g_dbus_method_invocation_return_gerror (context, error);
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ADD_ACTIVATE,
-	                            NULL,
-	                            FALSE,
-	                            NULL,
-	                            nm_active_connection_get_subject (active),
-	                            error->message);
 }
 
 static void
@@ -4701,12 +4659,6 @@ _add_and_activate_auth_done (ByxManager *self,
 		error = g_error_new_literal (BYX_MANAGER_ERROR,
 		                             BYX_MANAGER_ERROR_PERMISSION_DENIED,
 		                             error_desc);
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ADD_ACTIVATE,
-		                            NULL,
-		                            FALSE,
-		                            NULL,
-		                            nm_active_connection_get_subject (active),
-		                            error->message);
 		g_dbus_method_invocation_take_error (invocation, error);
 		return;
 	}
@@ -4814,20 +4766,12 @@ impl_manager_add_and_activate_connection (ByxDBusObject *obj,
 	if (!active)
 		goto error;
 
-	nm_active_connection_authorize (active, connection,
-	                                _async_op_complete_ac_auth_cb,
-	                                _async_op_data_new_ac_auth_add_and_activate (self,
-	                                                                             active,
-	                                                                             invocation,
-	                                                                             connection));
-
 	/* we passed the pointers on to _async_op_data_new_ac_auth_add_and_activate() */
 	g_steal_pointer (&connection);
 	g_steal_pointer (&active);
 	return;
 
 error:
-	nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ADD_ACTIVATE, NULL, FALSE, NULL, subject, error->message);
 	g_dbus_method_invocation_take_error (invocation, error);
 }
 
@@ -4910,15 +4854,6 @@ deactivate_net_auth_done_cb (NMAuthChain *chain,
 			nm_assert (error);
 	}
 
-	if (active) {
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_DEACTIVATE,
-		                            nm_active_connection_get_settings_connection (active),
-		                            !error,
-		                            NULL,
-		                            nm_auth_chain_get_subject (chain),
-		                            error ? error->message : NULL);
-	}
-
 	if (error)
 		g_dbus_method_invocation_take_error (context, error);
 	else
@@ -4990,10 +4925,6 @@ impl_manager_deactivate_connection (ByxDBusObject *obj,
 
 done:
 	if (error) {
-		if (connection) {
-			nm_audit_log_connection_op (NM_AUDIT_OP_CONN_DEACTIVATE, connection, FALSE, NULL,
-			                            subject, error->message);
-		}
 		g_dbus_method_invocation_take_error (invocation, error);
 	}
 	g_clear_object (&subject);
@@ -5243,8 +5174,6 @@ impl_manager_sleep (ByxDBusObject *obj,
 		error = g_error_new (BYX_MANAGER_ERROR,
 		                     BYX_MANAGER_ERROR_ALREADY_ASLEEP_OR_AWAKE,
 		                     "Already %s", do_sleep ? "asleep" : "awake");
-		nm_audit_log_control_op (NM_AUDIT_OP_SLEEP_CONTROL, do_sleep ? "on" : "off", FALSE, subject,
-		                         error->message);
 		g_dbus_method_invocation_take_error (invocation, error);
 		return;
 	}
@@ -5258,7 +5187,6 @@ impl_manager_sleep (ByxDBusObject *obj,
 	 * D-Bus permissions to restrict the call to root.
 	 */
 	_internal_sleep (self, do_sleep);
-	nm_audit_log_control_op (NM_AUDIT_OP_SLEEP_CONTROL, do_sleep ? "on" : "off", TRUE, subject, NULL);
 	g_dbus_method_invocation_return_value (invocation, NULL);
 	return;
 }
@@ -5326,13 +5254,9 @@ enable_net_done_cb (NMAuthChain *chain,
 		/* Auth success */
 		_internal_enable (self, enable);
 		g_dbus_method_invocation_return_value (context, NULL);
-		nm_audit_log_control_op (NM_AUDIT_OP_NET_CONTROL, enable ? "on" : "off", TRUE,
-		                         subject, NULL);
 	}
 
 	if (ret_error) {
-		nm_audit_log_control_op (NM_AUDIT_OP_NET_CONTROL, enable ? "on" : "off", FALSE,
-		                         subject, ret_error->message);
 		g_dbus_method_invocation_take_error (context, ret_error);
 	}
 
@@ -5874,11 +5798,6 @@ _dbus_set_property_auth_cb (NMAuthChain *chain,
 	g_value_unset (&gvalue);
 
 out:
-	nm_audit_log_control_op (property_info->writable.audit_op,
-	                         property_info->property_name,
-	                         !error_message,
-	                         nm_auth_chain_get_subject (chain),
-	                         error_message);
 	if (error_message)
 		g_dbus_method_invocation_return_dbus_error (invocation, error_name, error_message);
 	else
@@ -5923,11 +5842,6 @@ byx_manager_dbus_set_property_handle (ByxDBusObject *obj,
 	return;
 
 err:
-	nm_audit_log_control_op (property_info->writable.audit_op,
-	                         property_info->property_name,
-	                         FALSE,
-	                         invocation,
-	                         error_message);
 	g_dbus_method_invocation_return_error_literal (invocation,
 	                                               G_DBUS_ERROR,
 	                                               G_DBUS_ERROR_AUTH_FAILED,

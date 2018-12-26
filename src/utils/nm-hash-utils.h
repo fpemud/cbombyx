@@ -22,7 +22,7 @@
 #ifndef __NM_HASH_UTILS_H__
 #define __NM_HASH_UTILS_H__
 
-#include "c-siphash/src/c-siphash.h"
+#include <c-siphash.h>
 #include "nm-macros-internal.h"
 
 struct _NMHashState {

@@ -68,7 +68,6 @@
 #define BYX_CONFIG_KEYFILE_KEY_IFNET_AUTO_REFRESH            "auto_refresh"
 #define BYX_CONFIG_KEYFILE_KEY_IFNET_MANAGED                 "managed"
 #define BYX_CONFIG_KEYFILE_KEY_IFUPDOWN_MANAGED              "managed"
-#define BYX_CONFIG_KEYFILE_KEY_AUDIT                         "audit"
 
 #define BYX_CONFIG_KEYFILE_KEY_DEVICE_MANAGED                "managed"
 #define BYX_CONFIG_KEYFILE_KEY_DEVICE_IGNORE_CARRIER         "ignore-carrier"

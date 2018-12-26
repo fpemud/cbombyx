@@ -36,7 +36,6 @@
 #include <sys/resource.h>
 
 #include "main-utils.h"
-#include "nm-dbus-interface.h"
 #include "NetworkManagerUtils.h"
 #include "nm-manager.h"
 #include "platform/nm-linux-platform.h"

@@ -424,7 +424,6 @@ struct stat;
 
 gboolean byx_utils_validate_plugin (const char *path, struct stat *stat, GError **error);
 char **byx_utils_read_plugin_paths (const char *dirname, const char *prefix);
-char *byx_utils_format_con_diff_for_audit (GHashTable *diff);
 
 GVariant *byx_utils_strdict_to_variant (GHashTable *options);
 

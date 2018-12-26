@@ -70,7 +70,6 @@
 #include "plugins/keyfile/nms-keyfile-plugin.h"
 #include "nm-agent-manager.h"
 #include "nm-config.h"
-#include "nm-audit-manager.h"
 #include "NetworkManagerUtils.h"
 #include "nm-hostname-manager.h"
 
@@ -1111,13 +1110,10 @@ settings_add_connection_add_cb (NMSettings *self,
 {
 	if (error) {
 		g_dbus_method_invocation_return_gerror (context, error);
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ADD, NULL, FALSE, NULL, subject, error->message);
 	} else {
 		g_dbus_method_invocation_return_value (context,
 		                                       g_variant_new ("(o)",
 		                                                      nm_dbus_object_get_path (NM_DBUS_OBJECT (connection))));
-		nm_audit_log_connection_op (NM_AUDIT_OP_CONN_ADD, connection, TRUE, NULL,
-		                            subject, NULL);
 	}
 }
 

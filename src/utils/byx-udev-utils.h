@@ -26,7 +26,7 @@ struct udev_device;
 struct udev_enumerate;
 
 gboolean byx_udev_utils_property_as_boolean (const char *uproperty);
-const char *byx_udev_utils_property_decode    (const char *uproperty, char **to_free);
+const char *byx_udev_utils_property_decode (const char *uproperty, char **to_free);
 char       *byx_udev_utils_property_decode_cp (const char *uproperty);
 
 typedef struct _NMPUdevClient ByxUdevClient;
