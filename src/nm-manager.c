@@ -21,7 +21,6 @@
 
 #include "byx-default.h"
 
-#include "nm-manager.h"
 
 #include <stdlib.h>
 #include <fcntl.h>
@@ -32,13 +31,8 @@
 #include "nm-utils/nm-c-list.h"
 
 #include "nm-common-macros.h"
-#include "nm-dbus-manager.h"
-#include "vpn/nm-vpn-manager.h"
-#include "devices/nm-device.h"
-#include "devices/nm-device-generic.h"
 #include "platform/nm-platform.h"
 #include "platform/nmp-object.h"
-#include "nm-hostname-manager.h"
 #include "nm-rfkill-manager.h"
 #include "dhcp/nm-dhcp-manager.h"
 #include "settings/nm-settings.h"
@@ -57,6 +51,7 @@
 #include "nm-dbus-compat.h"
 #include "nm-dbus-object.h"
 #include "NetworkManagerUtils.h"
+#include "nm-manager.h"
 
 /*****************************************************************************/
 

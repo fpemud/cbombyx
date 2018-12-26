@@ -23,10 +23,6 @@
 #ifndef __BYX_MANAGER_H__
 #define __BYX_MANAGER_H__
 
-#include "settings/nm-settings-connection.h"
-#include "c-list/src/c-list.h"
-#include "nm-dbus-manager.h"
-
 #define BYX_TYPE_MANAGER            (byx_manager_get_type ())
 #define BYX_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_MANAGER, ByxManager))
 #define BYX_MANAGER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), BYX_TYPE_MANAGER, ByxManagerClass))

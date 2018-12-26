@@ -30,25 +30,21 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
+#include <c-list.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <string.h>
 #include <sys/resource.h>
 
 #include "main-utils.h"
-#include "NetworkManagerUtils.h"
 #include "nm-manager.h"
 #include "platform/nm-linux-platform.h"
-#include "nm-dbus-manager.h"
 #include "devices/nm-device.h"
-#include "dhcp/nm-dhcp-manager.h"
 #include "nm-config.h"
 #include "nm-session-monitor.h"
 #include "settings/nm-settings.h"
 #include "nm-core-internal.h"
-#include "nm-dbus-object.h"
 #include "nm-connectivity.h"
-#include "dns/nm-dns-manager.h"
 #include "systemd/nm-sd.h"
 #include "nm-netns.h"
 

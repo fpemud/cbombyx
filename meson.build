@@ -166,9 +166,6 @@ endif
 # iptables path
 config_h.set_quoted('IPTABLES_PATH', find_program(get_option('iptables')).path())
 
-# dnsmasq path
-config_h.set_quoted('DNSMASQ_PATH', find_program(get_option('dnsmasq')).path())
-
 enable_concheck = get_option('concheck')
 if enable_concheck
   libcurl_dep = dependency('libcurl', version: '>= 7.24.0', required: false)
