@@ -1,4 +1,4 @@
-src_inc = include_directories('.')
+#src_inc = include_directories('.')
 
 cflags = [
   '-DPREFIX="@0@"'.format(byx_prefix),
@@ -18,26 +18,12 @@ cflags = [
   '-DNMLIBDIR="@0@"'.format(byx_pkglibdir)
 ]
 
+ldflags = [
+  '-rdynamic'
+]
+
 sources = files(
-  'ndisc/nm-lndp-ndisc.c',
-  'ndisc/nm-ndisc.c',
-  'platform/nm-netlink.c',
-  'platform/wifi/nm-wifi-utils-nl80211.c',
-  'platform/wifi/nm-wifi-utils.c',
-  'platform/wpan/nm-wpan-utils.c',
-  'platform/nm-linux-platform.c',
-  'platform/nm-platform.c',
-  'platform/nm-platform-utils.c',
-  'platform/nmp-netns.c',
-  'platform/nmp-object.c',
-  'main-utils.c',
-  'NetworkManagerUtils.c',
-  'nm-core-utils.c',
-  'nm-dbus-object.c',
-  'nm-dbus-utils.c',
-  'nm-ip4-config.c',
-  'nm-ip6-config.c',
-  'nm-logging.c'
+  'main.c',
 )
 
 deps = [
@@ -45,112 +31,14 @@ deps = [
   liblogind_dep,
 ]
 
-libnetwork_manager_base = static_library(
-  byx_name + 'Base',
-  sources: sources,
-  dependencies: deps,
-  c_args: cflags,
-  link_with: libnm_core
-)
-
-sources = files(
-  'devices/nm-device.c',
-  'dns/nm-dns-dnsmasq.c',
-  'dns/nm-dns-manager.c',
-  'dns/nm-dns-plugin.c',
-  'dns/nm-dns-systemd-resolved.c',
-  'dns/nm-dns-unbound.c',
-  'settings/plugins/keyfile/nms-keyfile-connection.c',
-  'settings/plugins/keyfile/nms-keyfile-plugin.c',
-  'settings/plugins/keyfile/nms-keyfile-reader.c',
-  'settings/plugins/keyfile/nms-keyfile-utils.c',
-  'settings/plugins/keyfile/nms-keyfile-writer.c',
-  'settings/nm-agent-manager.c',
-  'settings/nm-secret-agent.c',
-  'settings/nm-settings.c',
-  'settings/nm-settings-connection.c',
-  'settings/nm-settings-plugin.c',
-  'service/byx-service.c',
-  'service/byx-service-manager.c',
-  'nm-active-connection.c',
-  'nm-act-request.c',
-  'nm-audit-manager.c',
-  'nm-auth-manager.c',
-  'nm-auth-subject.c',
-  'nm-auth-utils.c',
-  'nm-dbus-manager.c',
-  'nm-config.c',
-  'nm-config-data.c',
-  'nm-connectivity.c',
-  'nm-dcb.c',
-  'nm-dhcp4-config.c',
-  'nm-dhcp6-config.c',
-  'nm-firewall-manager.c',
-  'nm-hostname-manager.c',
-  'nm-manager.c',
-  'nm-netns.c',
-  'nm-policy.c',
-  'nm-proxy-config.c',
-  'nm-rfkill-manager.c',
-  'nm-session-monitor.c',
-  'nm-sleep-monitor.c'
-)
-
-deps = [
-  dl_dep,
-  libndp_dep,
-  libudev_dep,
-  nm_core_dep,
-  shared_n_acd_dep
-]
-
 if enable_concheck
   deps += libcurl_dep
 endif
 
-libnetwork_manager = static_library(
-  byx_name,
-  sources: sources,
+byx_daemon = executable(byx_name, sources,
   dependencies: deps,
-  c_args: cflags,
-  link_with: [libnetwork_manager_base, libsystemd_nm]
-)
-
-ldflags = ['-rdynamic']
-
-# FIXME: this doesn't work and it depends on libtool
-'''
-src/NetworkManager.ver: src/libNetworkManager.la
-  $(AM_V_GEN) NM="$(NM)" "$(srcdir)/tools/create-exports-NetworkManager.sh" --called-from-make "$(srcdir)"
-
-src_NetworkManager_LDFLAGS = \
-  -rdynamic \
-  -Wl,--version-script="src/NetworkManager.ver"
-
-nm = find_program('gcc-nm', 'nm')
-create_exports_networkmanager = join_paths(meson.source_root(), 'tools', 'create-exports-NetworkManager.sh')
-
-symbol_map_name = 'NetworkManager.ver'
-
-linker_script = custom_target(
-  symbol_map_name,
-  input: meson.source_root(),
-  output: symbol_map_name,
-  capture: true,
-  #command: ['NM=' + nm.path(), create_exports_networkmanager, '--called-from-make', '@INPUT@']
-  command: [create_exports_networkmanager, '--called-from-make', '@INPUT@']
-)
-
-ldflags += '-Wl,--version-script,@0@'.format(linker_script)
-'''
-
-bombyx_daemon = executable(
-  byx_name,
-  'main.c',
-  dependencies: deps,
-  c_args: cflags,
-  link_with: libnetwork_manager,
-  link_args: ldflags,
-  install: true,
-  install_dir: byx_sbindir
+        c_args: cflags,
+     link_args: ldflags,
+       install: true,
+   install_dir: byx_sbindir
 )

@@ -16,6 +16,7 @@ option('concheck', type: 'boolean', value: true, description: 'enable connectivi
 option('network_sharing', type: 'boolean', value: false, description: 'enable network sharing function')
 
 # miscellaneous
+option('docs', type: 'boolean', value: false, description: 'Build documentation')
 option('tests', type: 'combo', choices: ['yes', 'no', 'root'], value: 'yes', description: 'Build NetworkManager tests')
 option('more_asserts', type: 'string', value: 'all', description: 'Enable more assertions for debugging (0 = none, 100 = all, default: all)')
 option('more_logging', type: 'boolean', value: true, description: 'Enable more debug logging')

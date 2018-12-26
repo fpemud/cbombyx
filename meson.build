@@ -1,11 +1,11 @@
-project('Bombyx', 'c',
-                version: '1.13.1',
-                license: 'GPL2+',
-        default_options: [
-          'buildtype=debugoptimized',
-          'c_std=gnu99'
-        ],
-          meson_version: '>= 0.48.0'
+project('bombyx-daemon', 'c',
+          version: '1.13.1',
+          license: 'GPL2+',
+  default_options: [
+    'buildtype=debugoptimized',
+    'c_std=gnu99'
+  ],
+  meson_version: '>= 0.48.0'
 )
 
 byx_name = meson.project_name()
@@ -128,13 +128,14 @@ if install_service
 endif
 
 logging_backend = get_option('logging_backend')
+config_h.set_quoted('BYX_CONFIG_DEFAULT_LOGGING_BACKEND', logging_backend)
 if logging_backend == 'journal'
+  logging_backend = 'systemd-journald'
   liblogind_dep = dependency('libsystemd', version: '>= 209')
   config_h.set10('SYSTEMD_JOURNAL', 1)
 else
   liblogind_dep = dependency('libelogind', version: '>= 219')
 endif
-config_h.set_quoted('BYX_CONFIG_DEFAULT_LOGGING_BACKEND', logging_backend)
 
 suspend_resume = ''
 if get_option('logind_backend') == 'systemd'
@@ -229,6 +230,11 @@ pkg = import('pkgconfig')
 subdir('src')
 subdir('data')
 subdir('po')
+
+enable_docs = get_option('docs')
+if enable_docs
+  assert(false)
+endif
 
 config = 'config.h'
 configure_file(
