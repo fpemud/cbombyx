@@ -772,8 +772,8 @@ _linktype_read_devtype (int dirfd)
 		end = strpbrk (cont, "\r\n");
 		if (end)
 			*end++ = '\0';
-		if (strncmp (cont, DEVTYPE_PREFIX, NM_STRLEN (DEVTYPE_PREFIX)) == 0) {
-			cont += NM_STRLEN (DEVTYPE_PREFIX);
+		if (strncmp (cont, DEVTYPE_PREFIX, BYX_STRLEN (DEVTYPE_PREFIX)) == 0) {
+			cont += BYX_STRLEN (DEVTYPE_PREFIX);
 			memmove (contents, cont, strlen (cont) + 1);
 			return contents;
 		}
@@ -5244,7 +5244,7 @@ link_set_sriov_num_vfs (NMPlatform *platform, int ifindex, guint num_vfs)
 	                             NMP_SYSCTL_PATHID_NETDIR (dirfd,
 	                                                       ifname,
 	                                                       "device/sriov_numvfs"),
-	                             nm_sprintf_buf (buf, "%d", num_vfs))) {
+	                             byx_sprintf_buf (buf, "%d", num_vfs))) {
 		_LOGW ("link: couldn't set SR-IOV num_vfs to %d: %s", num_vfs, strerror (errno));
 		return FALSE;
 	}

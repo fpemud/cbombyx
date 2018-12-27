@@ -11,7 +11,7 @@
 #mesondefine BYX_CONFIG_DEFAULT_LOGGING_BACKEND
 
 /* Define if more asserts are enabled */
-#mesondefine NM_MORE_ASSERTS
+#mesondefine BYX_MORE_ASSERTS
 
 /* Define if more debug logging is enabled */
 #mesondefine NM_MORE_LOGGING

@@ -267,7 +267,7 @@ NM_G_ERROR_MSG (GError *error)
 /*****************************************************************************/
 
 /* macro to return strlen() of a compile time string. */
-#define NM_STRLEN(str)     ( sizeof ("" str) - 1 )
+#define BYX_STRLEN(str)     ( sizeof ("" str) - 1 )
 
 /* returns the length of a NULL terminated array of pointers,
  * like g_strv_length() does. The difference is:
@@ -736,11 +736,13 @@ nm_str_realloc (char *str)
  * be explicitly enabled. They are useful for more expensive checks or checks that
  * depend less on runtime conditions (that is, are generally expected to be true). */
 
-#ifndef NM_MORE_ASSERTS
-#define NM_MORE_ASSERTS 0
+#ifndef BYX_MORE_ASSERTS
+#define BYX_MORE_ASSERTS 0
 #endif
 
-#if NM_MORE_ASSERTS
+#define byx_assert_not_reached()	assert(0);
+
+#if BYX_MORE_ASSERTS
 #define nm_assert(cond) G_STMT_START { g_assert (cond); } G_STMT_END
 #define nm_assert_se(cond) G_STMT_START { if (G_LIKELY (cond)) { ; } else { g_assert (FALSE && (cond)); } } G_STMT_END
 #define nm_assert_not_reached() G_STMT_START { g_assert_not_reached (); } G_STMT_END
@@ -1199,17 +1201,17 @@ nm_decode_version (guint version, guint *major, guint *minor, guint *micro)
 			: "(null)"); \
 	})
 
-#define nm_sprintf_buf(buf, format, ...) \
+#define byx_sprintf_buf(buf, format, ...) \
 	({ \
-		char * _buf = (buf); \
 		int _buf_len; \
 		\
-		/* some static assert trying to ensure that the buffer is statically allocated.
-		 * It disallows a buffer size of sizeof(gpointer) to catch that. */ \
-		G_STATIC_ASSERT (G_N_ELEMENTS (buf) == sizeof (buf) && sizeof (buf) != sizeof (char *)); \
-		_buf_len = g_snprintf (_buf, sizeof (buf), \
-		                       ""format"", ##__VA_ARGS__); \
-		nm_assert (_buf_len < sizeof (buf)); \
+		/* ensure that the buffer is statically allocated */ \
+		assert (sizeof(buf) / sizeof((buf)[0]) == sizeof(buf)); \
+		assert (sizeof(buf) != sizeof(char *));
+		\
+		_buf_len = g_snprintf (buf, sizeof(buf), ""format"", ##__VA_ARGS__); \
+		assert (_buf_len < sizeof(buf)); \
+		\
 		_buf; \
 	})
 
@@ -1239,8 +1241,8 @@ nm_decode_version (guint version, guint *major, guint *minor, guint *micro)
 		char *_buf2; \
 		\
 		nm_assert (_p_val_to_free && !*_p_val_to_free); \
-		if (NM_STRLEN (format) + _name_len < 200) \
-			_buf2 = nm_sprintf_bufa (NM_STRLEN (format) + _name_len, format, _name); \
+		if (BYX_STRLEN (format) + _name_len < 200) \
+			_buf2 = nm_sprintf_bufa (BYX_STRLEN (format) + _name_len, format, _name); \
 		else { \
 			_buf2 = g_strdup_printf (format, _name); \
 			*_p_val_to_free = _buf2; \

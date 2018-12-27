@@ -112,7 +112,7 @@ typedef struct {
 	char *mode;
 	NMDnsPlugin *plugin;
 
-	ByxConfig *config;
+	ByxConfigManager *config;
 
 	struct {
 		guint64 ts;
@@ -153,7 +153,7 @@ BYX_DEFINE_SINGLETON_GETTER (NMDnsManager, nm_dns_manager_get, NM_TYPE_DNS_MANAG
                      _NMLOG_PREFIX_NAME, \
                      ((!__self || __self == singleton_instance) \
                         ? "" \
-                        : nm_sprintf_buf (__prefix, "[%p]", __self)) \
+                        : byx_sprintf_buf (__prefix, "[%p]", __self)) \
                      _NM_UTILS_MACRO_REST (__VA_ARGS__)); \
         } \
     } G_STMT_END
@@ -1191,7 +1191,7 @@ update_dns (NMDnsManager *self,
 		_LOGD ("update-dns: updating resolv.conf");
 	}
 
-	data = byx_config_get_data (priv->config);
+	data = byx_config_manager_get_data (priv->config);
 	global_config = byx_config_data_get_global_dns_config (data);
 
 	/* Update hash with config we're applying */
@@ -1522,7 +1522,7 @@ nm_dns_manager_end_updates (NMDnsManager *self, const char *func)
 	priv = NM_DNS_MANAGER_GET_PRIVATE (self);
 	g_return_if_fail (priv->updates_queue > 0);
 
-	compute_hash (self, byx_config_data_get_global_dns_config (byx_config_get_data (priv->config)), new);
+	compute_hash (self, byx_config_data_get_global_dns_config (byx_config_manager_get_data (priv->config)), new);
 	changed = (memcmp (new, priv->prev_hash, sizeof (new)) != 0) ? TRUE : FALSE;
 	_LOGD ("(%s): DNS configuration %s", func, changed ? "changed" : "did not change");
 
@@ -1715,7 +1715,7 @@ _resolvconf_resolved_managed (void)
 }
 
 static void
-config_changed_cb (ByxConfig *config,
+config_changed_cb (ByxConfigManager *config,
                    ByxConfigData *config_data,
                    ByxConfigChangeFlags changes,
                    ByxConfigData *old_data,
@@ -1817,7 +1817,7 @@ _get_config_variant (NMDnsManager *self)
 	if (priv->config_variant)
 		return priv->config_variant;
 
-	global_config = byx_config_data_get_global_dns_config (byx_config_get_data (priv->config));
+	global_config = byx_config_data_get_global_dns_config (byx_config_manager_get_data (priv->config));
 	if (global_config) {
 		priv->config_variant = _get_global_config_variant (global_config);
 		_LOGT ("current configuration: %s", (str = g_variant_print (priv->config_variant, TRUE)));
@@ -1937,18 +1937,13 @@ nm_dns_manager_init (NMDnsManager *self)
 
 	c_list_init (&priv->ip_config_lst_head);
 
-	priv->config = g_object_ref (byx_config_get ());
+	priv->config = g_object_ref (byx_config_manager_get ());
 
 	priv->configs = g_hash_table_new_full (nm_direct_hash, NULL,
 	                                       NULL, (GDestroyNotify) _config_data_free);
 
 	/* Set the initial hash */
 	compute_hash (self, NULL, NM_DNS_MANAGER_GET_PRIVATE (self)->hash);
-
-	g_signal_connect (G_OBJECT (priv->config),
-	                  BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
-	                  G_CALLBACK (config_changed_cb),
-	                  self);
 }
 
 static void

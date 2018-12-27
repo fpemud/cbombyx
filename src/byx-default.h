@@ -19,33 +19,29 @@
  * (C) Copyright 2015 Red Hat, Inc.
  */
 
-#ifndef __NM_DEFAULT_H__
-#define __NM_DEFAULT_H__
+#ifndef __BYX_DEFAULT_H__
+#define __BYX_DEFAULT_H__
 
 /*****************************************************************************/
 
-#ifndef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "bombyx"
-#else
+#ifdef G_LOG_DOMAIN
 #error Do not define G_LOG_DOMAIN
 #endif
+#define G_LOG_DOMAIN "bombyx"
 
 /*****************************************************************************/
 
-#ifndef ___CONFIG_H__
-#define ___CONFIG_H__
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdlib.h>
 #include <glib.h>
 #include <glib/gi18n.h>
 
-#ifndef NM_MORE_ASSERTS
-#define NM_MORE_ASSERTS 0
+#ifndef BYX_MORE_ASSERTS
+#define BYX_MORE_ASSERTS 0
 #endif
 
-#if NM_MORE_ASSERTS == 0
+#if BYX_MORE_ASSERTS == 0
 /* The cast macros like NM_TYPE() are implemented via G_TYPE_CHECK_INSTANCE_CAST()
  * and _G_TYPE_CIC(). The latter, by default performs runtime checks of the type
  * by calling g_type_check_instance_cast().
@@ -98,7 +94,7 @@
 #endif
 #endif
 
-#if NM_MORE_ASSERTS == 0
+#if BYX_MORE_ASSERTS == 0
 #ifndef G_DISABLE_CAST_CHECKS
 /* Unless compiling with G_DISABLE_CAST_CHECKS, glib performs type checking
  * during G_VARIANT_TYPE() via g_variant_type_checked_(). This is not necesary
@@ -129,11 +125,11 @@
 
 /*****************************************************************************/
 
-#if NM_MORE_ASSERTS == 0
+#if BYX_MORE_ASSERTS == 0
 
 /* glib assertions (g_return_*(), g_assert*()) contain a textual representation
  * of the checked statement. This part of the assertion blows up the size of the
- * binary. Unless we compile a debug-build with NM_MORE_ASSERTS, drop these
+ * binary. Unless we compile a debug-build with BYX_MORE_ASSERTS, drop these
  * parts. Note that the failed assertion still prints the file and line where the
  * assertion fails. That shall suffice. */
 
@@ -190,4 +186,4 @@ _nm_g_return_if_fail_warning (const char *log_domain,
 
 /*****************************************************************************/
 
-#endif /* __NM_DEFAULT_H__ */
+#endif /* __BYX_DEFAULT_H__ */

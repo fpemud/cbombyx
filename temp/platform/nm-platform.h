@@ -965,12 +965,12 @@ const char *nm_platform_error_to_string (NMPlatformError error,
 	((const char *) NULL), -1, (path)
 
 #define NMP_SYSCTL_PATHID_NETDIR_unsafe(dirfd, ifname, path) \
-	nm_sprintf_bufa (NM_STRLEN ("net:/sys/class/net//\0") + IFNAMSIZ + strlen (path), \
+	nm_sprintf_bufa (BYX_STRLEN ("net:/sys/class/net//\0") + IFNAMSIZ + strlen (path), \
 	                 "net:/sys/class/net/%s/%s", (ifname), (path)), \
 	(dirfd), (path)
 
 #define NMP_SYSCTL_PATHID_NETDIR(dirfd, ifname, path) \
-	nm_sprintf_bufa (NM_STRLEN ("net:/sys/class/net//"path"/\0") + IFNAMSIZ, \
+	nm_sprintf_bufa (BYX_STRLEN ("net:/sys/class/net//"path"/\0") + IFNAMSIZ, \
 	                 "net:/sys/class/net/%s/%s", (ifname), path), \
 	(dirfd), (""path"")
 

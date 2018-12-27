@@ -2177,8 +2177,8 @@ nm_vpn_service_daemon_exec (ByxService *self, GError **error)
 	GError *spawn_error = NULL;
 	guint i, j, n_environ;
 	gs_free char **envp = NULL;
-	char env_log_level[NM_STRLEN ("NM_VPN_LOG_LEVEL=") + 100];
-	char env_log_syslog[NM_STRLEN ("NM_VPN_LOG_SYSLOG=") + 10];
+	char env_log_level[BYX_STRLEN ("NM_VPN_LOG_LEVEL=") + 100];
+	char env_log_syslog[BYX_STRLEN ("NM_VPN_LOG_SYSLOG=") + 10];
 	const int N_ENVIRON_EXTRA = 3;
 	char **p_environ;
 
@@ -2207,13 +2207,13 @@ nm_vpn_service_daemon_exec (ByxService *self, GError **error)
 	}
 
 	/* NM_VPN_LOG_LEVEL: the syslog logging level for the plugin. */
-	envp[i++] = nm_sprintf_buf (env_log_level,  "NM_VPN_LOG_LEVEL=%d", _get_log_level ());
+	envp[i++] = byx_sprintf_buf (env_log_level,  "NM_VPN_LOG_LEVEL=%d", _get_log_level ());
 
 	/* NM_VPN_LOG_SYSLOG: whether to log to stdout or syslog. If NetworkManager itself runs in
 	 * foreground, we also want the plugin to log to stdout.
 	 * If the plugin runs in background, the plugin should prefer logging to syslog. Otherwise
 	 * logging messages will be lost (unless using journald, in which case it wouldn't matter). */
-	envp[i++] = nm_sprintf_buf (env_log_syslog, "NM_VPN_LOG_SYSLOG=%c", byx_logging_syslog_enabled () ? '1' : '0');
+	envp[i++] = byx_sprintf_buf (env_log_syslog, "NM_VPN_LOG_SYSLOG=%c", byx_logging_syslog_enabled () ? '1' : '0');
 
 	envp[i++] = NULL;
 	nm_assert (i <= n_environ + N_ENVIRON_EXTRA);

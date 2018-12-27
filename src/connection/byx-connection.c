@@ -339,7 +339,6 @@ typedef struct _ByxConnectionPrivate {
 	guint           link_disconnected_id;
 	guint           carrier_defer_id;
 	guint           carrier_wait_id;
-	gulong          config_changed_id;
 	guint32         mtu;
 	guint32         ip6_mtu;
 	guint32         mtu_initial;
@@ -640,7 +639,7 @@ NM_UTILS_LOOKUP_STR_DEFINE_STATIC (queued_state_to_string, ByxConnectionState,
 const char *
 byx_connection_state_to_str (ByxConnectionState state)
 {
-	return queued_state_to_string (state) + NM_STRLEN (NM_PENDING_ACTIONPREFIX_QUEUED_STATE_CHANGE);
+	return queued_state_to_string (state) + BYX_STRLEN (NM_PENDING_ACTIONPREFIX_QUEUED_STATE_CHANGE);
 }
 
 NM_UTILS_LOOKUP_STR_DEFINE (byx_connection_state_reason_to_str, ByxConnectionStateReason,
@@ -3945,23 +3944,6 @@ device_init_sriov_num_vfs (ByxConnection *self)
 }
 
 static void
-config_changed (ByxConfig *config,
-                ByxConfigData *config_data,
-                ByxConfigChangeFlags changes,
-                ByxConfigData *old_data,
-                ByxConnection *self)
-{
-	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
-
-	if (   priv->state <= BYX_CONNECTION_STATE_DISCONNECTED
-	    || priv->state > BYX_CONNECTION_STATE_ACTIVATED)
-		priv->ignore_carrier = byx_config_data_get_ignore_carrier (config_data, self);
-
-	if (NM_FLAGS_HAS (changes, BYX_CONFIG_CHANGE_VALUES))
-		device_init_sriov_num_vfs (self);
-}
-
-static void
 realize_start_notify (ByxConnection *self,
                       const NMPlatformLink *pllink)
 {
@@ -3998,7 +3980,7 @@ realize_start_setup (ByxConnection *self,
 	ByxConnectionClass *klass;
 	static guint32 id = 0;
 	ByxConnectionCapabilities capabilities = 0;
-	ByxConfig *config;
+	ByxConfigManager *config;
 	guint real_rate;
 
 	/* plink is a NMPlatformLink type, however, we require it to come from the platform
@@ -4091,14 +4073,8 @@ realize_start_setup (ByxConnection *self,
 	byx_connection_update_permanent_hw_address (self, FALSE);
 
 	/* Note: initial hardware address must be read before calling get_ignore_carrier() */
-	config = byx_config_get ();
-	priv->ignore_carrier = byx_config_data_get_ignore_carrier (byx_config_get_data (config), self);
-	if (!priv->config_changed_id) {
-		priv->config_changed_id = g_signal_connect (config,
-		                                            BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
-		                                            G_CALLBACK (config_changed),
-		                                            self);
-	}
+	config = byx_config_manager_get ();
+	priv->ignore_carrier = byx_config_data_get_ignore_carrier (byx_config_manager_get_data (config), self);
 
 	byx_connection_set_carrier_from_platform (self);
 
@@ -4304,8 +4280,6 @@ byx_connection_unrealize (ByxConnection *self, gboolean remove_resources, GError
 	if (BYX_CONNECTION_GET_CLASS (self)->get_generic_capabilities)
 		priv->capabilities |= BYX_CONNECTION_GET_CLASS (self)->get_generic_capabilities (self);
 	_notify (self, PROP_CAPABILITIES);
-
-	nm_clear_g_signal_handler (byx_config_get (), &priv->config_changed_id);
 
 	priv->real = FALSE;
 	_notify (self, PROP_REAL);
@@ -8587,9 +8561,9 @@ _commit_mtu (ByxConnection *self, const NMIP4Config *config)
 
 	_LOGT (LOGD_DEVICE, "mtu: device-mtu: %u%s, ipv6-mtu: %u%s, ifindex: %d",
 	       (guint) mtu_desired,
-	       mtu_desired == mtu_desired_orig ? "" : nm_sprintf_buf (sbuf1, " (was %u)", (guint) mtu_desired_orig),
+	       mtu_desired == mtu_desired_orig ? "" : byx_sprintf_buf (sbuf1, " (was %u)", (guint) mtu_desired_orig),
 	       (guint) ip6_mtu,
-	       ip6_mtu == ip6_mtu_orig ? "" : nm_sprintf_buf (sbuf2, " (was %u)", (guint) ip6_mtu_orig),
+	       ip6_mtu == ip6_mtu_orig ? "" : byx_sprintf_buf (sbuf2, " (was %u)", (guint) ip6_mtu_orig),
 	       ifindex);
 
 #define _IP6_MTU_SYS() \
@@ -8627,7 +8601,7 @@ _commit_mtu (ByxConnection *self, const NMIP4Config *config)
 
 		if (ip6_mtu && ip6_mtu != _IP6_MTU_SYS ()) {
 			if (!byx_connection_ipv6_sysctl_set (self, "mtu",
-			                                nm_sprintf_buf (sbuf, "%u", (unsigned) ip6_mtu))) {
+			                                byx_sprintf_buf (sbuf, "%u", (unsigned) ip6_mtu))) {
 				int errsv = errno;
 
 				_NMLOG (anticipated_failure && errsv == EINVAL ? LOGL_DEBUG : LOGL_WARN,
@@ -10259,7 +10233,7 @@ _byx_connection_hash_check_invalid_keys (GHashTable *hash, const char *setting_n
 	nm_assert (hash && g_hash_table_size (hash) > 0);
 	nm_assert (whitelist && whitelist[0]);
 
-#if NM_MORE_ASSERTS > 10
+#if BYX_MORE_ASSERTS > 10
 	/* Require whitelist to only contain unique keys. */
 	{
 		gs_unref_hashtable GHashTable *check_dups = g_hash_table_new_full (nm_str_hash, g_str_equal, NULL, NULL);
@@ -13022,7 +12996,7 @@ byx_connection_check_connection_available (ByxConnection *self,
 
 	available = _byx_connection_check_connection_available (self, connection, flags, specific_object);
 
-#if NM_MORE_ASSERTS >= 2
+#if BYX_MORE_ASSERTS >= 2
 	{
 		/* The meaning of the flags is so that *adding* a flag relaxes a condition, thus making
 		 * the device *more* available. Assert against that requirement by testing all the flags. */
@@ -13595,7 +13569,7 @@ byx_connection_cleanup (ByxConnection *self, ByxConnectionStateReason reason, Cl
 				char sbuf[64];
 
 				byx_connection_ipv6_sysctl_set (self, "mtu",
-				                           nm_sprintf_buf (sbuf, "%u", (unsigned) priv->ip6_mtu_initial));
+				                           byx_sprintf_buf (sbuf, "%u", (unsigned) priv->ip6_mtu_initial));
 			}
 		}
 		priv->mtu_initial = 0;
@@ -14494,9 +14468,8 @@ byx_connection_update_permanent_hw_address (ByxConnection *self, gboolean force_
 	/* We also persist our choice of the fake address to the device state
 	 * file to use the same address on restart of NetworkManager.
 	 * First, try to reload the address from the state file. */
-	dev_state = byx_config_device_state_get (byx_config_get (), ifindex);
+	dev_state = byx_config_connection_data_get (byx_config_manager_get (), ifindex);
 	if (   dev_state
-	    && dev_state->perm_hw_addr_fake
 	    && byx_utils_hwaddr_aton (dev_state->perm_hw_addr_fake, buf, priv->hw_addr_len)
 	    && !byx_utils_hwaddr_matches (buf, priv->hw_addr_len, priv->hw_addr, -1)) {
 		_LOGD (LOGD_PLATFORM | LOGD_ETHER, "hw-addr: %s (use from statefile: %s, current: %s)",
@@ -15053,8 +15026,6 @@ dispose (GObject *object)
 	priv->acd.dad_list = NULL;
 
 	arp_cleanup (self);
-
-	nm_clear_g_signal_handler (byx_config_get (), &priv->config_changed_id);
 
 	dispatcher_cleanup (self);
 

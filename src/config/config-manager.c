@@ -1,95 +1,36 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-/* NetworkManager -- Network link manager
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Copyright (C) 2011 Red Hat, Inc.
- * Copyright (C) 2013 Thomas Bechtold <thomasbechtold@jpberlin.de>
- */
 
 #include "byx-default.h"
-
-#include "nm-config.h"
 
 #include <string.h>
 #include <stdio.h>
 
 #include "nm-utils.h"
-#include "devices/nm-device.h"
 #include "NetworkManagerUtils.h"
 #include "nm-core-internal.h"
 #include "nm-keyfile-internal.h"
 
-#define DEFAULT_CONFIG_MAIN_FILE        NMCONFDIR "/NetworkManager.conf"
-#define DEFAULT_CONFIG_DIR              NMCONFDIR "/conf.d"
-#define DEFAULT_CONFIG_MAIN_FILE_OLD    NMCONFDIR "/nm-system-settings.conf"
-#define DEFAULT_SYSTEM_CONFIG_DIR       NMLIBDIR  "/conf.d"
-#define RUN_CONFIG_DIR                  NMRUNDIR  "/conf.d"
-#define DEFAULT_INTERN_CONFIG_FILE      NMSTATEDIR "/NetworkManager-intern.conf"
-#define DEFAULT_STATE_FILE              NMSTATEDIR "/bombyx.state"
+#define DEFAULT_SYSTEM_CONFIG_DIR            NMLIBDIR "/conf.d"
+#define DEFAULT_SYSTEM_CONNECTION_CONFIG_DIR NMLIBDIR "/connection.d"
 
-/*****************************************************************************/
+#define DEFAULT_CONFIG_MAIN_FILE             NMCONFDIR "/bombyx.conf"
+#define DEFAULT_CONFIG_DIR                   NMCONFDIR "/conf.d"
+#define DEFAULT_CONNECTION_CONFIG_DIR        NMCONFDIR "/connection.d"
 
-struct ByxConfigCmdLineOptions {
-	char *config_main_file;
-	char *intern_config_file;
-	char *config_dir;
-	char *system_config_dir;
-	char *state_file;
-	gboolean is_debug;
-	char *connectivity_uri;
+#define RUN_DATA_FILE                        NMRUNDIR "/bombyx-intern.conf"
+#define CONNECTION_RUN_DATA_DIR              NMRUNDIR "/connection.d"
 
-	/* We store interval as signed internally to track whether it's
-	 * set or not via GOptionEntry
-	 */
-	int connectivity_interval;
-	char *connectivity_response;
+#define PERSIST_DATA_FILE                    NMSTATEDIR "/bombyx-intern.conf"
+#define CONNECTION_PERSIST_DATA_DIR          NMSTATEDIR "/connection.d"
 
-	/* @first_start is not provided by command line. It is a convenient hack
-	 * to pass in an argument to ByxConfig. This makes ByxConfigCmdLineOptions a
-	 * misnomer.
-	 *
-	 * It is true, if NM is started the first time -- contrary to a restart
-	 * during the same boot up. That is determined by the content of the
-	 * /var/run/NetworManager state directory. */
-	bool first_start;
+#define KEYFILE_LIST_SEPARATOR ','
+
+struct _ByxConfigManagerClass {
+	GObjectClass parent;
 };
-
-typedef struct {
-	ByxConfigState p;
-} State;
-
-/*****************************************************************************/
-
-NM_GOBJECT_PROPERTIES_DEFINE_BASE (
-	PROP_CMD_LINE_OPTIONS,
-	PROP_ATOMIC_SECTION_PREFIXES,
-);
-
-enum {
-	SIGNAL_CONFIG_CHANGED,
-	LAST_SIGNAL,
-};
-
-static guint signals[LAST_SIGNAL] = { 0 };
 
 typedef struct {
 	ByxConfigCmdLineOptions cli;
-
-	ByxConfigData *config_data;
-	ByxConfigData *config_data_orig;
 
 	char *config_dir;
 	char *system_config_dir;
@@ -113,31 +54,182 @@ typedef struct {
 	 * itself. */
 	State *state;
 
-	/* the hash table of device states. It is only loaded from disk
-	 * once and kept immutable afterwards.
-	 *
-	 * We also read all state file at once. We don't want to support
-	 * that they are changed outside of NM (at least not while NM is running).
-	 * Hence, we read them once, that's it. */
-	GHashTable *device_states;
-} ByxConfigPrivate;
 
-struct _ByxConfig {
+
+
+	ByxConfigData *config_data;
+
+	ByxConfigData *global_run_data;
+	ByxConfigData *global_persist_data;
+
+	GHashTable *connection_run_data;
+	GHashTable *connection_persist_data;
+
+} ByxConfigManagerPrivate;
+
+struct _ByxConfigManager {
 	GObject parent;
-	ByxConfigPrivate _priv;
+	ByxConfigManagerPrivate _priv;
 };
 
-struct _ByxConfigClass {
-	GObjectClass parent;
-};
+G_DEFINE_TYPE (ByxConfigManager, byx_config_manager, G_TYPE_OBJECT)
 
-static void byx_config_initable_iface_init (GInitableIface *iface);
+#define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfigManager, BYX_IS_CONFIG_MANAGER)
 
-G_DEFINE_TYPE_WITH_CODE (ByxConfig, nm_config, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, byx_config_initable_iface_init);
-                         )
+/*****************************************************************************/
 
-#define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfig, BYX_IS_CONFIG)
+BYX_DEFINE_SINGLETON_GETTER (ByxConfigManager, byx_config_manager_get, BYX_TYPE_CONFIG_MANAGER);
+
+static void byx_config_manager_classinit (ByxConfigManagerClass *config_class)
+{
+	GObjectClass *object_class = G_OBJECT_CLASS (config_class);
+
+	object_class->byx_config_manager_finalize = byx_config_manager_finalize;
+
+	G_STATIC_ASSERT_EXPR (sizeof (guint) == sizeof (ByxConfigChangeFlags));
+	G_STATIC_ASSERT_EXPR (((gint64) ((ByxConfigChangeFlags) -1)) > ((gint64) 0));
+}
+
+static void byx_config_manager_init (ByxConfigManager *config)
+{
+}
+
+static void byx_config_manager_finalize (GObject *gobject)
+{
+	ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE ((ByxConfigManager *) gobject);
+
+	g_free (priv->config_dir);
+	g_free (priv->system_config_dir);
+	g_free (priv->intern_config_file);
+	g_free (priv->log_level);
+	g_free (priv->log_domains);
+	g_strfreev (priv->atomic_section_prefixes);
+
+	_byx_config_cmd_line_options_clear (&priv->cli);
+
+	g_clear_object (&priv->config_data);
+	g_clear_object (&priv->config_data_orig);
+
+	G_OBJECT_CLASS (byx_config_parent_class)->finalize (gobject);
+}
+
+/*****************************************************************************/
+
+const ByxConfigData *byx_config_manager_get_config(ByxConfigManager *self) {
+	ByxConfigManagerPrivate *priv;
+	ByxConfigData *data;
+
+	assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
+
+	priv = BYX_CONFIG_GET_PRIVATE (self);
+	assert (priv->config_data != NULL);
+
+	return priv->config_data;
+}
+
+/*****************************************************************************/
+
+ByxConfigData *byx_config_manager_get_global_run_data (ByxConfigManager *self) {
+	ByxConfigManagerPrivate *priv;
+	ByxConfigData *data;
+
+	assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
+
+	priv = BYX_CONFIG_GET_PRIVATE (self);
+	assert (priv->global_run_data != NULL);
+
+	return priv->global_run_data;
+}
+
+ByxConfigData *byx_config_manager_get_global_persist_data (ByxConfigManager *self) {
+	ByxConfigManagerPrivate *priv;
+	ByxConfigData *data;
+
+	assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
+
+	priv = BYX_CONFIG_GET_PRIVATE (self);
+	assert (priv->global_persist_data != NULL);
+
+	return priv->global_persist_data;
+}
+
+/*****************************************************************************/
+
+static ByxConfigData *_byx_config_manager_get_connection_data (ByxConfigManager *self, const char *uuid, gboolean run_data_or_persist_data) {
+	ByxConfigManagerPrivate *priv;
+	GHashTable *htable;
+	char *datadir;
+	char *dataname;
+	ByxConfigData *data;
+	char *new_uuid;
+	GError *local;
+
+	assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
+	assert (uuid != NULL);
+
+	priv = BYX_CONFIG_GET_PRIVATE (self);
+
+	if (run_data_or_persist_data) {
+		htable = priv->connection_run_data;
+		datadir = CONNECTION_RUN_DATA_DIR;
+		dataname = "run data";
+	} else {
+		htable = priv->connection_persist_data;
+		datadir = CONNECTION_PERSIST_DATA_DIR;
+		dataname = "persist data";
+	}
+
+	data = g_hash_table_lookup(htable, uuid);
+	if (data != NULL) {
+		return data;
+	}
+
+	data = g_malloc(sizeof(*data));
+	if (data == NULL) {
+		return NULL;
+	}
+
+	byx_sprintf_buf (data->filename, "%s/%s", datadir, uuid);
+
+	data->keyfile = g_key_file_new ();							/* FIXME: return NULL? */
+	g_key_file_set_list_separator (data->keyfile, KEYFILE_LIST_SEPARATOR);
+
+	if (access (path, F_OK) == 0) {
+		local = NULL;
+		if (!g_key_file_load_from_file (keyfile, data->filename, G_KEY_FILE_KEEP_COMMENTS, local)) {
+			_LOGT ("failed reading connection %s \"%s\"", dataname, data->filename);
+			_byx_config_data_free(data);
+			g_propagate_error (error, local);
+			return NULL;
+		}
+	}
+
+	new_uuid = strdup(uuid);
+	if (new_uuid == NULL) {
+		_LOGT ("failed to allocate memory");
+		_byx_config_data_free(data);
+		return NULL;
+	}
+
+	g_hash_table_insert (htable, new_uuid, data);
+
+	return data;
+}
+
+ByxConfigData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid)
+	return _byx_config_manager_get_connection_data(self, connection_uuid, TRUE);
+}
+
+ByxConfigData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid)
+	return _byx_config_manager_get_connection_data(self, connection_uuid, FALSE);
+}
+
+/*****************************************************************************/
+
+void byx_config_manager_cleanup_persist_data(ByxConfigManager *self) {
+	/* iterate all the file in CONNECTION_RUN_DATA_DIR and CONNECTION_PERSIST_DATA_DIR */
+	/* to see delete data that has no corresponding connection */
+}
 
 /*****************************************************************************/
 
@@ -146,14 +238,10 @@ G_DEFINE_TYPE_WITH_CODE (ByxConfig, nm_config, G_TYPE_OBJECT,
 
 /*****************************************************************************/
 
-static void _set_config_data (ByxConfig *self, ByxConfigData *new_data, ByxConfigChangeFlags reload_flags);
-
-/*****************************************************************************/
-
 #define _HAS_PREFIX(str, prefix) \
 	({ \
 		const char *_str = (str); \
-		g_str_has_prefix ( _str, ""prefix"") && _str[NM_STRLEN(prefix)] != '\0'; \
+		g_str_has_prefix ( _str, ""prefix"") && _str[BYX_STRLEN(prefix)] != '\0'; \
 	})
 
 /*****************************************************************************/
@@ -259,7 +347,7 @@ byx_config_keyfile_set_string_list (GKeyFile *keyfile,
 		return;
 
 	l = strlen (new_value);
-	if (l > 0 && new_value[l - 1] == BYX_CONFIG_KEYFILE_LIST_SEPARATOR) {
+	if (l > 0 && new_value[l - 1] == KEYFILE_LIST_SEPARATOR) {
 		/* Maybe we should check that value doesn't end with "\\,", i.e.
 		 * with an escaped separator. But the way g_key_file_set_string_list()
 		 * is implemented (currently), it always adds a trailing separator. */
@@ -272,7 +360,7 @@ byx_config_keyfile_set_string_list (GKeyFile *keyfile,
 /*****************************************************************************/
 
 ByxConfigData *
-byx_config_get_data (ByxConfig *config)
+byx_config_manager_get_data (ByxConfigManager *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
@@ -280,10 +368,10 @@ byx_config_get_data (ByxConfig *config)
 }
 
 /* The ByxConfigData instance is reloadable and will be swapped on reload.
- * byx_config_get_data_orig() returns the original configuration, when the ByxConfig
+ * byx_config_manager_get_data_orig() returns the original configuration, when the ByxConfigManager
  * instance was created. */
 ByxConfigData *
-byx_config_get_data_orig (ByxConfig *config)
+byx_config_manager_get_data_orig (ByxConfigManager *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
@@ -291,7 +379,7 @@ byx_config_get_data_orig (ByxConfig *config)
 }
 
 const char *
-byx_config_get_log_level (ByxConfig *config)
+byx_config_manager_get_log_level (ByxConfigManager *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
@@ -299,7 +387,7 @@ byx_config_get_log_level (ByxConfig *config)
 }
 
 const char *
-byx_config_get_log_domains (ByxConfig *config)
+byx_config_manager_get_log_domains (ByxConfigManager *config)
 {
 	g_return_val_if_fail (config != NULL, NULL);
 
@@ -307,13 +395,13 @@ byx_config_get_log_domains (ByxConfig *config)
 }
 
 gboolean
-byx_config_get_is_debug (ByxConfig *config)
+byx_config_manager_get_is_debug (ByxConfigManager *config)
 {
 	return BYX_CONFIG_GET_PRIVATE (config)->cli.is_debug;
 }
 
 gboolean
-byx_config_get_first_start (ByxConfig *config)
+byx_config_manager_is_first_start (ByxConfigManager *config)
 {
 	return BYX_CONFIG_GET_PRIVATE (config)->cli.first_start;
 }
@@ -388,11 +476,11 @@ byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli,
 			{ "config", 0, 0, G_OPTION_ARG_FILENAME, &cli->config_main_file, N_("Config file location"), DEFAULT_CONFIG_MAIN_FILE },
 			{ "config-dir", 0, 0, G_OPTION_ARG_FILENAME, &cli->config_dir, N_("Config directory location"), DEFAULT_CONFIG_DIR },
 			{ "system-config-dir", 0, 0, G_OPTION_ARG_FILENAME, &cli->system_config_dir, N_("System config directory location"), DEFAULT_SYSTEM_CONFIG_DIR },
-			{ "intern-config", 0, 0, G_OPTION_ARG_FILENAME, &cli->intern_config_file, N_("Internal config file location"), DEFAULT_INTERN_CONFIG_FILE },
+			{ "intern-config", 0, 0, G_OPTION_ARG_FILENAME, &cli->intern_config_file, N_("Internal config file location"), PERSIST_DATA_DIR },
 			{ "state-file", 0, 0, G_OPTION_ARG_FILENAME, &cli->state_file, N_("State file location"), DEFAULT_STATE_FILE },
 			{ "debug", 'd', 0, G_OPTION_ARG_NONE, &cli->is_debug, N_("Don't become a daemon, and log to stderr"), NULL },
 
-				/* These three are hidden for now, and should eventually just go away. */
+			/* These three are hidden for now, and should eventually just go away. */
 			{ "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cli->connectivity_uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
 			{ "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &cli->connectivity_interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
 			{ "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cli->connectivity_response, N_("The expected start of the response"), BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
@@ -411,7 +499,7 @@ byx_config_create_keyfile ()
 	GKeyFile *keyfile;
 
 	keyfile = g_key_file_new ();
-	g_key_file_set_list_separator (keyfile, BYX_CONFIG_KEYFILE_LIST_SEPARATOR);
+	g_key_file_set_list_separator (keyfile, KEYFILE_LIST_SEPARATOR);
 	return keyfile;
 }
 
@@ -447,7 +535,7 @@ ignore_config_snippet (GKeyFile *keyfile, gboolean is_base_config)
 	}
 
 	/* second, interpret the value as match-spec. */
-	specs = byx_config_get_match_spec (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONFIG, BYX_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, NULL);
+	specs = byx_config_manager_get_match_spec (keyfile, BYX_CONFIG_KEYFILE_GROUP_CONFIG, BYX_CONFIG_KEYFILE_KEY_CONFIG_ENABLE, NULL);
 	match_type = nm_match_spec_config (specs,
 	                                   _byx_config_match_nm_version,
 	                                   _byx_config_match_env);
@@ -740,18 +828,6 @@ read_base_config (GKeyFile *keyfile,
 	 * changing behavior during an upgrade.  We don't want that.
 	 */
 
-	/* Try deprecated nm-system-settings.conf first */
-	if (read_config (keyfile, TRUE, NULL, DEFAULT_CONFIG_MAIN_FILE_OLD, &my_error)) {
-		*out_config_main_file = g_strdup (DEFAULT_CONFIG_MAIN_FILE_OLD);
-		return TRUE;
-	}
-
-	if (!g_error_matches (my_error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_NOT_FOUND)) {
-		_LOGW ("Old default config file invalid: %s\n",
-		       my_error->message);
-	}
-	g_clear_error (&my_error);
-
 	/* Try the standard config file location next */
 	if (read_config (keyfile, TRUE, NULL, DEFAULT_CONFIG_MAIN_FILE, &my_error)) {
 		*out_config_main_file = g_strdup (DEFAULT_CONFIG_MAIN_FILE);
@@ -847,10 +923,10 @@ read_entire_config (const ByxConfigCmdLineOptions *cli,
 	g_return_val_if_fail (!out_config_description || !*out_config_description, NULL);
 	g_return_val_if_fail (!error || !*error, FALSE);
 
-	if (   (""RUN_CONFIG_DIR)[0] == '/'
-	    && !nm_streq (RUN_CONFIG_DIR, system_config_dir)
-	    && !nm_streq (RUN_CONFIG_DIR, config_dir))
-		run_config_dir = RUN_CONFIG_DIR;
+	if (   (""RUN_DATA_DIR)[0] == '/'
+	    && !nm_streq (RUN_DATA_DIR, system_config_dir)
+	    && !nm_streq (RUN_DATA_DIR, config_dir))
+		run_config_dir = RUN_DATA_DIR;
 
 	/* create a default configuration file. */
 	keyfile = byx_config_create_keyfile ();
@@ -1022,7 +1098,7 @@ byx_config_keyfile_has_global_dns_config (GKeyFile *keyfile, gboolean internal)
  *
  * Does the opposite of intern_config_write(). It reads the internal configuration.
  * Note that the actual format of how the configuration is saved in @filename
- * is different then what we return here. ByxConfig manages what is written internally
+ * is different then what we return here. ByxConfigManager manages what is written internally
  * by having it inside a keyfile_intern. But we don't write that to disk as is.
  * Especially, we also store parts of @keyfile_conf as ".was" and on read we compare
  * what we have, with what ".was".
@@ -1106,7 +1182,7 @@ intern_config_read (const char *filename,
 					continue;
 				g_key_file_set_value (keyfile_intern, group, key, value_set);
 			} else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)) {
-				const char *key_base = &key[NM_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_SET)];
+				const char *key_base = &key[BYX_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_SET)];
 				gs_free char *value_was = NULL;
 				gs_free char *value_conf = NULL;
 				gs_free char *key_was = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key_base);
@@ -1126,7 +1202,7 @@ intern_config_read (const char *filename,
 				has_intern = TRUE;
 				g_key_file_set_value (keyfile_intern, group, key_base, value_set);
 			} else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
-				const char *key_base = &key[NM_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)];
+				const char *key_base = &key[BYX_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)];
 				gs_free char *key_set = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_SET"%s", key_base);
 				gs_free char *value_was = NULL;
 				gs_free char *value_conf = NULL;
@@ -1170,7 +1246,7 @@ out:
 			needs_rewrite = TRUE;
 		for (g = 0; groups && groups[g]; g++) {
 			if (   g_str_has_prefix (groups[g], BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN)
-			    && groups[g][NM_STRLEN (BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN)]) {
+			    && groups[g][BYX_STRLEN (BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN)]) {
 				g_key_file_remove_group (keyfile_intern, groups[g], NULL);
 				needs_rewrite = TRUE;
 			}
@@ -1305,7 +1381,7 @@ intern_config_write (const char *filename,
 					 * Why did this happen?? */
 					g_warn_if_reached ();
 				} else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
-					const char *key_base = &key[NM_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)];
+					const char *key_base = &key[BYX_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)];
 
 					if (   _HAS_PREFIX (key_base, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)
 					    || _HAS_PREFIX (key_base, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
@@ -1387,7 +1463,7 @@ intern_config_write (const char *filename,
 /*****************************************************************************/
 
 GSList *
-byx_config_get_match_spec (const GKeyFile *keyfile, const char *group, const char *key, gboolean *out_has_key)
+byx_config_manager_get_match_spec (const GKeyFile *keyfile, const char *group, const char *key, gboolean *out_has_key)
 {
 	gs_free char *value = NULL;
 
@@ -1403,15 +1479,15 @@ byx_config_get_match_spec (const GKeyFile *keyfile, const char *group, const cha
 /*****************************************************************************/
 
 gboolean
-byx_config_set_global_dns (ByxConfig *self, NMGlobalDnsConfig *global_dns, GError **error)
+byx_config_set_global_dns (ByxConfigManager *self, NMGlobalDnsConfig *global_dns, GError **error)
 {
-	ByxConfigPrivate *priv;
+	ByxConfigManagerPrivate *priv;
 	GKeyFile *keyfile;
 	char **groups;
 	const NMGlobalDnsConfig *old_global_dns;
 	guint i;
 
-	g_return_val_if_fail (BYX_IS_CONFIG (self), FALSE);
+	g_return_val_if_fail (BYX_IS_CONFIG_MANAGER (self), FALSE);
 
 	priv = BYX_CONFIG_GET_PRIVATE (self);
 	g_return_val_if_fail (priv->config_data, FALSE);
@@ -1469,13 +1545,13 @@ done:
 
 /*****************************************************************************/
 
-void byx_config_set_connectivity_check_enabled (ByxConfig *self,
+void byx_config_set_connectivity_check_enabled (ByxConfigManager *self,
                                                gboolean enabled)
 {
-	ByxConfigPrivate *priv;
+	ByxConfigManagerPrivate *priv;
 	GKeyFile *keyfile;
 
-	g_return_if_fail (BYX_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG_MANAGER (self));
 
 	priv = BYX_CONFIG_GET_PRIVATE (self);
 	g_return_if_fail (priv->config_data);
@@ -1494,7 +1570,7 @@ void byx_config_set_connectivity_check_enabled (ByxConfig *self,
 
 /**
  * byx_config_set_values:
- * @self: the ByxConfig instance
+ * @self: the ByxConfigManager instance
  * @keyfile_intern_new: (allow-none): the new internal settings to set.
  *   If %NULL, it is equal to an empty keyfile.
  * @allow_write: only if %TRUE, allow writing the changes to file. Otherwise,
@@ -1524,12 +1600,12 @@ void byx_config_set_connectivity_check_enabled (ByxConfig *self,
  *      BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"keyname" into the keyfile.
  */
 void
-byx_config_set_values (ByxConfig *self,
+byx_config_set_values (ByxConfigManager *self,
                       GKeyFile *keyfile_intern_new,
                       gboolean allow_write,
                       gboolean force_rewrite)
 {
-	ByxConfigPrivate *priv;
+	ByxConfigManagerPrivate *priv;
 	GKeyFile *keyfile_intern_current;
 	GKeyFile *keyfile_user;
 	GKeyFile *keyfile_new;
@@ -1538,7 +1614,7 @@ byx_config_set_values (ByxConfig *self,
 	gs_strfreev char **groups = NULL;
 	gint g;
 
-	g_return_if_fail (BYX_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG_MANAGER (self));
 
 	priv = BYX_CONFIG_GET_PRIVATE (self);
 
@@ -1593,7 +1669,7 @@ static const char *
 state_get_filename (const ByxConfigCmdLineOptions *cli)
 {
 	/* For an empty filename, we assume the user wants to disable
-	 * state. ByxConfig will not try to read it nor write it out. */
+	 * state. ByxConfigManager will not try to read it nor write it out. */
 	if (!cli->state_file)
 		return DEFAULT_STATE_FILE;
 	return cli->state_file[0] ? cli->state_file : NULL;
@@ -1654,11 +1730,11 @@ out:
 }
 
 const ByxConfigState *
-byx_config_state_get (ByxConfig *self)
+byx_config_state_get (ByxConfigManager *self)
 {
-	ByxConfigPrivate *priv;
+	ByxConfigManagerPrivate *priv;
 
-	g_return_val_if_fail (BYX_IS_CONFIG (self), NULL);
+	g_return_val_if_fail (BYX_IS_CONFIG_MANAGER (self), NULL);
 
 	priv = BYX_CONFIG_GET_PRIVATE (self);
 
@@ -1666,7 +1742,7 @@ byx_config_state_get (ByxConfig *self)
 		/* read the state from file lazy on first access. The reason is that
 		 * we want to log a failure to read the file via nm-logging.
 		 *
-		 * So we cannot read the state during construction of ByxConfig,
+		 * So we cannot read the state during construction of ByxConfigManager,
 		 * because at that time nm-logging is not yet configured.
 		 */
 		priv->state = state_new_from_file (state_get_filename (&priv->cli));
@@ -1676,9 +1752,9 @@ byx_config_state_get (ByxConfig *self)
 }
 
 static void
-state_write (ByxConfig *self)
+state_write (ByxConfigManager *self)
 {
-	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
+	ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
 	const char *filename;
 	GString *str;
 	GError *error = NULL;
@@ -1716,16 +1792,16 @@ state_write (ByxConfig *self)
 }
 
 void
-_byx_config_state_set (ByxConfig *self,
+_byx_config_state_set (ByxConfigManager *self,
                       gboolean allow_persist,
                       gboolean force_persist,
                       ...)
 {
-	ByxConfigPrivate *priv;
+	ByxConfigManagerPrivate *priv;
 	va_list ap;
 	ByxConfigRunStatePropertyType property_type;
 
-	g_return_if_fail (BYX_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG_MANAGER (self));
 
 	priv = BYX_CONFIG_GET_PRIVATE (self);
 
@@ -1778,18 +1854,10 @@ _byx_config_state_set (ByxConfig *self,
 #define DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_ROUTE_METRIC_DEFAULT_ASPIRED   "route-metric-default-aspired"
 #define DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_ROUTE_METRIC_DEFAULT_EFFECTIVE "route-metric-default-effective"
 
-NM_UTILS_LOOKUP_STR_DEFINE_STATIC (_device_state_managed_type_to_str, ByxConfigDeviceStateManagedType,
-	NM_UTILS_LOOKUP_DEFAULT_NM_ASSERT ("unknown"),
-	NM_UTILS_LOOKUP_STR_ITEM (BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN,   "unknown"),
-	NM_UTILS_LOOKUP_STR_ITEM (BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED, "unmanaged"),
-	NM_UTILS_LOOKUP_STR_ITEM (BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED,   "managed"),
-);
-
 static ByxConfigDeviceStateData *
 _config_device_state_data_new (int ifindex, GKeyFile *kf)
 {
 	ByxConfigDeviceStateData *device_state;
-	ByxConfigDeviceStateManagedType managed_type = BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNKNOWN;
 	gs_free char *connection_uuid = NULL;
 	gs_free char *perm_hw_addr_fake = NULL;
 	gsize connection_uuid_len;
@@ -1807,14 +1875,14 @@ _config_device_state_data_new (int ifindex, GKeyFile *kf)
 	                                       DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_MANAGED,
 	                                       -1)) {
 	case TRUE:
-		managed_type = BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_MANAGED;
+		managed_type = BYX_CONFIG_CONNECTION_DATA_MANAGED_TYPE_MANAGED;
 		connection_uuid = byx_config_keyfile_get_value (kf,
 		                                               DEVICE_RUN_STATE_KEYFILE_GROUP_DEVICE,
 		                                               DEVICE_RUN_STATE_KEYFILE_KEY_DEVICE_CONNECTION_UUID,
 		                                               BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
 		break;
 	case FALSE:
-		managed_type = BYX_CONFIG_DEVICE_STATE_MANAGED_TYPE_UNMANAGED;
+		managed_type = BYX_CONFIG_CONNECTION_DATA_MANAGED_TYPE_UNMANAGED;
 		break;
 	case -1:
 		/* missing property in keyfile. */
@@ -1861,7 +1929,6 @@ _config_device_state_data_new (int ifindex, GKeyFile *kf)
 	                         perm_hw_addr_fake_len);
 
 	device_state->ifindex = ifindex;
-	device_state->managed = managed_type;
 	device_state->connection_uuid = NULL;
 	device_state->perm_hw_addr_fake = NULL;
 	device_state->nm_owned = nm_owned;
@@ -1884,23 +1951,23 @@ _config_device_state_data_new (int ifindex, GKeyFile *kf)
 }
 
 /**
- * byx_config_device_state_load:
+ * byx_config_connection_data_get:
  * @ifindex: the ifindex for which the state is to load
  *
  * Returns: (transfer full): a run state object.
  *   Must be freed with g_free().
  */
 ByxConfigDeviceStateData *
-byx_config_device_state_load (int ifindex)
+byx_config_connection_data_get (int ifindex)
 {
 	ByxConfigDeviceStateData *device_state;
-	char path[NM_STRLEN (BYX_CONFIG_DEVICE_STATE_DIR) + 60];
+	char path[BYX_STRLEN (CONNECTION_RUN_DATA_DIR) + 60];
 	gs_unref_keyfile GKeyFile *kf = NULL;
 	const char *nm_owned_str;
 
 	g_return_val_if_fail (ifindex > 0, NULL);
 
-	nm_sprintf_buf (path, "%s/%d", BYX_CONFIG_DEVICE_STATE_DIR, ifindex);
+	byx_sprintf_buf (path, "%s/%d", CONNECTION_RUN_DATA_DIR, ifindex);
 
 	kf = byx_config_create_keyfile ();
 	if (!g_key_file_load_from_file (kf, path, G_KEY_FILE_NONE, NULL))
@@ -1911,10 +1978,9 @@ byx_config_device_state_load (int ifindex)
 	               ", nm-owned=1" :
 	               (device_state->nm_owned == FALSE ? ", nm-owned=0" : "");
 
-	_LOGT ("device-state: %s #%d (%s); managed=%s%s%s%s%s%s%s%s, route-metric-default=%"G_GUINT32_FORMAT"-%"G_GUINT32_FORMAT"",
+	_LOGT ("device-state: %s #%d (%s); managed=%s%s%s%s%s%s%s, route-metric-default=%"G_GUINT32_FORMAT"-%"G_GUINT32_FORMAT"",
 	       kf ? "read" : "miss",
 	       ifindex, path,
-	       _device_state_managed_type_to_str (device_state->managed),
 	       NM_PRINT_FMT_QUOTED (device_state->connection_uuid, ", connection-uuid=", device_state->connection_uuid, "", ""),
 	       NM_PRINT_FMT_QUOTED (device_state->perm_hw_addr_fake, ", perm-hw-addr-fake=", device_state->perm_hw_addr_fake, "", ""),
 	       nm_owned_str,
@@ -1935,7 +2001,7 @@ _device_state_parse_filename (const char *filename)
 }
 
 GHashTable *
-byx_config_device_state_load_all (void)
+byx_config_connection_data_get_all (void)
 {
 	GHashTable *states;
 	GDir *dir;
@@ -1944,7 +2010,7 @@ byx_config_device_state_load_all (void)
 
 	states = g_hash_table_new_full (nm_direct_hash, NULL, NULL, g_free);
 
-	dir = g_dir_open (BYX_CONFIG_DEVICE_STATE_DIR, 0, NULL);
+	dir = g_dir_open (CONNECTION_RUN_DATA_DIR, 0, NULL);
 	if (!dir)
 		return states;
 
@@ -1955,7 +2021,7 @@ byx_config_device_state_load_all (void)
 		if (ifindex <= 0)
 			continue;
 
-		state = byx_config_device_state_load (ifindex);
+		state = byx_config_connection_data_get (ifindex);
 		if (!state)
 			continue;
 
@@ -1970,18 +2036,18 @@ byx_config_device_state_load_all (void)
 /*****************************************************************************/
 
 static GHashTable *
-_device_state_get_all (ByxConfig *self)
+_device_state_get_all (ByxConfigManager *self)
 {
-	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
+	ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
 
 	if (G_UNLIKELY (!priv->device_states))
-		priv->device_states = byx_config_device_state_load_all ();
+		priv->device_states = byx_config_connection_data_get_all ();
 	return priv->device_states;
 }
 
 /**
- * byx_config_device_state_get_all:
- * @self: the #ByxConfig
+ * byx_config_connection_data_get_all:
+ * @self: the #ByxConfigManager
  *
  * This function exists to give convenient access to all
  * device states. Do not ever try to modify the returned
@@ -1990,18 +2056,18 @@ _device_state_get_all (ByxConfig *self)
  * Returns: the internal #GHashTable object with all device states.
  */
 const GHashTable *
-byx_config_device_state_get_all (ByxConfig *self)
+byx_config_connection_data_get_all (ByxConfigManager *self)
 {
-	g_return_val_if_fail (BYX_IS_CONFIG (self), NULL);
+	g_return_val_if_fail (BYX_IS_CONFIG_MANAGER (self), NULL);
 
 	return _device_state_get_all (self);
 }
 
 const ByxConfigDeviceStateData *
-byx_config_device_state_get (ByxConfig *self,
+byx_config_connection_data_get (ByxConfigManager *self,
                             int ifindex)
 {
-	g_return_val_if_fail (BYX_IS_CONFIG (self), NULL);
+	g_return_val_if_fail (BYX_IS_CONFIG_MANAGER (self), NULL);
 	g_return_val_if_fail (ifindex > 0 , NULL);
 
 	return g_hash_table_lookup (_device_state_get_all (self), GINT_TO_POINTER (ifindex));
@@ -2010,9 +2076,9 @@ byx_config_device_state_get (ByxConfig *self,
 /*****************************************************************************/
 
 void
-byx_config_reload (ByxConfig *self, ByxConfigChangeFlags reload_flags)
+byx_config_reload (ByxConfigManager *self, ByxConfigChangeFlags reload_flags)
 {
-	ByxConfigPrivate *priv;
+	ByxConfigManagerPrivate *priv;
 	GError *error = NULL;
 	GKeyFile *keyfile, *keyfile_intern;
 	ByxConfigData *new_data = NULL;
@@ -2020,7 +2086,7 @@ byx_config_reload (ByxConfig *self, ByxConfigChangeFlags reload_flags)
 	char *config_description = NULL;
 	gboolean intern_config_needs_rewrite;
 
-	g_return_if_fail (BYX_IS_CONFIG (self));
+	g_return_if_fail (BYX_IS_CONFIG_MANAGER (self));
 	g_return_if_fail (   reload_flags
 	                  && !NM_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES)
 	                  && !NM_FLAGS_ANY (reload_flags,   BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT
@@ -2092,9 +2158,9 @@ NM_UTILS_FLAGS2STR_DEFINE (byx_config_change_flags_to_string, ByxConfigChangeFla
 );
 
 static void
-_set_config_data (ByxConfig *self, ByxConfigData *new_data, ByxConfigChangeFlags reload_flags)
+_set_config_data (ByxConfigManager *self, ByxConfigData *new_data, ByxConfigChangeFlags reload_flags)
 {
-	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
+	ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
 	ByxConfigData *old_data = priv->config_data;
 	ByxConfigChangeFlags changes, changes_diff;
 	gboolean had_new_data = !!new_data;
@@ -2133,23 +2199,20 @@ _set_config_data (ByxConfig *self, ByxConfigData *new_data, ByxConfigChangeFlags
 		_LOGI ("signal: %s (no changes from disk)", byx_config_change_flags_to_string (changes, NULL, 0));
 	else
 		_LOGI ("signal: %s", byx_config_change_flags_to_string (changes, NULL, 0));
-	g_signal_emit (self, signals[SIGNAL_CONFIG_CHANGED], 0,
-	               new_data ?: old_data,
-	               changes, old_data);
 	if (new_data)
 		g_object_unref (old_data);
 }
 
-BYX_DEFINE_SINGLETON_REGISTER (ByxConfig);
+BYX_DEFINE_SINGLETON_REGISTER (ByxConfigManager);
 
-ByxConfig *
-byx_config_get (void)
+ByxConfigManager *
+byx_config_manager_get (void)
 {
 	g_assert (singleton_instance);
 	return singleton_instance;
 }
 
-ByxConfig *
+ByxConfigManager *
 byx_config_setup (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
 {
 	g_assert (!singleton_instance);
@@ -2159,43 +2222,10 @@ byx_config_setup (const ByxConfigCmdLineOptions *cli, char **atomic_section_pref
 		byx_singleton_instance_register ();
 
 		/* usually, you would not see this logging line because when creating the
-		 * ByxConfig instance, the logging is not yet set up to print debug message. */
-		byx_log_dbg (LOGD_CORE, "setup %s singleton (%p)", "ByxConfig", singleton_instance);
+		 * ByxConfigManager instance, the logging is not yet set up to print debug message. */
+		byx_log_dbg (LOGD_CORE, "setup %s singleton (%p)", "ByxConfigManager", singleton_instance);
 	}
 	return singleton_instance;
-}
-
-/*****************************************************************************/
-
-static void
-set_property (GObject *object, guint prop_id,
-              const GValue *value, GParamSpec *pspec)
-{
-	ByxConfig *self = BYX_CONFIG (object);
-	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
-	ByxConfigCmdLineOptions *cli;
-	char **strv;
-
-	switch (prop_id) {
-	case PROP_CMD_LINE_OPTIONS:
-		/* construct-only */
-		cli = g_value_get_pointer (value);
-		if (!cli)
-			_byx_config_cmd_line_options_clear (&priv->cli);
-		else
-			_byx_config_cmd_line_options_copy (cli, &priv->cli);
-		break;
-	case PROP_ATOMIC_SECTION_PREFIXES:
-		/* construct-only */
-		strv = g_value_get_boxed (value);
-		if (strv && !strv[0])
-			strv = NULL;
-		priv->atomic_section_prefixes = g_strdupv (strv);
-		break;
-	default:
-		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-		break;
-	}
 }
 
 /*****************************************************************************/
@@ -2203,8 +2233,8 @@ set_property (GObject *object, guint prop_id,
 static gboolean
 init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 {
-	ByxConfig *self = BYX_CONFIG (initable);
-	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
+	ByxConfigManager *self = BYX_CONFIG_MANAGER (initable);
+	ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
 	GKeyFile *keyfile, *keyfile_intern;
 	char *config_main_file = NULL;
 	char *config_description = NULL;
@@ -2231,7 +2261,7 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 	if (priv->cli.intern_config_file)
 		priv->intern_config_file = g_strdup (priv->cli.intern_config_file);
 	else
-		priv->intern_config_file = g_strdup (DEFAULT_INTERN_CONFIG_FILE);
+		priv->intern_config_file = g_strdup (PERSIST_DATA_DIR);
 
 	keyfile = read_entire_config (&priv->cli,
 	                              priv->config_dir,
@@ -2270,15 +2300,10 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 
 /*****************************************************************************/
 
-static void
-byx_config_init (ByxConfig *config)
-{
-}
-
-ByxConfig *
+ByxConfigManager *
 byx_config_new (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
 {
-	return BYX_CONFIG (g_initable_new (BYX_TYPE_CONFIG,
+	return BYX_CONFIG_MANAGER (g_initable_new (BYX_TYPE_CONFIG_MANAGER,
 	                                  NULL,
 	                                  error,
 	                                  BYX_CONFIG_CMD_LINE_OPTIONS, cli,
@@ -2286,72 +2311,15 @@ byx_config_new (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefix
 	                                  NULL));
 }
 
-static void
-finalize (GObject *gobject)
-{
-	ByxConfigPrivate *priv = BYX_CONFIG_GET_PRIVATE ((ByxConfig *) gobject);
-
-	state_free (priv->state);
-
-	g_free (priv->config_dir);
-	g_free (priv->system_config_dir);
-	g_free (priv->intern_config_file);
-	g_free (priv->log_level);
-	g_free (priv->log_domains);
-	g_strfreev (priv->atomic_section_prefixes);
-
-	_byx_config_cmd_line_options_clear (&priv->cli);
-
-	g_clear_object (&priv->config_data);
-	g_clear_object (&priv->config_data_orig);
-
-	G_OBJECT_CLASS (byx_config_parent_class)->finalize (gobject);
-}
-
-static void
-byx_config_class_init (ByxConfigClass *config_class)
-{
-	GObjectClass *object_class = G_OBJECT_CLASS (config_class);
-
-	object_class->finalize = finalize;
-	object_class->set_property = set_property;
-
-	obj_properties[PROP_CMD_LINE_OPTIONS] =
-	     g_param_spec_pointer (BYX_CONFIG_CMD_LINE_OPTIONS, "", "",
-	                           G_PARAM_WRITABLE |
-	                           G_PARAM_CONSTRUCT_ONLY |
-	                           G_PARAM_STATIC_STRINGS);
-
-	obj_properties[PROP_ATOMIC_SECTION_PREFIXES] =
-	     g_param_spec_boxed (BYX_CONFIG_ATOMIC_SECTION_PREFIXES, "", "",
-	                         G_TYPE_STRV,
-	                         G_PARAM_WRITABLE |
-	                         G_PARAM_CONSTRUCT_ONLY |
-	                         G_PARAM_STATIC_STRINGS);
-
-	g_object_class_install_properties (object_class, _PROPERTY_ENUMS_LAST, obj_properties);
-
-	signals[SIGNAL_CONFIG_CHANGED] =
-	    g_signal_new (BYX_CONFIG_SIGNAL_CONFIG_CHANGED,
-	                  G_OBJECT_CLASS_TYPE (object_class),
-	                  G_SIGNAL_RUN_FIRST,
-	                  0,
-	                  NULL, NULL, NULL,
-	                  G_TYPE_NONE,
-	                  3,
-	                  BYX_TYPE_CONFIG_DATA,
-	                  /* Use plain guint type for changes argument. This avoids
-	                   * glib/ffi bug https://bugzilla.redhat.com/show_bug.cgi?id=1260577 */
-	                  /* BYX_TYPE_CONFIG_CHANGE_FLAGS, */
-	                  G_TYPE_UINT,
-	                  BYX_TYPE_CONFIG_DATA);
-
-	G_STATIC_ASSERT_EXPR (sizeof (guint) == sizeof (ByxConfigChangeFlags));
-	G_STATIC_ASSERT_EXPR (((gint64) ((ByxConfigChangeFlags) -1)) > ((gint64) 0));
-}
 
 static void
 byx_config_initable_iface_init (GInitableIface *iface)
 {
 	iface->init = init_sync;
 }
+
+
+#define RUN_DATA_DIR                         NMRUNDIR "/conf.d"
+#define PERSIST_DATA_DIR                     NMSTATEDIR "/bombyx-intern.conf"
+#define DEFAULT_STATE_FILE                   NMSTATEDIR "/bombyx.state"
+

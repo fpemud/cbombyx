@@ -70,7 +70,7 @@ _set_g_fatal_warnings (void)
 }
 
 static void
-_init_nm_debug (ByxConfig *config)
+_init_nm_debug (ByxConfigManager *config)
 {
 	gs_free char *debug = NULL;
 	enum {
@@ -84,7 +84,7 @@ _init_nm_debug (ByxConfig *config)
 	guint flags;
 	const char *env = getenv ("NM_DEBUG");
 
-	debug = byx_config_data_get_value (byx_config_get_data_orig (config),
+	debug = byx_config_data_get_value (byx_config_manager_get_data_orig (config),
 	                                  BYX_CONFIG_KEYFILE_GROUP_MAIN,
 	                                  BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG,
 	                                  BYX_MANAGER_RELOAD_FLAGS_NONE);
@@ -131,18 +131,18 @@ nm_main_config_reload (int signal)
 	byx_log_info (LOGD_CORE, "reload configuration (signal %s)...", strsignal (signal));
 
 	/* The signal handler thread is only installed after
-	 * creating ByxConfig instance, and on shut down we
+	 * creating ByxConfigManager instance, and on shut down we
 	 * no longer run the mainloop (to reach this point).
 	 *
-	 * Hence, a ByxConfig singleton instance must always be
+	 * Hence, a ByxConfigManager singleton instance must always be
 	 * available. */
-	byx_config_reload (byx_config_get (), reload_flags);
+	byx_config_reload (byx_config_manager_get (), reload_flags);
 }
 
 static int
 print_config (ByxConfigCmdLineOptions *config_cli)
 {
-	gs_unref_object ByxConfig *config = NULL;
+	gs_unref_object ByxConfigManager *config = NULL;
 	gs_free_error GError *error = NULL;
 	ByxConfigData *config_data;
 
@@ -154,7 +154,7 @@ print_config (ByxConfigCmdLineOptions *config_cli)
 		return 7;
 	}
 
-	config_data = byx_config_get_data (config);
+	config_data = byx_config_manager_get_data (config);
 	fprintf (stdout, "# NetworkManager configuration: %s\n", byx_config_data_get_config_description (config_data));
 	byx_config_data_log (config_data, "", "", stdout);
 	return 0;
@@ -167,9 +167,7 @@ do_early_setup (int *argc, char **argv[], ByxConfigCmdLineOptions *config_cli)
 		{ "version", 'V', 0, G_OPTION_ARG_NONE, &global_opt.show_version, N_("Print NetworkManager version and exit"), NULL },
 		{ "no-daemon", 'n', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &global_opt.become_daemon, N_("Don't become a daemon"), NULL },
 		{ "log-level", 0, 0, G_OPTION_ARG_STRING, &global_opt.opt_log_level, N_("Log level: one of [%s]"), "INFO" },
-		{ "log-domains", 0, 0, G_OPTION_ARG_STRING, &global_opt.opt_log_domains,
-		  N_("Log domains separated by ',': any combination of [%s]"),
-		  "PLATFORM,RFKILL,WIFI" },
+		{ "log-domains", 0, 0, G_OPTION_ARG_STRING, &global_opt.opt_log_domains, N_("Log domains separated by ',': any combination of [%s]"), "PLATFORM,RFKILL,WIFI" },
 		{ "g-fatal-warnings", 0, 0, G_OPTION_ARG_NONE, &global_opt.g_fatal_warnings, N_("Make all warnings fatal"), NULL },
 		{ "pid-file", 'p', 0, G_OPTION_ARG_FILENAME, &global_opt.pidfile, N_("Specify the location of a PID file"), BYX_DEFAULT_PID_FILE },
 		{ "run-from-build-dir", 0, 0, G_OPTION_ARG_NONE, &global_opt.run_from_build_dir, "Run from build directory", NULL },
@@ -198,7 +196,7 @@ main (int argc, char *argv[])
 {
 	gboolean success = FALSE;
 	ByxManager *manager = NULL;
-	ByxConfig *config;
+	ByxConfigManager *config;
 	gs_free_error GError *error = NULL;
 	gboolean wrote_pidfile = FALSE;
 	char *bad_domains = NULL;
@@ -217,9 +215,8 @@ main (int argc, char *argv[])
 	main_loop = g_main_loop_new (NULL, FALSE);
 
 	/* we determine a first-start (contrary to a restart during the same boot)
-	 * based on the existence of BYX_CONFIG_DEVICE_STATE_DIR directory. */
-	config_cli = byx_config_cmd_line_options_new (!g_file_test (BYX_CONFIG_DEVICE_STATE_DIR,
-	                                                           G_FILE_TEST_IS_DIR));
+	 * based on the existence of NMRUNDIR directory. */
+	config_cli = byx_config_cmd_line_options_new (!g_file_test (NMRUNDIR, G_FILE_TEST_IS_DIR));
 
 	do_early_setup (&argc, &argv, config_cli);
 
@@ -294,8 +291,8 @@ main (int argc, char *argv[])
 	 * specified by commandline.
 	 */
 	if (global_opt.opt_log_level == NULL && global_opt.opt_log_domains == NULL) {
-		if (!byx_logging_setup (byx_config_get_log_level (config),
-		                       byx_config_get_log_domains (config),
+		if (!byx_logging_setup (byx_config_manager_get_log_level (config),
+		                       byx_config_manager_get_log_domains (config),
 		                       &bad_domains,
 		                       &error_invalid_logging_config)) {
 			/* ignore error, and print the failure reason below.
@@ -303,7 +300,7 @@ main (int argc, char *argv[])
 		}
 	}
 
-	if (global_opt.become_daemon && !byx_config_get_is_debug (config)) {
+	if (global_opt.become_daemon && !byx_config_manager_get_is_debug (config)) {
 		if (daemon (0, 0) < 0) {
 			int saved_errno;
 
@@ -326,14 +323,14 @@ main (int argc, char *argv[])
 		                              BYX_CONFIG_KEYFILE_GROUP_LOGGING,
 		                              BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND,
 		                              BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
-		byx_logging_syslog_openlog (v, byx_config_get_is_debug (config));
+		byx_logging_syslog_openlog (v, byx_config_manager_get_is_debug (config));
 	}
 
 	byx_log_info (LOGD_CORE, "NetworkManager (version " VERSION ") is starting... (%s)",
-	              byx_config_get_first_start (config) ? "for the first time" : "after a restart");
+	              byx_config_manager_is_first_start (config) ? "for the first time" : "after a restart");
 
-	byx_log_info (LOGD_CORE, "Read config: %s", byx_config_data_get_config_description (byx_config_get_data (config)));
-	byx_config_data_log (byx_config_get_data (config), "CONFIG: ", "  ", NULL);
+	byx_log_info (LOGD_CORE, "Read config: %s", byx_config_data_get_config_description (byx_config_manager_get_data (config)));
+	byx_config_data_log (byx_config_manager_get_data (config), "CONFIG: ", "  ", NULL);
 
 	if (error_invalid_logging_config) {
 		byx_log_warn (LOGD_CORE, "config: invalid logging configuration: %s", error_invalid_logging_config->message);
@@ -354,7 +351,7 @@ main (int argc, char *argv[])
 	/* Set up platform interaction layer */
 	nm_linux_platform_setup ();
 
-	NM_UTILS_KEEP_ALIVE (config, nm_netns_get (), "ByxConfig-depends-on-NMNetns");
+	NM_UTILS_KEEP_ALIVE (config, nm_netns_get (), "ByxConfigManager-depends-on-NMNetns");
 
 	if (!byx_dbus_manager_acquire_bus (byx_dbus_manager_get ()))
 		goto done_no_manager;

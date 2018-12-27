@@ -181,7 +181,7 @@ elif more_asserts == 'all'
 else
   more_asserts = more_asserts.to_int()
 endif
-config_h.set('NM_MORE_ASSERTS', more_asserts)
+config_h.set('BYX_MORE_ASSERTS', more_asserts)
 
 more_logging = get_option('more_logging')
 config_h.set10('NM_MORE_LOGGING', more_logging)

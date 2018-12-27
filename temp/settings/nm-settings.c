@@ -107,7 +107,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 typedef struct {
 	NMAgentManager *agent_mgr;
 
-	ByxConfig *config;
+	ByxConfigManager *config;
 
 	GSList *auths;
 
@@ -344,7 +344,7 @@ _clear_connections_cached_list (NMSettingsPrivate *priv)
 
 	nm_assert (priv->connections_len == NM_PTRARRAY_LEN (priv->connections_cached_list));
 
-#if NM_MORE_ASSERTS
+#if BYX_MORE_ASSERTS
 	/* set the pointer to a bogus value. This makes it more apparent
 	 * if somebody has a reference to the cached list and still uses
 	 * it. That is a bug, this code just tries to make it blow up
@@ -433,7 +433,7 @@ nm_settings_get_connections_clone (NMSettings *self,
 
 	list_cached = nm_settings_get_connections (self, &len);
 
-#if NM_MORE_ASSERTS
+#if BYX_MORE_ASSERTS
 	nm_assert (list_cached);
 	for (i = 0; i < len; i++)
 		nm_assert (NM_IS_SETTINGS_CONNECTION (list_cached[i]));
@@ -1541,7 +1541,7 @@ nm_settings_init (NMSettings *self)
 	c_list_init (&priv->connections_lst_head);
 
 	priv->agent_mgr = g_object_ref (nm_agent_manager_get ());
-	priv->config = g_object_ref (byx_config_get ());
+	priv->config = g_object_ref (byx_config_manager_get ());
 }
 
 NMSettings *

@@ -53,7 +53,7 @@ static void
 ASSERT_idx_type (const NMDedupMultiIdxType *idx_type)
 {
 	nm_assert (idx_type);
-#if NM_MORE_ASSERTS > 10
+#if BYX_MORE_ASSERTS > 10
 	nm_assert (idx_type->klass);
 	nm_assert (idx_type->klass->idx_obj_id_hash_update);
 	nm_assert (idx_type->klass->idx_obj_id_equal);

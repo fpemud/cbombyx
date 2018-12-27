@@ -216,7 +216,7 @@ _syslog_identifier_assert (const struct Global *gl)
 	g_assert (gl);
 	g_assert (gl->syslog_identifier);
 	g_assert (g_str_has_prefix (gl->syslog_identifier, "SYSLOG_IDENTIFIER="));
-	g_assert (_syslog_identifier_valid_domain (&gl->syslog_identifier[NM_STRLEN ("SYSLOG_IDENTIFIER=")]));
+	g_assert (_syslog_identifier_valid_domain (&gl->syslog_identifier[BYX_STRLEN ("SYSLOG_IDENTIFIER=")]));
 	return TRUE;
 }
 
@@ -224,7 +224,7 @@ static const char *
 syslog_identifier_domain (const struct Global *gl)
 {
 	nm_assert (_syslog_identifier_assert (gl));
-	return &gl->syslog_identifier[NM_STRLEN ("SYSLOG_IDENTIFIER=")];
+	return &gl->syslog_identifier[BYX_STRLEN ("SYSLOG_IDENTIFIER=")];
 }
 
 #if SYSTEMD_JOURNAL
@@ -579,7 +579,7 @@ _iovec_set_format (struct iovec *iov, gpointer *iov_free, const char *format, ..
 
 #define _iovec_set_format_a(iov, reserve_extra, format, ...) \
 	G_STMT_START { \
-		const gsize _size = (reserve_extra) + (NM_STRLEN (format) + 3); \
+		const gsize _size = (reserve_extra) + (BYX_STRLEN (format) + 3); \
 		char *const _buf = g_alloca (_size); \
 		int _len; \
 		\

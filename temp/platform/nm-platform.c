@@ -644,7 +644,7 @@ nm_platform_link_get_all (NMPlatform *self, gboolean sort_by_name)
 			nm_assert_not_reached ();
 	}
 
-#if NM_MORE_ASSERTS
+#if BYX_MORE_ASSERTS
 	/* Ensure that link_get_all returns a consistent and valid result. */
 	for (i = 0; i < links->len; i++) {
 		item = NMP_OBJECT_CAST_LINK (links->pdata[i]);
@@ -2057,16 +2057,16 @@ static const char *
 _to_string_ifa_flags (guint32 ifa_flags, char *buf, gsize size)
 {
 #define S_FLAGS_PREFIX " flags "
-	nm_assert (buf && size >= TO_STRING_IFA_FLAGS_BUF_SIZE && size > NM_STRLEN (S_FLAGS_PREFIX));
+	nm_assert (buf && size >= TO_STRING_IFA_FLAGS_BUF_SIZE && size > BYX_STRLEN (S_FLAGS_PREFIX));
 
 	if (!ifa_flags)
 		buf[0] = '\0';
 	else {
-		nm_platform_addr_flags2str (ifa_flags, &buf[NM_STRLEN (S_FLAGS_PREFIX)], size - NM_STRLEN (S_FLAGS_PREFIX));
-		if (buf[NM_STRLEN (S_FLAGS_PREFIX)] == '\0')
+		nm_platform_addr_flags2str (ifa_flags, &buf[BYX_STRLEN (S_FLAGS_PREFIX)], size - BYX_STRLEN (S_FLAGS_PREFIX));
+		if (buf[BYX_STRLEN (S_FLAGS_PREFIX)] == '\0')
 			buf[0] = '\0';
 		else
-			memcpy (buf, S_FLAGS_PREFIX, NM_STRLEN (S_FLAGS_PREFIX));
+			memcpy (buf, S_FLAGS_PREFIX, BYX_STRLEN (S_FLAGS_PREFIX));
 	}
 	return buf;
 }
@@ -2222,7 +2222,7 @@ nm_platform_ip4_address_delete (NMPlatform *self, int ifindex, in_addr_t address
 	_LOGD ("address: deleting IPv4 address %s/%d, %sifindex %d%s",
 	       byx_utils_inet4_ntop (address, NULL), plen,
 	       peer_address != address
-	           ? nm_sprintf_buf (str_peer, "peer %s, ", byx_utils_inet4_ntop (peer_address, str_peer2)) : "",
+	           ? byx_sprintf_buf (str_peer, "peer %s, ", byx_utils_inet4_ntop (peer_address, str_peer2)) : "",
 	       ifindex,
 	       _to_string_dev (self, ifindex, str_dev, sizeof (str_dev)));
 	return klass->ip4_address_delete (self, ifindex, address, plen, peer_address);
@@ -2275,7 +2275,7 @@ _addr_array_clean_expired (int addr_family, int ifindex, GPtrArray *array, guint
 	for (i = 0; i < array->len; i++) {
 		const NMPlatformIPAddress *a = NMP_OBJECT_CAST_IP_ADDRESS (array->pdata[i]);
 
-#if NM_MORE_ASSERTS > 10
+#if BYX_MORE_ASSERTS > 10
 		nm_assert (a);
 		nm_assert (a->ifindex == ifindex);
 		{
@@ -3013,7 +3013,7 @@ nm_platform_ip_route_get (NMPlatform *self,
 	_LOGT ("route: get IPv%c route for: %s%s",
 	       byx_utils_addr_family_to_char (addr_family),
 	       inet_ntop (addr_family, address, buf, sizeof (buf)),
-	       oif_ifindex > 0 ? nm_sprintf_buf (buf_oif, " oif %d", oif_ifindex) : "");
+	       oif_ifindex > 0 ? byx_sprintf_buf (buf_oif, " oif %d", oif_ifindex) : "");
 
 	if (!klass->ip_route_get)
 		result = NM_PLATFORM_ERROR_OPNOTSUPP;
@@ -3630,16 +3630,16 @@ nm_platform_lnk_gre_to_string (const NMPlatformLnkGre *lnk, char *buf, gsize len
 	            "%s" /* ikey */
 	            "%s" /* okey */
 	            "",
-	            lnk->remote ? nm_sprintf_buf (str_remote, " remote %s", byx_utils_inet4_ntop (lnk->remote, str_remote1)) : "",
-	            lnk->local ? nm_sprintf_buf (str_local, " local %s", byx_utils_inet4_ntop (lnk->local, str_local1)) : "",
-	            lnk->parent_ifindex ? nm_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
-	            lnk->ttl ? nm_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
-	            lnk->tos ? (lnk->tos == 1 ? " tos inherit" : nm_sprintf_buf (str_tos, " tos 0x%x", lnk->tos)) : "",
+	            lnk->remote ? byx_sprintf_buf (str_remote, " remote %s", byx_utils_inet4_ntop (lnk->remote, str_remote1)) : "",
+	            lnk->local ? byx_sprintf_buf (str_local, " local %s", byx_utils_inet4_ntop (lnk->local, str_local1)) : "",
+	            lnk->parent_ifindex ? byx_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
+	            lnk->ttl ? byx_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
+	            lnk->tos ? (lnk->tos == 1 ? " tos inherit" : byx_sprintf_buf (str_tos, " tos 0x%x", lnk->tos)) : "",
 	            lnk->path_mtu_discovery ? "" : " nopmtudisc",
-	            lnk->input_flags ? nm_sprintf_buf (str_input_flags, " iflags 0x%x", lnk->input_flags) : "",
-	            lnk->output_flags ? nm_sprintf_buf (str_output_flags, " oflags 0x%x", lnk->output_flags) : "",
-	            NM_FLAGS_HAS (lnk->input_flags, GRE_KEY) || lnk->input_key ? nm_sprintf_buf (str_input_key, " ikey %s", byx_utils_inet4_ntop (lnk->input_key, str_input_key1)) : "",
-	            NM_FLAGS_HAS (lnk->output_flags, GRE_KEY) || lnk->output_key ? nm_sprintf_buf (str_output_key, " okey %s", byx_utils_inet4_ntop (lnk->output_key, str_output_key1)) : "");
+	            lnk->input_flags ? byx_sprintf_buf (str_input_flags, " iflags 0x%x", lnk->input_flags) : "",
+	            lnk->output_flags ? byx_sprintf_buf (str_output_flags, " oflags 0x%x", lnk->output_flags) : "",
+	            NM_FLAGS_HAS (lnk->input_flags, GRE_KEY) || lnk->input_key ? byx_sprintf_buf (str_input_key, " ikey %s", byx_utils_inet4_ntop (lnk->input_key, str_input_key1)) : "",
+	            NM_FLAGS_HAS (lnk->output_flags, GRE_KEY) || lnk->output_key ? byx_sprintf_buf (str_output_key, " okey %s", byx_utils_inet4_ntop (lnk->output_key, str_output_key1)) : "");
 	return buf;
 }
 
@@ -3656,7 +3656,7 @@ nm_platform_lnk_infiniband_to_string (const NMPlatformLnkInfiniband *lnk, char *
 	            "%s" /* p_key */
 	            "%s%s" /* mode */
 	            "",
-	            lnk->p_key ? nm_sprintf_buf (str_p_key, " pkey %d", lnk->p_key) : "",
+	            lnk->p_key ? byx_sprintf_buf (str_p_key, " pkey %d", lnk->p_key) : "",
 	            lnk->mode ? " mode " : "",
 	            lnk->mode ?: "");
 	return buf;
@@ -3691,14 +3691,14 @@ nm_platform_lnk_ip6tnl_to_string (const NMPlatformLnkIp6Tnl *lnk, char *buf, gsi
 	            "%s" /* proto */
 	            " flags 0x%x"
 	            "",
-	            nm_sprintf_buf (str_remote, " remote %s", byx_utils_inet6_ntop (&lnk->remote, str_remote1)),
-	            nm_sprintf_buf (str_local, " local %s", byx_utils_inet6_ntop (&lnk->local, str_local1)),
-	            lnk->parent_ifindex ? nm_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
-	            lnk->ttl ? nm_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
-	            lnk->tclass == 1 ? " tclass inherit" : nm_sprintf_buf (str_tclass, " tclass 0x%x", lnk->tclass),
-	            nm_sprintf_buf (str_encap, " encap-limit %u", lnk->encap_limit),
-	            nm_sprintf_buf (str_flow, " flow-label 0x05%x", lnk->flow_label),
-	            nm_sprintf_buf (str_proto, " proto %u", lnk->proto),
+	            byx_sprintf_buf (str_remote, " remote %s", byx_utils_inet6_ntop (&lnk->remote, str_remote1)),
+	            byx_sprintf_buf (str_local, " local %s", byx_utils_inet6_ntop (&lnk->local, str_local1)),
+	            lnk->parent_ifindex ? byx_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
+	            lnk->ttl ? byx_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
+	            lnk->tclass == 1 ? " tclass inherit" : byx_sprintf_buf (str_tclass, " tclass 0x%x", lnk->tclass),
+	            byx_sprintf_buf (str_encap, " encap-limit %u", lnk->encap_limit),
+	            byx_sprintf_buf (str_flow, " flow-label 0x05%x", lnk->flow_label),
+	            byx_sprintf_buf (str_proto, " proto %u", lnk->proto),
 	            (guint) lnk->flags);
 	return buf;
 }
@@ -3726,11 +3726,11 @@ nm_platform_lnk_ipip_to_string (const NMPlatformLnkIpIp *lnk, char *buf, gsize l
 	            "%s" /* tos */
 	            "%s" /* path_mtu_discovery */
 	            "",
-	            lnk->remote ? nm_sprintf_buf (str_remote, " remote %s", byx_utils_inet4_ntop (lnk->remote, str_remote1)) : "",
-	            lnk->local ? nm_sprintf_buf (str_local, " local %s", byx_utils_inet4_ntop (lnk->local, str_local1)) : "",
-	            lnk->parent_ifindex ? nm_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
-	            lnk->ttl ? nm_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
-	            lnk->tos ? (lnk->tos == 1 ? " tos inherit" : nm_sprintf_buf (str_tos, " tos 0x%x", lnk->tos)) : "",
+	            lnk->remote ? byx_sprintf_buf (str_remote, " remote %s", byx_utils_inet4_ntop (lnk->remote, str_remote1)) : "",
+	            lnk->local ? byx_sprintf_buf (str_local, " local %s", byx_utils_inet4_ntop (lnk->local, str_local1)) : "",
+	            lnk->parent_ifindex ? byx_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
+	            lnk->ttl ? byx_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
+	            lnk->tos ? (lnk->tos == 1 ? " tos inherit" : byx_sprintf_buf (str_tos, " tos 0x%x", lnk->tos)) : "",
 	            lnk->path_mtu_discovery ? "" : " nopmtudisc");
 	return buf;
 }
@@ -3808,14 +3808,14 @@ nm_platform_lnk_sit_to_string (const NMPlatformLnkSit *lnk, char *buf, gsize len
 	            "%s" /* flags */
 	            "%s" /* proto */
 	            "",
-	            lnk->remote ? nm_sprintf_buf (str_remote, " remote %s", byx_utils_inet4_ntop (lnk->remote, str_remote1)) : "",
-	            lnk->local ? nm_sprintf_buf (str_local, " local %s", byx_utils_inet4_ntop (lnk->local, str_local1)) : "",
-	            lnk->parent_ifindex ? nm_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
-	            lnk->ttl ? nm_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
-	            lnk->tos ? (lnk->tos == 1 ? " tos inherit" : nm_sprintf_buf (str_tos, " tos 0x%x", lnk->tos)) : "",
+	            lnk->remote ? byx_sprintf_buf (str_remote, " remote %s", byx_utils_inet4_ntop (lnk->remote, str_remote1)) : "",
+	            lnk->local ? byx_sprintf_buf (str_local, " local %s", byx_utils_inet4_ntop (lnk->local, str_local1)) : "",
+	            lnk->parent_ifindex ? byx_sprintf_buf (str_parent_ifindex, " dev %d", lnk->parent_ifindex) : "",
+	            lnk->ttl ? byx_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : " ttl inherit",
+	            lnk->tos ? (lnk->tos == 1 ? " tos inherit" : byx_sprintf_buf (str_tos, " tos 0x%x", lnk->tos)) : "",
 	            lnk->path_mtu_discovery ? "" : " nopmtudisc",
-	            lnk->flags ? nm_sprintf_buf (str_flags, " flags 0x%x", lnk->flags) : "",
-	            lnk->proto ? nm_sprintf_buf (str_proto, " proto 0x%x", lnk->proto) : "");
+	            lnk->flags ? byx_sprintf_buf (str_flags, " flags 0x%x", lnk->flags) : "",
+	            lnk->proto ? byx_sprintf_buf (str_proto, " proto 0x%x", lnk->proto) : "");
 	return buf;
 }
 
@@ -3835,7 +3835,7 @@ nm_platform_lnk_tun_to_string (const NMPlatformLnkTun *lnk, char *buf, gsize len
 	else if (lnk->type == IFF_TAP)
 		type = "tap";
 	else
-		type = nm_sprintf_buf (str_type, "tun type %u", (guint) lnk->type);
+		type = byx_sprintf_buf (str_type, "tun type %u", (guint) lnk->type);
 
 	g_snprintf (buf, len,
 	            "%s" /* type */
@@ -3851,8 +3851,8 @@ nm_platform_lnk_tun_to_string (const NMPlatformLnkTun *lnk, char *buf, gsize len
 	            lnk->vnet_hdr ? " vnet_hdr" : "",
 	            lnk->multi_queue ? " multi_queue" : "",
 	            lnk->persist ? " persist" : "",
-	            lnk->owner_valid ? nm_sprintf_buf (str_owner, " owner %u", (guint) lnk->owner) : "",
-	            lnk->group_valid ? nm_sprintf_buf (str_group, " group %u", (guint) lnk->group) : "");
+	            lnk->owner_valid ? byx_sprintf_buf (str_owner, " owner %u", (guint) lnk->owner) : "",
+	            lnk->group_valid ? byx_sprintf_buf (str_group, " group %u", (guint) lnk->group) : "");
 	return buf;
 }
 
@@ -3944,18 +3944,18 @@ nm_platform_lnk_vxlan_to_string (const NMPlatformLnkVxlan *lnk, char *buf, gsize
 	            (guint) lnk->id,
 	            str_group, str_group6,
 	            str_local, str_local6,
-	            lnk->parent_ifindex ? nm_sprintf_buf (str_dev, " dev %d", lnk->parent_ifindex) : "",
-	            lnk->src_port_min || lnk->src_port_max ? nm_sprintf_buf (str_src_port, " srcport %u %u", lnk->src_port_min, lnk->src_port_max) : "",
-	            lnk->dst_port ? nm_sprintf_buf (str_dst_port, " dstport %u", lnk->dst_port) : "",
+	            lnk->parent_ifindex ? byx_sprintf_buf (str_dev, " dev %d", lnk->parent_ifindex) : "",
+	            lnk->src_port_min || lnk->src_port_max ? byx_sprintf_buf (str_src_port, " srcport %u %u", lnk->src_port_min, lnk->src_port_max) : "",
+	            lnk->dst_port ? byx_sprintf_buf (str_dst_port, " dstport %u", lnk->dst_port) : "",
 	            !lnk->learning ? " nolearning" : "",
 	            lnk->proxy ? " proxy" : "",
 	            lnk->rsc ? " rsc" : "",
 	            lnk->l2miss ? " l2miss" : "",
 	            lnk->l3miss ? " l3miss" : "",
-	            lnk->tos == 1 ? " tos inherit" : nm_sprintf_buf (str_tos, " tos %#x", lnk->tos),
-	            lnk->ttl ? nm_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : "",
+	            lnk->tos == 1 ? " tos inherit" : byx_sprintf_buf (str_tos, " tos %#x", lnk->tos),
+	            lnk->ttl ? byx_sprintf_buf (str_ttl, " ttl %u", lnk->ttl) : "",
 	            lnk->ageing,
-	            lnk->limit ? nm_sprintf_buf (str_limit, " maxaddr %u", lnk->limit) : "");
+	            lnk->limit ? byx_sprintf_buf (str_limit, " maxaddr %u", lnk->limit) : "");
 	return buf;
 }
 
@@ -4212,7 +4212,7 @@ nm_platform_ip4_route_to_string (const NMPlatformIP4Route *route, char *buf, gsi
 	            "%s" /* initrwnd */
 	            "%s" /* mtu */
 	            "",
-	            route->table_coerced ? nm_sprintf_buf (str_table, "table %u ", nm_platform_route_table_uncoerce (route->table_coerced, FALSE)) : "",
+	            route->table_coerced ? byx_sprintf_buf (str_table, "table %u ", nm_platform_route_table_uncoerce (route->table_coerced, FALSE)) : "",
 	            s_network,
 	            route->plen,
 	            s_gateway,
@@ -4225,12 +4225,12 @@ nm_platform_ip4_route_to_string (const NMPlatformIP4Route *route, char *buf, gsi
 	            route->scope_inv ? (nm_platform_route_scope2str (nm_platform_route_scope_inv (route->scope_inv), str_scope, sizeof (str_scope))) : "",
 	            route->pref_src ? " pref-src " : "",
 	            route->pref_src ? inet_ntop (AF_INET, &route->pref_src, s_pref_src, sizeof(s_pref_src)) : "",
-	            route->tos ? nm_sprintf_buf (str_tos, " tos 0x%x", (unsigned) route->tos) : "",
-	            route->window   || route->lock_window   ? nm_sprintf_buf (str_window,   " window %s%"G_GUINT32_FORMAT,   route->lock_window   ? "lock " : "", route->window)   : "",
-	            route->cwnd     || route->lock_cwnd     ? nm_sprintf_buf (str_cwnd,     " cwnd %s%"G_GUINT32_FORMAT,     route->lock_cwnd     ? "lock " : "", route->cwnd)     : "",
-	            route->initcwnd || route->lock_initcwnd ? nm_sprintf_buf (str_initcwnd, " initcwnd %s%"G_GUINT32_FORMAT, route->lock_initcwnd ? "lock " : "", route->initcwnd) : "",
-	            route->initrwnd || route->lock_initrwnd ? nm_sprintf_buf (str_initrwnd, " initrwnd %s%"G_GUINT32_FORMAT, route->lock_initrwnd ? "lock " : "", route->initrwnd) : "",
-	            route->mtu      || route->lock_mtu      ? nm_sprintf_buf (str_mtu,      " mtu %s%"G_GUINT32_FORMAT,      route->lock_mtu      ? "lock " : "", route->mtu)      : "");
+	            route->tos ? byx_sprintf_buf (str_tos, " tos 0x%x", (unsigned) route->tos) : "",
+	            route->window   || route->lock_window   ? byx_sprintf_buf (str_window,   " window %s%"G_GUINT32_FORMAT,   route->lock_window   ? "lock " : "", route->window)   : "",
+	            route->cwnd     || route->lock_cwnd     ? byx_sprintf_buf (str_cwnd,     " cwnd %s%"G_GUINT32_FORMAT,     route->lock_cwnd     ? "lock " : "", route->cwnd)     : "",
+	            route->initcwnd || route->lock_initcwnd ? byx_sprintf_buf (str_initcwnd, " initcwnd %s%"G_GUINT32_FORMAT, route->lock_initcwnd ? "lock " : "", route->initcwnd) : "",
+	            route->initrwnd || route->lock_initrwnd ? byx_sprintf_buf (str_initrwnd, " initrwnd %s%"G_GUINT32_FORMAT, route->lock_initrwnd ? "lock " : "", route->initrwnd) : "",
+	            route->mtu      || route->lock_mtu      ? byx_sprintf_buf (str_mtu,      " mtu %s%"G_GUINT32_FORMAT,      route->lock_mtu      ? "lock " : "", route->mtu)      : "");
 	return buf;
 }
 
@@ -4289,7 +4289,7 @@ nm_platform_ip6_route_to_string (const NMPlatformIP6Route *route, char *buf, gsi
 	            "%s" /* mtu */
 	            "%s" /* pref */
 	            "",
-	            route->table_coerced ? nm_sprintf_buf (str_table, "table %u ", nm_platform_route_table_uncoerce (route->table_coerced, FALSE)) : "",
+	            route->table_coerced ? byx_sprintf_buf (str_table, "table %u ", nm_platform_route_table_uncoerce (route->table_coerced, FALSE)) : "",
 	            s_network,
 	            route->plen,
 	            s_gateway,
@@ -4298,17 +4298,17 @@ nm_platform_ip6_route_to_string (const NMPlatformIP6Route *route, char *buf, gsi
 	            route->mss,
 	            nmp_utils_ip_config_source_to_string (route->rt_source, s_source, sizeof (s_source)),
 	            route->src_plen || !IN6_IS_ADDR_UNSPECIFIED (&route->src)
-	              ? nm_sprintf_buf (s_src_all, " src %s/%u", byx_utils_inet6_ntop (&route->src, s_src), (unsigned) route->src_plen)
+	              ? byx_sprintf_buf (s_src_all, " src %s/%u", byx_utils_inet6_ntop (&route->src, s_src), (unsigned) route->src_plen)
 	              : "",
 	            _rtm_flags_to_string_full (str_rtm_flags, sizeof (str_rtm_flags), route->r_rtm_flags),
 	            s_pref_src[0] ? " pref-src " : "",
 	            s_pref_src[0] ? s_pref_src : "",
-	            route->window   || route->lock_window   ? nm_sprintf_buf (str_window,   " window %s%"G_GUINT32_FORMAT,   route->lock_window   ? "lock " : "", route->window)   : "",
-	            route->cwnd     || route->lock_cwnd     ? nm_sprintf_buf (str_cwnd,     " cwnd %s%"G_GUINT32_FORMAT,     route->lock_cwnd     ? "lock " : "", route->cwnd)     : "",
-	            route->initcwnd || route->lock_initcwnd ? nm_sprintf_buf (str_initcwnd, " initcwnd %s%"G_GUINT32_FORMAT, route->lock_initcwnd ? "lock " : "", route->initcwnd) : "",
-	            route->initrwnd || route->lock_initrwnd ? nm_sprintf_buf (str_initrwnd, " initrwnd %s%"G_GUINT32_FORMAT, route->lock_initrwnd ? "lock " : "", route->initrwnd) : "",
-	            route->mtu      || route->lock_mtu      ? nm_sprintf_buf (str_mtu,      " mtu %s%"G_GUINT32_FORMAT,      route->lock_mtu      ? "lock " : "", route->mtu)      : "",
-	            route->rt_pref ? nm_sprintf_buf (str_pref, " pref %s", nm_icmpv6_router_pref_to_string (route->rt_pref, str_pref2, sizeof (str_pref2))) : "");
+	            route->window   || route->lock_window   ? byx_sprintf_buf (str_window,   " window %s%"G_GUINT32_FORMAT,   route->lock_window   ? "lock " : "", route->window)   : "",
+	            route->cwnd     || route->lock_cwnd     ? byx_sprintf_buf (str_cwnd,     " cwnd %s%"G_GUINT32_FORMAT,     route->lock_cwnd     ? "lock " : "", route->cwnd)     : "",
+	            route->initcwnd || route->lock_initcwnd ? byx_sprintf_buf (str_initcwnd, " initcwnd %s%"G_GUINT32_FORMAT, route->lock_initcwnd ? "lock " : "", route->initcwnd) : "",
+	            route->initrwnd || route->lock_initrwnd ? byx_sprintf_buf (str_initrwnd, " initrwnd %s%"G_GUINT32_FORMAT, route->lock_initrwnd ? "lock " : "", route->initrwnd) : "",
+	            route->mtu      || route->lock_mtu      ? byx_sprintf_buf (str_mtu,      " mtu %s%"G_GUINT32_FORMAT,      route->lock_mtu      ? "lock " : "", route->mtu)      : "",
+	            route->rt_pref ? byx_sprintf_buf (str_pref, " pref %s", nm_icmpv6_router_pref_to_string (route->rt_pref, str_pref2, sizeof (str_pref2))) : "");
 
 	return buf;
 }

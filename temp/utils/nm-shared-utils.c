@@ -224,7 +224,7 @@ byx_utils_flags2str (const NMUtilsFlags2StrDesc *descs,
 	gsize i;
 	char *p;
 
-#if NM_MORE_ASSERTS > 10
+#if BYX_MORE_ASSERTS > 10
 	nm_assert (descs);
 	nm_assert (n_descs > 0);
 	for (i = 0; i < n_descs; i++) {
@@ -1381,7 +1381,7 @@ byx_utils_get_start_time_for_pid (pid_t pid, char *out_state, pid_t *out_ppid)
 
 	g_return_val_if_fail (pid > 0, 0);
 
-	nm_sprintf_buf (filename, "/proc/%"G_GUINT64_FORMAT"/stat", (guint64) pid);
+	byx_sprintf_buf (filename, "/proc/%"G_GUINT64_FORMAT"/stat", (guint64) pid);
 
 	if (!g_file_get_contents (filename, &contents, &length, NULL))
 		goto fail;

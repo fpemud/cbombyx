@@ -31,7 +31,7 @@ static void
 _ASSERT_enum_values_info (GType type,
                           const ByxUtilsEnumValueInfo *value_infos)
 {
-#if NM_MORE_ASSERTS > 5
+#if BYX_MORE_ASSERTS > 5
 	nm_auto_unref_gtypeclass GTypeClass *klass = NULL;
 	gs_unref_hashtable GHashTable *ht = NULL;
 
@@ -343,7 +343,7 @@ byx_utils_enum_get_values (GType type, gint from, gint to)
 				if (_enum_is_valid_enum_nick (enum_value->value_nick))
 					g_ptr_array_add (array, (gpointer) enum_value->value_nick);
 				else
-					g_ptr_array_add (array, (gpointer) g_intern_string (nm_sprintf_buf (sbuf, "%d", enum_value->value)));
+					g_ptr_array_add (array, (gpointer) g_intern_string (byx_sprintf_buf (sbuf, "%d", enum_value->value)));
 			}
 		}
 	} else if (G_IS_FLAGS_CLASS (klass)) {
@@ -356,7 +356,7 @@ byx_utils_enum_get_values (GType type, gint from, gint to)
 				if (_enum_is_valid_flags_nick (flags_value->value_nick))
 					g_ptr_array_add (array, (gpointer) flags_value->value_nick);
 				else
-					g_ptr_array_add (array, (gpointer) g_intern_string (nm_sprintf_buf (sbuf, "0x%x", (unsigned) flags_value->value)));
+					g_ptr_array_add (array, (gpointer) g_intern_string (byx_sprintf_buf (sbuf, "0x%x", (unsigned) flags_value->value)));
 			}
 		}
 	} else {

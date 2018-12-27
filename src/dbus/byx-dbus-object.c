@@ -58,7 +58,7 @@ _create_export_path (ByxDBusObjectClass *klass)
 	nm_assert (NM_IS_DBUS_OBJECT_CLASS (klass));
 	nm_assert (klass->export_path.path);
 
-#if NM_MORE_ASSERTS
+#if BYX_MORE_ASSERTS
 	{
 		const char *p;
 

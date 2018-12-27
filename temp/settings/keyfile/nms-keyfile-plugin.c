@@ -50,7 +50,7 @@ typedef struct {
 
 	gboolean initialized;
 
-	ByxConfig *config;
+	ByxConfigManager *config;
 } NMSKeyfilePluginPrivate;
 
 struct _NMSKeyfilePlugin {
@@ -509,7 +509,7 @@ get_unmanaged_specs (NMSettingsPlugin *config)
 	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE ((NMSKeyfilePlugin *) config);
 	gs_free char *value = NULL;
 
-	value = byx_config_data_get_value (byx_config_get_data (priv->config),
+	value = byx_config_data_get_value (byx_config_manager_get_data (priv->config),
 	                                  BYX_CONFIG_KEYFILE_GROUP_KEYFILE,
 	                                  BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES,
 	                                  BYX_CONFIG_GET_VALUE_TYPE_SPEC);
@@ -523,7 +523,7 @@ nms_keyfile_plugin_init (NMSKeyfilePlugin *plugin)
 {
 	NMSKeyfilePluginPrivate *priv = NMS_KEYFILE_PLUGIN_GET_PRIVATE (plugin);
 
-	priv->config = g_object_ref (byx_config_get ());
+	priv->config = g_object_ref (byx_config_manager_get ());
 	priv->connections = g_hash_table_new_full (nm_str_hash, g_str_equal, g_free, g_object_unref);
 }
 

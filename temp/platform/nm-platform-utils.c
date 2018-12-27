@@ -766,7 +766,7 @@ nmp_utils_sysctl_open_netdir (int ifindex,
 	char ifname_buf_last_try[IFNAMSIZ];
 	char ifname_buf[IFNAMSIZ];
 	guint try_count = 0;
-	char sysdir[NM_STRLEN (SYS_CLASS_NET) + IFNAMSIZ] = SYS_CLASS_NET;
+	char sysdir[BYX_STRLEN (SYS_CLASS_NET) + IFNAMSIZ] = SYS_CLASS_NET;
 	char fd_buf[256];
 	ssize_t nn;
 
@@ -787,7 +787,7 @@ nmp_utils_sysctl_open_netdir (int ifindex,
 
 		nm_assert (byx_utils_is_valid_iface_name (ifname, NULL));
 
-		if (g_strlcpy (&sysdir[NM_STRLEN (SYS_CLASS_NET)], ifname, IFNAMSIZ) >= IFNAMSIZ)
+		if (g_strlcpy (&sysdir[BYX_STRLEN (SYS_CLASS_NET)], ifname, IFNAMSIZ) >= IFNAMSIZ)
 			g_return_val_if_reached (-1);
 
 		/* we only retry, if the name changed since previous attempt.

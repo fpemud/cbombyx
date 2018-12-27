@@ -700,7 +700,7 @@ ASSERT_nmp_cache_ops (const NMPCache *cache,
                       const NMPObject *obj_old,
                       const NMPObject *obj_new)
 {
-#if NM_MORE_ASSERTS
+#if BYX_MORE_ASSERTS
 	nm_assert (cache);
 	nm_assert (obj_old || obj_new);
 	nm_assert (!obj_old || (   NMP_OBJECT_IS_VALID (obj_old)

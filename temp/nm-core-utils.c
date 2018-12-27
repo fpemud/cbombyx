@@ -1226,8 +1226,8 @@ match_device_hwaddr_eval (const char *spec_str,
 	({ \
 		gboolean _has = FALSE; \
 		\
-		if (!g_ascii_strncasecmp (spec_str, (""tag""), NM_STRLEN (tag))) { \
-			spec_str += NM_STRLEN (tag); \
+		if (!g_ascii_strncasecmp (spec_str, (""tag""), BYX_STRLEN (tag))) { \
+			spec_str += BYX_STRLEN (tag); \
 			_has = TRUE; \
 		} \
 		_has; \
@@ -2266,7 +2266,7 @@ byx_utils_monotonic_timestamp_as_boottime (gint64 timestamp, gint64 timestamp_ns
 #define IPV6_PROPERTY_DIR "/proc/sys/net/ipv6/conf/"
 #define IPV4_PROPERTY_DIR "/proc/sys/net/ipv4/conf/"
 G_STATIC_ASSERT (sizeof (IPV4_PROPERTY_DIR) == sizeof (IPV6_PROPERTY_DIR));
-G_STATIC_ASSERT (NM_STRLEN (IPV6_PROPERTY_DIR) + IFNAMSIZ + 60 == NM_UTILS_SYSCTL_IP_CONF_PATH_BUFSIZE);
+G_STATIC_ASSERT (BYX_STRLEN (IPV6_PROPERTY_DIR) + IFNAMSIZ + 60 == NM_UTILS_SYSCTL_IP_CONF_PATH_BUFSIZE);
 
 /**
  * byx_utils_sysctl_ip_conf_path:
@@ -2311,11 +2311,11 @@ byx_utils_sysctl_ip_conf_is_path (int addr_family, const char *path, const char 
 	if (addr_family == AF_INET) {
 		if (!g_str_has_prefix (path, IPV4_PROPERTY_DIR))
 			return FALSE;
-		path += NM_STRLEN (IPV4_PROPERTY_DIR);
+		path += BYX_STRLEN (IPV4_PROPERTY_DIR);
 	} else if (addr_family == AF_INET6) {
 		if (!g_str_has_prefix (path, IPV6_PROPERTY_DIR))
 			return FALSE;
-		path += NM_STRLEN (IPV6_PROPERTY_DIR);
+		path += BYX_STRLEN (IPV6_PROPERTY_DIR);
 	} else
 		g_return_val_if_reached (FALSE);
 
@@ -3188,7 +3188,7 @@ byx_utils_stable_id_parse (const char *stable_id,
 				_match = TRUE; \
 				if (!str) \
 					str = g_string_sized_new (256); \
-				i += NM_STRLEN (prefix); \
+				i += BYX_STRLEN (prefix); \
 				g_string_append_len (str, &(stable_id)[idx_start], i - idx_start); \
 				idx_start = i; \
 			} \
@@ -3814,7 +3814,7 @@ byx_utils_get_reverse_dns_domains_ip4 (guint32 addr, guint8 plen, GPtrArray *dom
 	ip &= mask;
 	ip2 = ip;
 
-	len0 = NM_STRLEN ("in-addr.arpa") + (4 * octets) + 1;
+	len0 = BYX_STRLEN ("in-addr.arpa") + (4 * octets) + 1;
 	while ((ip2 & mask) == ip) {
 		addr = htonl (ip2);
 		p = (guchar *) &addr;
@@ -3865,7 +3865,7 @@ byx_utils_get_reverse_dns_domains_ip6 (const struct in6_addr *ip, guint8 plen, G
 	/* Number of domains */
 	entries = 1 << (4 - bits);
 
-	len0 = NM_STRLEN ("ip6.arpa") + (2 * nibbles) + 1;
+	len0 = BYX_STRLEN ("ip6.arpa") + (2 * nibbles) + 1;
 
 #define N_SHIFT(x) ((x) % 2 ? 0 : 4)
 

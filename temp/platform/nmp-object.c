@@ -1522,7 +1522,7 @@ nmp_cache_lookup_all (const NMPCache *cache,
 static const NMPLookup *
 _L (const NMPLookup *lookup)
 {
-#if NM_MORE_ASSERTS
+#if BYX_MORE_ASSERTS
 	DedupMultiIdxType idx_type;
 
 	nm_assert (lookup);
@@ -1894,7 +1894,7 @@ _idxcache_update_other_cache_ids (NMPCache *cache,
 		                               &entry_new,
 		                               NULL);
 
-#if NM_MORE_ASSERTS
+#if BYX_MORE_ASSERTS
 		if (entry_new) {
 			nm_assert (idx_type->klass->idx_obj_partitionable);
 			nm_assert (idx_type->klass->idx_obj_partition_equal);
