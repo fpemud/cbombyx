@@ -26,3 +26,13 @@ struct ByxConfigCmdLineOptions {
 	 * /var/run/NetworManager state directory. */
 	bool first_start;
 };
+
+
+typedef struct ByxConfigCmdLineOptions ByxConfigCmdLineOptions;
+
+
+/* for main.c only */
+ByxConfigCmdLineOptions *byx_config_cmd_line_options_new (gboolean first_start);
+void                    byx_config_cmd_line_options_free (ByxConfigCmdLineOptions *cli);
+void                    byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli,
+                                                                   GOptionContext *opt_ctx);

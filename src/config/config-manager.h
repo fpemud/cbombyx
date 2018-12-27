@@ -3,8 +3,8 @@
 #ifndef __BYX_CONFIG_MANAGER_H__
 #define __BYX_CONFIG_MANAGER_H__
 
-#include "config-data.h"
 #include "config-cmdline-options.h"
+#include "config-data.h"
 
 #define BYX_TYPE_CONFIG_MANAGER            (byx_config_manager_get_type ())
 #define BYX_CONFIG_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_CONFIG_MANAGER, ByxConfigManager))
@@ -86,15 +86,8 @@ void byx_config_manager_cleanup_persist_data(ByxConfigManager *self);
 #define BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN \
 	BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN BYX_CONFIG_KEYFILE_GROUPPREFIX_GLOBAL_DNS_DOMAIN
 
-typedef struct ByxConfigCmdLineOptions ByxConfigCmdLineOptions;
 
 
-
-/* for main.c only */
-ByxConfigCmdLineOptions *byx_config_cmd_line_options_new (gboolean first_start);
-void                    byx_config_cmd_line_options_free (ByxConfigCmdLineOptions *cli);
-void                    byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli,
-                                                                   GOptionContext *opt_ctx);
 
 /*****************************************************************************/
 
