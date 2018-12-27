@@ -4,6 +4,7 @@
 #define __BYX_CONFIG_MANAGER_H__
 
 #include "config-data.h"
+#include "config-cmdline-options.h"
 
 #define BYX_TYPE_CONFIG_MANAGER            (byx_config_manager_get_type ())
 #define BYX_CONFIG_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_CONFIG_MANAGER, ByxConfigManager))
