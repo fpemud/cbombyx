@@ -18,21 +18,26 @@ typedef struct _ByxConfigManagerClass ByxConfigManagerClass;
 
 GType byx_config_manager_get_type (void);
 
-ByxConfigManager *byx_config_manager_get (void);
+gboolean byx_config_manager_setup (int argc, char *argv[], GError **error);
 
-gboolean byx_config_manager_setup (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error);
+ByxConfigManager *byx_config_manager_get (void);
 
 void byx_config_manager_reload (ByxConfigManager *self);
 
 gboolean byx_config_manager_is_first_start (ByxConfigManager *self);
 
-const ByxConfigData *byx_config_manager_get_config(ByxConfigManager *self);
+const GKeyFile *byx_config_manager_get_config(ByxConfigManager *self);
 
-ByxConfigData *byx_config_manager_get_global_run_data (ByxConfigManager *self);
-ByxConfigData *byx_config_manager_get_global_persist_data (ByxConfigManager *self);
+const ByxConfigCmdLineOptions *byx_config_manager_get_cmd_line_options(ByxConfigManager *self);
+
+ByxConfigData *byx_config_manager_get_run_data (ByxConfigManager *self);
+ByxConfigData *byx_config_manager_get_persist_data (ByxConfigManager *self);
 
 ByxConfigData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid);
 ByxConfigData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid);
+
+ByxConfigData *byx_config_manager_get_service_run_data (ByxConfigManager *self, const char *service_uuid);
+ByxConfigData *byx_config_manager_get_service_persist_data (ByxConfigManager *self, const char *service_uuid);
 
 void byx_config_manager_cleanup_persist_data(ByxConfigManager *self);
 

@@ -66,15 +66,14 @@ sigterm_handler (gpointer user_data)
 }
 
 /**
- * nm_main_utils_setup_signals:
+ * byx_main_utils_setup_signals:
  * @main_loop: the #GMainLoop to quit when SIGINT or SIGTERM is received
  *
  * Sets up signal handling for NetworkManager.
  */
-void
-nm_main_utils_setup_signals (GMainLoop *main_loop)
+void byx_main_utils_setup_signals (GMainLoop *main_loop)
 {
-	g_return_if_fail (main_loop != NULL);
+	assert (main_loop != NULL);
 
 	signal (SIGPIPE, SIG_IGN);
 
@@ -85,8 +84,7 @@ nm_main_utils_setup_signals (GMainLoop *main_loop)
 	g_unix_signal_add (SIGTERM, sigterm_handler, main_loop);
 }
 
-gboolean
-nm_main_utils_write_pidfile (const char *pidfile)
+gboolean byx_main_utils_write_pidfile (const char *pidfile)
 {
 	char pid[16];
 	int fd;
@@ -109,8 +107,7 @@ nm_main_utils_write_pidfile (const char *pidfile)
 	return success;
 }
 
-void
-byx_main_utils_ensure_statedir ()
+void byx_main_utils_ensure_statedir ()
 {
 	gs_free char *parent = NULL;
 	int errsv;
@@ -134,8 +131,7 @@ byx_main_utils_ensure_statedir ()
 	}
 }
 
-void
-byx_main_utils_ensure_rundir ()
+void byx_main_utils_ensure_rundir ()
 {
 	int errsv;
 
@@ -148,7 +144,7 @@ byx_main_utils_ensure_rundir ()
 }
 
 /**
- * byx_main_utils_ensure_not_running_pidfile:
+ * byx_main_utils_ensure_no_running_pidfile:
  * @pidfile: the pid file
  *
  * Checks whether the pidfile already exists and contains PID of a running
@@ -156,8 +152,7 @@ byx_main_utils_ensure_rundir ()
  *
  * Exits with code 1 if a conflicting process is running.
  */
-void
-byx_main_utils_ensure_not_running_pidfile (const char *pidfile)
+void byx_main_utils_ensure_no_running_pidfile (const char *pidfile)
 {
 	gs_free char *contents = NULL;
 	gs_free char *proc_cmdline = NULL;
@@ -208,81 +203,3 @@ byx_main_utils_ensure_root ()
 		exit (1);
 	}
 }
-
-gboolean
-nm_main_utils_early_setup (const char *progname,
-                           int *argc,
-                           char **argv[],
-                           GOptionEntry *options,
-                           void (*option_context_hook) (gpointer user_data, GOptionContext *opt_ctx),
-                           gpointer option_context_hook_data,
-                           const char *summary)
-{
-	GOptionContext *opt_ctx = NULL;
-	GError *error = NULL;
-	gboolean success = FALSE;
-	int i;
-	const char *opt_fmt_log_level = NULL, *opt_fmt_log_domains = NULL;
-	const char **opt_loc_log_level = NULL, **opt_loc_log_domains = NULL;
-
-	/* Make GIO ignore the remote VFS service; otherwise it tries to use the
-	 * session bus to contact the remote service, and NM shouldn't ever be
-	 * talking on the session bus.  See rh #588745
-	 */
-	setenv ("GIO_USE_VFS", "local", 1);
-
-	/*
-	 * Set the umask to 0022, which results in 0666 & ~0022 = 0644.
-	 * Otherwise, if root (or an su'ing user) has a wacky umask, we could
-	 * write out an unreadable resolv.conf.
-	 */
-	umask (022);
-
-	/* Ensure gettext() gets the right environment (bgo #666516) */
-	setlocale (LC_ALL, "");
-	textdomain (GETTEXT_PACKAGE);
-
-	for (i = 0; options[i].long_name; i++) {
-		NM_PRAGMA_WARNING_DISABLE("-Wformat-nonliteral")
-		if (!strcmp (options[i].long_name, "log-level")) {
-			opt_fmt_log_level = options[i].description;
-			opt_loc_log_level = &options[i].description;
-			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_levels_to_string ());
-		} else if (!strcmp (options[i].long_name, "log-domains")) {
-			opt_fmt_log_domains = options[i].description;
-			opt_loc_log_domains = &options[i].description;
-			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_domains_to_string ());
-		}
-		NM_PRAGMA_WARNING_REENABLE
-	}
-
-	/* Parse options */
-	opt_ctx = g_option_context_new (NULL);
-	g_option_context_set_translation_domain (opt_ctx, GETTEXT_PACKAGE);
-	g_option_context_set_ignore_unknown_options (opt_ctx, FALSE);
-	g_option_context_set_help_enabled (opt_ctx, TRUE);
-	g_option_context_add_main_entries (opt_ctx, options, NULL);
-	g_option_context_set_summary (opt_ctx, summary);
-	if (option_context_hook)
-		option_context_hook (option_context_hook_data, opt_ctx);
-
-	success = g_option_context_parse (opt_ctx, argc, argv, &error);
-	if (!success) {
-		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"),
-		         error->message);
-		g_clear_error (&error);
-	}
-	g_option_context_free (opt_ctx);
-
-	if (opt_loc_log_level) {
-		g_free ((char *) *opt_loc_log_level);
-		*opt_loc_log_level = opt_fmt_log_level;
-	}
-	if (opt_loc_log_domains) {
-		g_free ((char *) *opt_loc_log_domains);
-		*opt_loc_log_domains = opt_fmt_log_domains;
-	}
-
-	return success;
-}
-

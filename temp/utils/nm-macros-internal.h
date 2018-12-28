@@ -231,7 +231,7 @@ _nm_auto_unref_gsource (GSource **ptr)
         _Pragma(_NM_PRAGMA_WARNING_DO("-Wunknown-warning-option")) \
         _Pragma(_NM_PRAGMA_WARNING_DO(warning))
 #else
-#define NM_PRAGMA_WARNING_DISABLE(warning)
+#error "Complier not supported"
 #endif
 
 #if defined (__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))

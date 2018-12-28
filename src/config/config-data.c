@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-gboolean byx_config_data_save (ByxConfigData *data) {
+gboolean byx_config_data_save (ByxConfigData *data)
+{
 	gboolean success = FALSE;
 	GError *local = NULL;
 
@@ -14,7 +15,8 @@ gboolean byx_config_data_save (ByxConfigData *data) {
 	return success;
 }
 
-void byx_config_data_free(ByxConfigData *data) {
+void byx_config_data_free(ByxConfigData *data)
+{
 	assert (data != NULL && data->keyfile != NULL);
 
 	free(data->keyfile);
