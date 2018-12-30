@@ -10,6 +10,25 @@
 #include "nm-core-internal.h"
 #include "nm-keyfile-internal.h"
 
+#define BYX_SYSTEM_CONFIG_DIR                    NMLIBDIR "/conf.d"
+#define BYX_SYSTEM_CONNECTION_CONFIG_DIR         NMLIBDIR "/connection.d"
+#define BYX_SYSTEM_SERVICE_CONFIG_DIR            NMLIBDIR "/service.d"
+
+#define BYX_CONFIG_MAIN_FILE                     NMCONFDIR "/bombyx.conf"
+#define BYX_CONFIG_DIR                           NMCONFDIR "/conf.d"
+#define BYX_CONNECTION_CONFIG_DIR                NMCONFDIR "/connection.d"
+#define BYX_SERVICE_CONFIG_DIR                   NMCONFDIR "/service.d"
+
+#define BYX_PID_FILE                             NMRUNDIR "/bombyx.pid"
+
+#define BYX_RUN_DATA_FILE                        NMRUNDIR "/bombyx-intern.conf"
+#define BYX_CONNECTION_RUN_DATA_DIR              NMRUNDIR "/connection.d"
+#define BYX_SERVICE_RUN_DATA_DIR                 NMRUNDIR "/service.d"
+
+#define BYX_PERSIST_DATA_FILE                    NMSTATEDIR "/bombyx-intern.conf"
+#define BYX_CONNECTION_PERSIST_DATA_DIR          NMSTATEDIR "/connection.d"
+#define BYX_SERVICE_PERSIST_DATA_DIR             NMSTATEDIR "/service.d"
+
 #define KEYFILE_LIST_SEPARATOR ','
 
 struct _ByxConfigManagerClass {
@@ -19,9 +38,22 @@ struct _ByxConfigManagerClass {
 typedef struct {
     ByxConfigCmdLineOptions cli;
 
-    char *config_dir;
-    char *system_config_dir;
-    char *run_data_file;
+	char *system_config_dir;
+	char *system_connection_config_dir;
+	char *system_service_config_dir;
+
+	char *config_main_file;
+	char *config_dir;
+	char *connection_config_dir;
+	char *service_config_dir;
+
+	char *run_data_file;
+	char *connection_run_data_dir;
+	char *service_run_data_dir;
+
+	char *persist_data_file;
+	char *connection_persist_data_dir;
+	char *service_persist_data_dir;
 
     char *log_level;
     char *log_domains;
@@ -89,7 +121,7 @@ gboolean byx_config_manager_setup (int argc, char *argv[], GError **error)
 
 /* FIXME */
 #if 0
-    global_opt.pidfile = global_opt.pidfile ?: g_strdup(BYX_DEFAULT_PID_FILE);
+    global_opt.pidfile = global_opt.pidfile ?: g_strdup(BYX_PID_FILE);
 #endif
 
     byx_singleton_instance_register ();
@@ -103,9 +135,9 @@ gboolean byx_config_manager_setup (int argc, char *argv[], GError **error)
 
 /*****************************************************************************/
 
-static void byx_config_manager_classinit (ByxConfigManagerClass *config_class)
+static void byx_config_manager_classinit (ByxConfigManagerClass *config_manager_class)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (config_class);
+    GObjectClass *object_class = G_OBJECT_CLASS (config_manager_class);
 
     object_class->byx_config_manager_finalize = byx_config_manager_finalize;
 
@@ -113,17 +145,34 @@ static void byx_config_manager_classinit (ByxConfigManagerClass *config_class)
     G_STATIC_ASSERT_EXPR (((gint64) ((ByxConfigChangeFlags) -1)) > ((gint64) 0));
 }
 
-static void byx_config_manager_init (ByxConfigManager *config)
+static void byx_config_manager_init (ByxConfigManager *self)
 {
+    self->system_config_dir = BYX_SYSTEM_CONFIG_DIR;
+	self->system_connection_config_dir = BYX_SYSTEM_CONNECTION_CONFIG_DIR;
+	self->system_service_config_dir = BYX_SYSTEM_SERVICE_CONFIG_DIR;
+
+	self->config_main_file = BYX_CONFIG_MAIN_FILE;
+	self->config_dir = BYX_CONFIG_DIR;
+	self->connection_config_dir = BYX_CONNECTION_CONFIG_DIR;
+	self->service_config_dir = BYX_SERVICE_CONFIG_DIR;
+
+	self->run_data_file = BYX_RUN_DATA_FILE;
+	self->connection_run_data_dir = BYX_CONNECTION_RUN_DATA_DIR;
+	self->service_run_data_dir = BYX_SERVICE_RUN_DATA_DIR;
+
+	self->persist_data_file = BYX_PERSIST_DATA_FILE;
+	self->connection_persist_data_dir = BYX_CONNECTION_PERSIST_DATA_DIR;
+	self->service_persist_data_dir = BYX_SERVICE_PERSIST_DATA_DIR;
+
+
+
+
 }
 
 static void byx_config_manager_finalize (GObject *gobject)
 {
     ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE ((ByxConfigManager *) gobject);
 
-    g_free (priv->config_dir);
-    g_free (priv->system_config_dir);
-    g_free (priv->run_data_file);
     g_free (priv->log_level);
     g_free (priv->log_domains);
     g_strfreev (priv->atomic_section_prefixes);
@@ -210,11 +259,11 @@ static ByxConfigData *_byx_config_manager_get_connection_data (ByxConfigManager 
 
     if (run_data_or_persist_data) {
         htable = priv->connection_run_data;
-        datadir = CONNECTION_RUN_DATA_DIR;
+        datadir = BYX_CONNECTION_RUN_DATA_DIR;
         dataname = "run data";
     } else {
         htable = priv->connection_persist_data;
-        datadir = CONNECTION_PERSIST_DATA_DIR;
+        datadir = BYX_CONNECTION_PERSIST_DATA_DIR;
         dataname = "persist data";
     }
 
@@ -269,7 +318,7 @@ ByxConfigData *byx_config_manager_get_connection_persist_data (ByxConfigManager 
 
 void byx_config_manager_cleanup_persist_data(ByxConfigManager *self)
 {
-    /* iterate all the file in CONNECTION_RUN_DATA_DIR and CONNECTION_PERSIST_DATA_DIR */
+    /* iterate all the file in BYX_CONNECTION_RUN_DATA_DIR and BYX_CONNECTION_PERSIST_DATA_DIR */
     /* to see delete data that has no corresponding connection */
 }
 
@@ -407,17 +456,6 @@ byx_config_manager_get_data (ByxConfigManager *config)
     g_return_val_if_fail (config != NULL, NULL);
 
     return BYX_CONFIG_GET_PRIVATE (config)->config_data;
-}
-
-/* The ByxConfigData instance is reloadable and will be swapped on reload.
- * byx_config_manager_get_data_orig() returns the original configuration, when the ByxConfigManager
- * instance was created. */
-ByxConfigData *
-byx_config_manager_get_data_orig (ByxConfigManager *config)
-{
-    g_return_val_if_fail (config != NULL, NULL);
-
-    return BYX_CONFIG_GET_PRIVATE (config)->config_data_orig;
 }
 
 const char *
@@ -810,8 +848,8 @@ read_base_config (GKeyFile *keyfile,
      */
 
     /* Try the standard config file location next */
-    if (read_config (keyfile, TRUE, NULL, DEFAULT_CONFIG_MAIN_FILE, &my_error)) {
-        *out_config_main_file = g_strdup (DEFAULT_CONFIG_MAIN_FILE);
+    if (read_config (keyfile, TRUE, NULL, BYX_CONFIG_MAIN_FILE, &my_error)) {
+        *out_config_main_file = g_strdup (BYX_CONFIG_MAIN_FILE);
         return TRUE;
     }
 
@@ -826,9 +864,9 @@ read_base_config (GKeyFile *keyfile,
     /* If for some reason no config file exists, use the default
      * config file path.
      */
-    *out_config_main_file = g_strdup (DEFAULT_CONFIG_MAIN_FILE);
+    *out_config_main_file = g_strdup (BYX_CONFIG_MAIN_FILE);
     _LOGI ("No config file found or given; using %s\n",
-           DEFAULT_CONFIG_MAIN_FILE);
+           BYX_CONFIG_MAIN_FILE);
     return TRUE;
 }
 
@@ -905,8 +943,8 @@ read_entire_config (const ByxConfigCmdLineOptions *cli,
     g_return_val_if_fail (!error || !*error, FALSE);
 
     if (   (""RUN_DATA_DIR)[0] == '/'
-        && !nm_streq (RUN_DATA_DIR, system_config_dir)
-        && !nm_streq (RUN_DATA_DIR, config_dir))
+        && !byx_streq (RUN_DATA_DIR, system_config_dir)
+        && !byx_streq (RUN_DATA_DIR, config_dir))
         run_config_dir = RUN_DATA_DIR;
 
     /* create a default configuration file. */
@@ -1942,13 +1980,13 @@ ByxConfigDeviceStateData *
 byx_config_connection_data_get (int ifindex)
 {
     ByxConfigDeviceStateData *device_state;
-    char path[BYX_STRLEN (CONNECTION_RUN_DATA_DIR) + 60];
+    char path[BYX_STRLEN (BYX_CONNECTION_RUN_DATA_DIR) + 60];
     gs_unref_keyfile GKeyFile *kf = NULL;
     const char *nm_owned_str;
 
     g_return_val_if_fail (ifindex > 0, NULL);
 
-    byx_sprintf_buf (path, "%s/%d", CONNECTION_RUN_DATA_DIR, ifindex);
+    byx_sprintf_buf (path, "%s/%d", BYX_CONNECTION_RUN_DATA_DIR, ifindex);
 
     kf = byx_config_create_keyfile ();
     if (!g_key_file_load_from_file (kf, path, G_KEY_FILE_NONE, NULL))
@@ -1991,7 +2029,7 @@ byx_config_connection_data_get_all (void)
 
     states = g_hash_table_new_full (nm_direct_hash, NULL, NULL, g_free);
 
-    dir = g_dir_open (CONNECTION_RUN_DATA_DIR, 0, NULL);
+    dir = g_dir_open (BYX_CONNECTION_RUN_DATA_DIR, 0, NULL);
     if (!dir)
         return states;
 
@@ -2214,12 +2252,12 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
         g_return_val_if_reached (FALSE);
     }
 
-    s = priv->cli.config_dir ?: ""DEFAULT_CONFIG_DIR;
+    s = priv->cli.config_dir ?: ""BYX_CONFIG_DIR;
     priv->config_dir = g_strdup (s[0] == '/' ? s : "");
 
-    s = priv->cli.system_config_dir ?: ""DEFAULT_SYSTEM_CONFIG_DIR;
+    s = priv->cli.system_config_dir ?: ""BYX_SYSTEM_CONFIG_DIR;
     if (   s[0] != '/'
-        || nm_streq (s, priv->config_dir))
+        || byx_streq (s, priv->config_dir))
         s = "";
     priv->system_config_dir = g_strdup (s);
 
@@ -2274,13 +2312,6 @@ byx_config_new (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefix
                                       BYX_CONFIG_CMD_LINE_OPTIONS, cli,
                                       BYX_CONFIG_ATOMIC_SECTION_PREFIXES, atomic_section_prefixes,
                                       NULL));
-}
-
-
-static void
-byx_config_initable_iface_init (GInitableIface *iface)
-{
-    iface->init = init_sync;
 }
 
 

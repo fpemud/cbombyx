@@ -179,5 +179,5 @@ nm_pstr_equal (gconstpointer a, gconstpointer b)
 	return    (s1 == s2)
 	       || (   s1
 	           && s2
-	           && nm_streq0 (*s1, *s2));
+	           && byx_streq0 (*s1, *s2));
 }

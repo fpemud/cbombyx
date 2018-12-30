@@ -280,7 +280,7 @@ nm_settings_get_connection_by_uuid (NMSettings *self, const char *uuid)
 	priv = NM_SETTINGS_GET_PRIVATE (self);
 
 	c_list_for_each_entry (candidate, &priv->connections_lst_head, _connections_lst) {
-		if (nm_streq (uuid, nm_settings_connection_get_uuid (candidate)))
+		if (byx_streq (uuid, nm_settings_connection_get_uuid (candidate)))
 			return candidate;
 	}
 
@@ -847,7 +847,7 @@ nm_settings_add_connection (NMSettings *self,
 
 	/* Make sure a connection with this UUID doesn't already exist */
 	c_list_for_each_entry (candidate, &priv->connections_lst_head, _connections_lst) {
-		if (nm_streq0 (uuid, nm_connection_get_uuid (NM_CONNECTION (candidate)))) {
+		if (byx_streq0 (uuid, nm_connection_get_uuid (NM_CONNECTION (candidate)))) {
 			g_set_error_literal (error,
 			                     NM_SETTINGS_ERROR,
 			                     NM_SETTINGS_ERROR_UUID_EXISTS,

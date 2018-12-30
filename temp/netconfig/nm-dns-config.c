@@ -590,7 +590,7 @@ update_resolv_conf (NMDnsManager *self,
 	 * This is the only situation, where we don't try to update our
 	 * internal resolv.conf file. */
 	if (rc_manager == NM_DNS_MANAGER_RESOLV_CONF_MAN_UNMANAGED) {
-		if (nm_streq0 (_read_link_cached (_PATH_RESCONF, &resconf_link_cached, &resconf_link),
+		if (byx_streq0 (_read_link_cached (_PATH_RESCONF, &resconf_link_cached, &resconf_link),
 		               MY_RESOLV_CONF)) {
 			_LOGD ("update-resolv-conf: not updating " _PATH_RESCONF
 			       " since it points to " MY_RESOLV_CONF);
@@ -705,7 +705,7 @@ update_resolv_conf (NMDnsManager *self,
 		return SR_SUCCESS;
 	}
 
-	if (!nm_streq0 (_read_link_cached (_PATH_RESCONF, &resconf_link_cached, &resconf_link),
+	if (!byx_streq0 (_read_link_cached (_PATH_RESCONF, &resconf_link_cached, &resconf_link),
 	                MY_RESOLV_CONF)) {
 		_LOGT ("update-resolv-conf: write internal file %s succeeded (don't touch symlink %s linking to %s)",
 		       MY_RESOLV_CONF, _PATH_RESCONF,
@@ -1770,7 +1770,7 @@ _get_global_config_variant (NMGlobalDnsConfig *global)
 		domain = nm_global_dns_config_get_domain (global, i);
 		domain_name = nm_global_dns_domain_get_name (domain);
 
-		if (domain_name && !nm_streq0 (domain_name, "*")) {
+		if (domain_name && !byx_streq0 (domain_name, "*")) {
 			g_variant_builder_init (&item_builder, G_VARIANT_TYPE ("as"));
 			g_variant_builder_add (&item_builder,
 			                       "s",

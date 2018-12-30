@@ -212,7 +212,7 @@ _find_value_info (const ByxUtilsEnumValueInfo *value_infos, const char *needle)
 {
 	if (value_infos) {
 		for (; value_infos->nick; value_infos++) {
-			if (nm_streq (needle, value_infos->nick))
+			if (byx_streq (needle, value_infos->nick))
 				return value_infos;
 		}
 	}

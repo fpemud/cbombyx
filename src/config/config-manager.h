@@ -45,7 +45,6 @@ void byx_config_manager_cleanup_persist_data(ByxConfigManager *self);
 
 /* Properties */
 #define BYX_CONFIG_CMD_LINE_OPTIONS                  "cmd-line-options"
-#define BYX_CONFIG_ATOMIC_SECTION_PREFIXES           "atomic-section-prefixes"
 
 #define BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL 300
 #define BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE "NetworkManager is online" /* NOT LOCALIZED */

@@ -4374,7 +4374,7 @@ nm_platform_tfilter_to_string (const NMPlatformTfilter *tfilter, char *buf, gsiz
 		l = sizeof (act_buf);
 
 		byx_utils_strbuf_append (&p, &l, " \"%s\"", tfilter->action.kind);
-		if (nm_streq (tfilter->action.kind, NM_PLATFORM_ACTION_KIND_SIMPLE)) {
+		if (byx_streq (tfilter->action.kind, NM_PLATFORM_ACTION_KIND_SIMPLE)) {
 			gs_free char *t = NULL;
 
 			byx_utils_strbuf_append (&p, &l,
@@ -4411,7 +4411,7 @@ nm_platform_tfilter_hash_update (const NMPlatformTfilter *obj, NMHashState *h)
 	                     obj->info);
 	if (obj->action.kind) {
 		nm_hash_update_str (h, obj->action.kind);
-		if (nm_streq (obj->action.kind, NM_PLATFORM_ACTION_KIND_SIMPLE))
+		if (byx_streq (obj->action.kind, NM_PLATFORM_ACTION_KIND_SIMPLE))
 			nm_hash_update_strarr (h, obj->action.simple.sdata);
 	}
 }
@@ -4429,7 +4429,7 @@ nm_platform_tfilter_cmp (const NMPlatformTfilter *a, const NMPlatformTfilter *b)
 
 	NM_CMP_FIELD_STR_INTERNED (a, b, action.kind);
 	if (a->action.kind) {
-		if (nm_streq (a->action.kind, NM_PLATFORM_ACTION_KIND_SIMPLE))
+		if (byx_streq (a->action.kind, NM_PLATFORM_ACTION_KIND_SIMPLE))
 			NM_CMP_FIELD_STR (a, b, action.simple.sdata);
 	}
 

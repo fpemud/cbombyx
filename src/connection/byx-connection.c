@@ -979,7 +979,7 @@ _assume_state_set (ByxConnection *self,
 
 	priv = BYX_CONNECTION_GET_PRIVATE (self);
 	if (   priv->assume_state_guess_assume == !!assume_state_guess_assume
-	    && nm_streq0 (priv->assume_state_connection_uuid, assume_state_connection_uuid))
+	    && byx_streq0 (priv->assume_state_connection_uuid, assume_state_connection_uuid))
 		return;
 
 	_LOGD (LOGD_DEVICE, "assume-state: set guess-assume=%c, connection=%s%s%s",
@@ -1280,7 +1280,7 @@ byx_connection_take_over_link (ByxConnection *self, int ifindex, char **old_name
 	if (!plink)
 		return FALSE;
 
-	if (!nm_streq (plink->name, byx_connection_get_iface (self))) {
+	if (!byx_streq (plink->name, byx_connection_get_iface (self))) {
 		up = NM_FLAGS_HAS (plink->n_ifi_flags, IFF_UP);
 		name = g_strdup (plink->name);
 
@@ -1379,7 +1379,7 @@ _set_ip_ifindex (ByxConnection *self,
 		ifname = NULL;
 	}
 
-	eq_name = nm_streq0 (priv->ip_iface, ifname);
+	eq_name = byx_streq0 (priv->ip_iface, ifname);
 
 	if (   eq_name
 	    && priv->ip_ifindex == ifindex)
@@ -1478,7 +1478,7 @@ _ip_iface_update (ByxConnection *self, const char *ip_iface)
 	if (!ip_iface[0])
 		return FALSE;
 
-	if (nm_streq (priv->ip_iface, ip_iface))
+	if (byx_streq (priv->ip_iface, ip_iface))
 		return FALSE;
 
 	_LOGI (LOGD_DEVICE, "ip-ifname: interface index %d renamed ip_iface (%d) from '%s' to '%s'",
@@ -4654,12 +4654,12 @@ check_ip_state (ByxConnection *self, gboolean may_fail, gboolean full_state_upda
 		return;
 
 	s_ip4 = (NMSettingIPConfig *) byx_connection_get_applied_setting (self, NM_TYPE_SETTING_IP4_CONFIG);
-	if (s_ip4 && nm_streq0 (nm_setting_ip_config_get_method (s_ip4),
+	if (s_ip4 && byx_streq0 (nm_setting_ip_config_get_method (s_ip4),
 	                        NM_SETTING_IP4_CONFIG_METHOD_DISABLED))
 		ip4_disabled = TRUE;
 
 	s_ip6 = (NMSettingIPConfig *) byx_connection_get_applied_setting (self, NM_TYPE_SETTING_IP6_CONFIG);
-	if (s_ip6 && nm_streq0 (nm_setting_ip_config_get_method (s_ip6),
+	if (s_ip6 && byx_streq0 (nm_setting_ip_config_get_method (s_ip6),
 	                        NM_SETTING_IP6_CONFIG_METHOD_IGNORE))
 		ip6_ignore = TRUE;
 
@@ -5340,11 +5340,11 @@ byx_connection_match_parent (ByxConnection *self, const char *parent)
 		if (!connection)
 			return TRUE;
 
-		if (!nm_streq0 (parent, nm_connection_get_uuid (connection)))
+		if (!byx_streq0 (parent, nm_connection_get_uuid (connection)))
 			return FALSE;
 	} else {
 		/* Interface name */
-		if (!nm_streq0 (parent, byx_connection_get_ip_iface (parent_device)))
+		if (!byx_streq0 (parent, byx_connection_get_ip_iface (parent_device)))
 			return FALSE;
 	}
 
@@ -7055,7 +7055,7 @@ dhcp4_get_client_id (ByxConnection *self,
 		return NULL;
 	}
 
-	if (nm_streq (client_id, "mac")) {
+	if (byx_streq (client_id, "mac")) {
 		if (!hwaddr) {
 			fail_reason = "failed to get current MAC address";
 			goto out_fail;
@@ -7071,7 +7071,7 @@ dhcp4_get_client_id (ByxConnection *self,
 		goto out_good;
 	}
 
-	if (nm_streq (client_id, "perm-mac")) {
+	if (byx_streq (client_id, "perm-mac")) {
 		const char *hwaddr_str;
 
 		hwaddr_str = byx_connection_get_permanent_hw_address (self);
@@ -7093,7 +7093,7 @@ dhcp4_get_client_id (ByxConnection *self,
 		goto out_good;
 	}
 
-	if (nm_streq (client_id, "stable")) {
+	if (byx_streq (client_id, "stable")) {
 		NMUtilsStableType stable_type;
 		const char *stable_id;
 		GChecksum *sum;
@@ -7845,7 +7845,7 @@ dhcp6_get_duid (ByxConnection *self, NMConnection *connection, GBytes *hwaddr, g
 			duid = "lease";
 	}
 
-	if (nm_streq (duid, "lease")) {
+	if (byx_streq (duid, "lease")) {
 		duid_enforce = FALSE;
 		duid_out = generate_duid_from_machine_id ();
 		if (!duid_out) {
@@ -7873,7 +7873,7 @@ dhcp6_get_duid (ByxConnection *self, NMConnection *connection, GBytes *hwaddr, g
 			goto out_fail;
 		}
 
-		if (nm_streq (duid, "ll")) {
+		if (byx_streq (duid, "ll")) {
 			duid_out = generate_duid_ll (g_bytes_get_data (hwaddr, NULL));
 		} else {
 			gint64 time;
@@ -7915,9 +7915,9 @@ dhcp6_get_duid (ByxConnection *self, NMConnection *connection, GBytes *hwaddr, g
 		g_checksum_get_digest (sum, sha256_digest, &len);
 		g_checksum_free (sum);
 
-		if (nm_streq (duid, "stable-ll")) {
+		if (byx_streq (duid, "stable-ll")) {
 			duid_out = generate_duid_ll (sha256_digest);
-		} else if (nm_streq (duid, "stable-llt")) {
+		} else if (byx_streq (duid, "stable-llt")) {
 			gint64 time;
 
 #define EPOCH_DATETIME_THREE_YEARS  (356 * 24 * 3600 * 3)
@@ -7938,7 +7938,7 @@ dhcp6_get_duid (ByxConnection *self, NMConnection *connection, GBytes *hwaddr, g
 
 			duid_out = generate_duid_llt (sha256_digest, time);
 		} else {
-			nm_assert (nm_streq (duid, "stable-uuid"));
+			nm_assert (byx_streq (duid, "stable-uuid"));
 			duid_out = generate_duid_uuid (sha256_digest, len);
 		}
 
@@ -8981,7 +8981,7 @@ restore_ip6_properties (ByxConnection *self)
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		/* Don't touch "disable_ipv6" if we're doing userland IPv6LL */
 		if (   priv->ipv6ll_handle
-		    && nm_streq (key, "disable_ipv6"))
+		    && byx_streq (key, "disable_ipv6"))
 			continue;
 		byx_connection_ipv6_sysctl_set (self, key, value);
 	}
@@ -10318,7 +10318,7 @@ byx_connection_reactivate_ip4_config (ByxConnection *self,
 		             ? nm_setting_ip_config_get_method (s_ip4_new)
 		             : NM_SETTING_IP4_CONFIG_METHOD_DISABLED;
 
-		if (!nm_streq0 (method_old, method_new)) {
+		if (!byx_streq0 (method_old, method_new)) {
 			_cleanup_ip_pre (self, AF_INET, CLEANUP_TYPE_DECONFIGURE);
 			_set_ip_state (self, AF_INET, IP_WAIT);
 			if (!byx_connection_activate_stage3_ip4_start (self))
@@ -10363,7 +10363,7 @@ byx_connection_reactivate_ip6_config (ByxConnection *self,
 		             ? nm_setting_ip_config_get_method (s_ip6_new)
 		             : NM_SETTING_IP6_CONFIG_METHOD_IGNORE;
 
-		if (!nm_streq0 (method_old, method_new)) {
+		if (!byx_streq0 (method_old, method_new)) {
 			_cleanup_ip_pre (self, AF_INET6, CLEANUP_TYPE_DECONFIGURE);
 			_set_ip_state (self, AF_INET6, IP_WAIT);
 			if (!byx_connection_activate_stage3_ip6_start (self))
@@ -10380,7 +10380,7 @@ can_reapply_change (ByxConnection *self, const char *setting_name,
                     NMSetting *s_old, NMSetting *s_new,
                     GHashTable *diffs, GError **error)
 {
-	if (nm_streq (setting_name, NM_SETTING_CONNECTION_SETTING_NAME)) {
+	if (byx_streq (setting_name, NM_SETTING_CONNECTION_SETTING_NAME)) {
 		/* Whitelist allowed properties from "connection" setting which are
 		 * allowed to differ.
 		 *
@@ -10536,10 +10536,10 @@ check_and_reapply_connection (ByxConnection *self,
 			s_con_a = nm_connection_get_setting_connection (applied);
 			s_con_n = nm_connection_get_setting_connection (connection);
 
-			if (   !nm_streq (nm_setting_connection_get_id (s_con_a), nm_setting_connection_get_id (s_con_n))
-			    || !nm_streq (nm_setting_connection_get_uuid (s_con_a), nm_setting_connection_get_uuid (s_con_n))
+			if (   !byx_streq (nm_setting_connection_get_id (s_con_a), nm_setting_connection_get_id (s_con_n))
+			    || !byx_streq (nm_setting_connection_get_uuid (s_con_a), nm_setting_connection_get_uuid (s_con_n))
 			    || nm_setting_connection_get_autoconnect (s_con_a) != nm_setting_connection_get_autoconnect (s_con_n)
-			    || !nm_streq0 (nm_setting_connection_get_stable_id (s_con_a), nm_setting_connection_get_stable_id (s_con_n))) {
+			    || !byx_streq0 (nm_setting_connection_get_stable_id (s_con_a), nm_setting_connection_get_stable_id (s_con_n))) {
 				connection_clean_free = nm_simple_connection_new_clone (connection);
 				connection_clean = connection_clean_free;
 				s_con_n = nm_connection_get_setting_connection (connection);
@@ -14109,7 +14109,7 @@ _set_state_full (ByxConnection *self,
 		}
 
 		connection = byx_connection_get_settings_connection (self);
-		_LOGW (LOGD_DEVICE | LOGD_WIFI,
+		_LOGW (LOGD_DEVICE,
 		       "Activation: failed for connection '%s'",
 		       connection ? nm_settings_connection_get_id (connection) : "<unknown>");
 
@@ -14385,7 +14385,7 @@ byx_connection_update_initial_hw_address (ByxConnection *self)
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 
 	if (   priv->hw_addr
-	    && !nm_streq0 (priv->hw_addr_initial, priv->hw_addr)) {
+	    && !byx_streq0 (priv->hw_addr_initial, priv->hw_addr)) {
 		if (   priv->hw_addr_initial
 		    && priv->hw_addr_type != HW_ADDR_TYPE_UNSET) {
 			/* once we have the initial hw address set, we only allow

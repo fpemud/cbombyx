@@ -37,28 +37,18 @@
 #include <sys/resource.h>
 
 #include "main-utils.h"
-#include "config/byx-config.h"
-
-#define BYX_DEFAULT_PID_FILE          NMRUNDIR "/bombyx.pid"
-
-#define CONFIG_ATOMIC_SECTION_PREFIXES ((char **) NULL)
+#include "config/config-manager.h"
 
 static GMainLoop *main_loop = NULL;
 
-static void
-_set_g_fatal_warnings (void)
+static void _init_nm_debug (ByxConfigManager *config)
 {
-    GLogLevelFlags fatal_mask;
+    ByxConfigManager *config_manager = byx_config_manager_get();
+    config GKeyFile *kf = byx_config_manager_get_config(config_manager);
+    GError *local = NULL;
 
-    fatal_mask = g_log_set_always_fatal (G_LOG_FATAL_MASK);
-    fatal_mask |= G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL;
-    g_log_set_always_fatal (fatal_mask);
-}
 
-static void
-_init_nm_debug (ByxConfigManager *config)
-{
-    gs_free char *debug = NULL;
+    gs_free gchar *debug = NULL;
     enum {
         D_RLIMIT_CORE =    (1 << 0),
         D_FATAL_WARNINGS = (1 << 1),
@@ -70,10 +60,10 @@ _init_nm_debug (ByxConfigManager *config)
     guint flags;
     const char *env = getenv ("NM_DEBUG");
 
-    debug = byx_config_data_get_value (byx_config_manager_get_data_orig (config),
-                                      BYX_CONFIG_KEYFILE_GROUP_MAIN,
-                                      BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG,
-                                      BYX_MANAGER_RELOAD_FLAGS_NONE);
+    debug = g_key_file_get_string(kf, "main", "debug", &local);
+
+
+
 
     flags  = byx_utils_parse_debug_string (env, keys, G_N_ELEMENTS (keys));
     flags |= byx_utils_parse_debug_string (debug, keys, G_N_ELEMENTS (keys));
@@ -90,9 +80,6 @@ _init_nm_debug (ByxConfigManager *config)
         setrlimit (RLIMIT_CORE, &limit);
     }
 #endif
-
-    if (NM_FLAGS_HAS (flags, D_FATAL_WARNINGS))
-        _set_g_fatal_warnings ();
 }
 
 void
@@ -101,17 +88,17 @@ nm_main_config_reload (int signal)
     ByxConfigChangeFlags reload_flags;
 
     switch (signal) {
-    case SIGHUP:
-        reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGHUP;
-        break;
-    case SIGUSR1:
-        reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR1;
-        break;
-    case SIGUSR2:
-        reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR2;
-        break;
-    default:
-        g_return_if_reached ();
+        case SIGHUP:
+            reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGHUP;
+            break;
+        case SIGUSR1:
+            reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR1;
+            break;
+        case SIGUSR2:
+            reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR2;
+            break;
+        default:
+            g_return_if_reached ();
     }
 
     byx_log_info (LOGD_CORE, "reload configuration (signal %s)...", strsignal (signal));
@@ -123,27 +110,6 @@ nm_main_config_reload (int signal)
      * Hence, a ByxConfigManager singleton instance must always be
      * available. */
     byx_config_reload (byx_config_manager_get (), reload_flags);
-}
-
-static int
-print_config (ByxConfigCmdLineOptions *config_cli)
-{
-    gs_unref_object ByxConfigManager *config = NULL;
-    gs_free_error GError *error = NULL;
-    ByxConfigData *config_data;
-
-    byx_logging_setup ("OFF", "ALL", NULL, NULL);
-
-    config = byx_config_new (config_cli, CONFIG_ATOMIC_SECTION_PREFIXES, &error);
-    if (config == NULL) {
-        fprintf (stderr, _("Failed to read configuration: %s\n"), error->message);
-        return 7;
-    }
-
-    config_data = byx_config_manager_get_data (config);
-    fprintf (stdout, "# NetworkManager configuration: %s\n", byx_config_data_get_config_description (config_data));
-    byx_config_data_log (config_data, "", "", stdout);
-    return 0;
 }
 
 /*
@@ -188,7 +154,6 @@ int main (int argc, char *argv[])
     textdomain (GETTEXT_PACKAGE);
 
     /* Setup config manager */
-    local = NULL;
     success = byx_config_manager_setup(argc, argv, &local);
 	if (!success) {
 		g_propagate_error (error, local);
@@ -199,19 +164,9 @@ int main (int argc, char *argv[])
 
     main_loop = g_main_loop_new (NULL, FALSE);
 
-    if (config_cli->g_fatal_warnings)
-        _set_g_fatal_warnings ();
-
     if (config_cli->show_version) {
         fprintf (stdout, VERSION "\n");
         exit (0);
-    }
-
-    if (config_cli->print_config) {
-        int result;
-        result = print_config (config_cli);
-        byx_config_cmd_line_options_free (config_cli);
-        exit (result);
     }
 
     byx_main_utils_ensure_root ();
@@ -267,7 +222,7 @@ int main (int argc, char *argv[])
                                       BYX_CONFIG_KEYFILE_GROUP_LOGGING,
                                       BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND,
                                       BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
-        byx_logging_syslog_openlog (v, byx_config_manager_get_is_debug (config));
+        byx_logging_openlog (v, byx_config_manager_get_is_debug (config));
     }
 
     byx_log_info (LOGD_CORE, "NetworkManager (version " VERSION ") is starting... (%s)",

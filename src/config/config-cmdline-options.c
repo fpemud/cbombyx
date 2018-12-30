@@ -2,11 +2,6 @@
 
 static void _byx_config_cmd_line_options_clear (ByxConfigCmdLineOptions *cli)
 {
-	g_clear_pointer (&cli->config_main_file, g_free);
-	g_clear_pointer (&cli->config_dir, g_free);
-	g_clear_pointer (&cli->system_config_dir, g_free);
-	g_clear_pointer (&cli->run_data_file, g_free);
-	g_clear_pointer (&cli->persist_data_file, g_free);
 	cli->is_debug = FALSE;
 	g_clear_pointer (&cli->connectivity_uri, g_free);
 	g_clear_pointer (&cli->connectivity_response, g_free);
@@ -81,31 +76,6 @@ void byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli, G
 
     GOptionEntry config_options[] = {
         {
-            "config", 0, 0, G_OPTION_ARG_FILENAME,
-            &cli->config_main_file, N_("Config file location"),
-            DEFAULT_CONFIG_MAIN_FILE,
-        },
-        {
-            "config-dir", 0, 0, G_OPTION_ARG_FILENAME,
-            &cli->config_dir, N_("Config directory location"),
-            DEFAULT_CONFIG_DIR,
-        },
-        {
-            "system-config-dir", 0, 0, G_OPTION_ARG_FILENAME,
-            &cli->system_config_dir, N_("System config directory location"),
-            DEFAULT_SYSTEM_CONFIG_DIR,
-        },
-        {
-            "runtime-config", 0, 0, G_OPTION_ARG_FILENAME,
-            &cli->run_data_file, N_("Internal config file location"),
-            PERSIST_DATA_DIR,
-        },
-        {
-            "persist-config", 0, 0, G_OPTION_ARG_FILENAME,
-            &cli->persist_data_file, N_("State file location"),
-            DEFAULT_STATE_FILE,
-        },
-        {
             "debug", 'd', 0, G_OPTION_ARG_NONE,
             &cli->is_debug, N_("Don't become a daemon, and log to stderr"),
             NULL,
@@ -156,20 +126,10 @@ void byx_config_cmd_line_options_add_to_entries (ByxConfigCmdLineOptions *cli, G
             "PLATFORM,RFKILL,WIFI"
         },
 		{
-            "g-fatal-warnings", 0, 0, G_OPTION_ARG_NONE,
-            &cli->g_fatal_warnings, N_("Make all warnings fatal"), NULL
-        },
-		{
             "pid-file", 'p', 0, G_OPTION_ARG_FILENAME,
             &cli->pidfile,
             N_("Specify the location of a PID file"),
-            BYX_DEFAULT_PID_FILE,
-        },
-		{
-            "print-config", 0, 0, G_OPTION_ARG_NONE,
-            &cli->print_config,
-            N_("Print NetworkManager configuration and exit"),
-            NULL,
+            BYX_PID_FILE,
         },
 		{
             NULL

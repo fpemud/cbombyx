@@ -1253,7 +1253,7 @@ match_device_eval (const char *spec_str,
 
 	if (_MATCH_CHECK (spec_str, DEVICE_TYPE_TAG)) {
 		return    match_data->device_type
-		       && nm_streq (spec_str, match_data->device_type);
+		       && byx_streq (spec_str, match_data->device_type);
 	}
 
 	if (_MATCH_CHECK (spec_str, MAC_TAG))
@@ -1271,7 +1271,7 @@ match_device_eval (const char *spec_str,
 		}
 
 		if (match_data->interface_name) {
-			if (nm_streq (spec_str, match_data->interface_name))
+			if (byx_streq (spec_str, match_data->interface_name))
 				return TRUE;
 			if (use_pattern && g_pattern_match_simple (spec_str, match_data->interface_name))
 				return TRUE;
@@ -1304,7 +1304,7 @@ match_device_eval (const char *spec_str,
 		t = strrchr (spec_str, '/');
 
 		if (!t)
-			return nm_streq (spec_str, match_data->driver);
+			return byx_streq (spec_str, match_data->driver);
 
 		return    (strncmp (spec_str, match_data->driver, t - spec_str) == 0)
 		       && g_pattern_match_simple (&t[1],
@@ -1318,7 +1318,7 @@ match_device_eval (const char *spec_str,
 		if (match_device_hwaddr_eval (spec_str, match_data))
 			return TRUE;
 		if (   match_data->interface_name
-		    && nm_streq (spec_str, match_data->interface_name))
+		    && byx_streq (spec_str, match_data->interface_name))
 			return TRUE;
 	}
 
@@ -2344,7 +2344,7 @@ byx_utils_sysctl_ip_conf_is_path (int addr_family, const char *path, const char 
 		path = slash + 1;
 	}
 
-	if (!nm_streq (path, property))
+	if (!byx_streq (path, property))
 		return FALSE;
 
 	return TRUE;
@@ -3612,10 +3612,7 @@ debug_key_matches (const gchar *key,
  *
  * Returns: the flags
  */
-guint
-byx_utils_parse_debug_string (const char *string,
-                             const GDebugKey *keys,
-                             guint nkeys)
+guint byx_utils_parse_debug_string (const char *string, const GDebugKey *keys, guint nkeys)
 {
 	guint i;
 	guint result = 0;

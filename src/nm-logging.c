@@ -57,7 +57,7 @@ static void
 byx_log_handler (const gchar *log_domain,
                 GLogLevelFlags level,
                 const gchar *message,
-                gpointer ignored);
+                gpointer user_data);
 
 typedef struct {
 	NMLogDomain num;
@@ -744,42 +744,91 @@ _byx_log_impl (const char *file,
 
 /*****************************************************************************/
 
-static void
-byx_log_handler (const gchar *log_domain,
-                GLogLevelFlags level,
-                const gchar *message,
-                gpointer ignored)
+GLogWriterOutput
+g_log_writer_syslog (GLogLevelFlags   log_level,
+                     const GLogField *fields,
+                     gsize            n_fields,
+                     gpointer         user_data)
+{
+	gchar *out = NULL;  /* in the current locale’s character set */
+
+	g_return_val_if_fail (fields != NULL, G_LOG_WRITER_UNHANDLED);
+	g_return_val_if_fail (n_fields > 0, G_LOG_WRITER_UNHANDLED);
+
+	switch (level & G_LOG_LEVEL_MASK) {
+		case G_LOG_LEVEL_ERROR:
+			syslog_priority = LOG_CRIT;
+			break;
+		case G_LOG_LEVEL_CRITICAL:
+			syslog_priority = LOG_ERR;
+			break;
+		case G_LOG_LEVEL_WARNING:
+			syslog_priority = LOG_WARNING;
+			break;
+		case G_LOG_LEVEL_MESSAGE:
+			syslog_priority = LOG_NOTICE;
+			break;
+		case G_LOG_LEVEL_DEBUG:
+			syslog_priority = LOG_DEBUG;
+			break;
+		case G_LOG_LEVEL_INFO:
+			syslog_priority = LOG_INFO;
+			break;
+		case G_LOG_LEVEL_DEBUG:
+			syslog_priority = LOG_DEBUG;
+			break;
+		default:
+			g_return_val_if_reached (G_LOG_WRITER_UNHANDLED);
+	}
+
+	out = g_log_writer_format_fields (log_level, fields, n_fields, FALSE);
+	syslog (syslog_priority, out);
+	g_free (out);
+
+	return G_LOG_WRITER_HANDLED;
+}
+
+
+static void byx_log_handler (const gchar *log_domain, GLogLevelFlags level, const gchar *message, gpointer user_data)
 {
 	int syslog_priority;
 
+	assert (log_domain != NULL);
+	assert (message != NULL);
+
+
 	switch (level & G_LOG_LEVEL_MASK) {
-	case G_LOG_LEVEL_ERROR:
-		syslog_priority = LOG_CRIT;
-		break;
-	case G_LOG_LEVEL_CRITICAL:
-		syslog_priority = LOG_ERR;
-		break;
-	case G_LOG_LEVEL_WARNING:
-		syslog_priority = LOG_WARNING;
-		break;
-	case G_LOG_LEVEL_MESSAGE:
-		syslog_priority = LOG_NOTICE;
-		break;
-	case G_LOG_LEVEL_DEBUG:
-		syslog_priority = LOG_DEBUG;
-		break;
-	case G_LOG_LEVEL_INFO:
-	default:
-		syslog_priority = LOG_INFO;
-		break;
+		case G_LOG_LEVEL_ERROR:
+			syslog_priority = LOG_CRIT;
+			break;
+		case G_LOG_LEVEL_CRITICAL:
+			syslog_priority = LOG_ERR;
+			break;
+		case G_LOG_LEVEL_WARNING:
+			syslog_priority = LOG_WARNING;
+			break;
+		case G_LOG_LEVEL_MESSAGE:
+			syslog_priority = LOG_NOTICE;
+			break;
+		case G_LOG_LEVEL_DEBUG:
+			syslog_priority = LOG_DEBUG;
+			break;
+		case G_LOG_LEVEL_INFO:
+			syslog_priority = LOG_INFO;
+			break;
+		case G_LOG_LEVEL_DEBUG:
+			syslog_priority = LOG_DEBUG;
+			break;
+		default:
+			assert (FALSE);
 	}
 
 	if (global.debug_stderr)
-		g_printerr ("%s%s\n", global.prefix, message ?: "");
+		g_printerr ("%s%s\n", global.prefix, message);
 
 	switch (global.log_backend) {
 #if SYSTEMD_JOURNAL
-	case LOG_BACKEND_JOURNAL:
+		case LOG_BACKEND_JOURNAL:
 		{
 			gint64 now, boottime;
 
@@ -787,28 +836,22 @@ byx_log_handler (const gchar *log_domain,
 			boottime = byx_utils_monotonic_timestamp_as_boottime (now, 1);
 
 			sd_journal_send ("PRIORITY=%d", syslog_priority,
-			                 "MESSAGE=%s%s", global.prefix, message ?: "",
-			                 syslog_identifier_full (&global),
-			                 "SYSLOG_PID=%ld", (long) getpid (),
-			                 "SYSLOG_FACILITY=GLIB",
-			                 "GLIB_DOMAIN=%s", log_domain ?: "",
-			                 "GLIB_LEVEL=%d", (int) (level & G_LOG_LEVEL_MASK),
-			                 "TIMESTAMP_MONOTONIC=%lld.%06lld", (long long) (now / NM_UTILS_NS_PER_SECOND), (long long) ((now % NM_UTILS_NS_PER_SECOND) / 1000),
-			                 "TIMESTAMP_BOOTTIME=%lld.%06lld", (long long) (boottime / NM_UTILS_NS_PER_SECOND), (long long) ((boottime % NM_UTILS_NS_PER_SECOND) / 1000),
-			                 NULL);
+							"MESSAGE=%s%s", global.prefix, message ?: "",
+							syslog_identifier_full (&global),
+							"SYSLOG_PID=%ld", (long) getpid (),
+							"SYSLOG_FACILITY=GLIB",
+							"GLIB_DOMAIN=%s", log_domain ?: "",
+							"GLIB_LEVEL=%d", (int) (level & G_LOG_LEVEL_MASK),
+							"TIMESTAMP_MONOTONIC=%lld.%06lld", (long long) (now / NM_UTILS_NS_PER_SECOND), (long long) ((now % NM_UTILS_NS_PER_SECOND) / 1000),
+							"TIMESTAMP_BOOTTIME=%lld.%06lld", (long long) (boottime / NM_UTILS_NS_PER_SECOND), (long long) ((boottime % NM_UTILS_NS_PER_SECOND) / 1000),
+							NULL);
 		}
 		break;
 #endif
-	default:
-		syslog (syslog_priority, "%s%s", global.prefix, message ?: "");
-		break;
+		default:
+			syslog (syslog_priority, "%s%s", global.prefix, message ?: "");
+			break;
 	}
-}
-
-gboolean
-byx_logging_syslog_enabled (void)
-{
-	return global.uses_syslog;
 }
 
 void
@@ -818,7 +861,7 @@ byx_logging_set_prefix (const char *format, ...)
 	va_list ap;
 
 	/* prefix can only be set once, to a non-empty string. Also, after
-	 * byx_logging_syslog_openlog() the prefix cannot be set either. */
+	 * byx_logging_openlog() the prefix cannot be set either. */
 	if (global.log_backend != LOG_BACKEND_GLIB)
 		g_return_if_reached ();
 	if (global.prefix[0])
@@ -836,10 +879,9 @@ byx_logging_set_prefix (const char *format, ...)
 }
 
 void
-byx_logging_syslog_openlog (const char *logging_backend, gboolean debug)
+byx_logging_openlog (const char *logging_backend, gboolean debug)
 {
 	gboolean fetch_monotonic_timestamp = FALSE;
-	gboolean obsolete_debug_backend = FALSE;
 
 	nm_assert (NM_IN_STRSET (""BYX_CONFIG_DEFAULT_LOGGING_BACKEND,
 	                         NM_LOG_CONFIG_BACKEND_JOURNAL,
@@ -851,19 +893,8 @@ byx_logging_syslog_openlog (const char *logging_backend, gboolean debug)
 	if (!logging_backend)
 		logging_backend = ""BYX_CONFIG_DEFAULT_LOGGING_BACKEND;
 
-	if (nm_streq (logging_backend, NM_LOG_CONFIG_BACKEND_DEBUG)) {
-		/* "debug" was wrongly documented as a valid logging backend. It makes no sense however,
-		 * because printing to stderr only makes sense when not demonizing. Whether to daemonize
-		 * is only controlled via command line arguments (--no-daemon, --debug) and not via the
-		 * logging backend from configuration.
-		 *
-		 * Fall back to the default. */
-		logging_backend = ""BYX_CONFIG_DEFAULT_LOGGING_BACKEND;
-		obsolete_debug_backend = TRUE;
-	}
-
 #if SYSTEMD_JOURNAL
-	if (!nm_streq (logging_backend, NM_LOG_CONFIG_BACKEND_SYSLOG)) {
+	if (!byx_streq (logging_backend, NM_LOG_CONFIG_BACKEND_SYSLOG)) {
 		global.log_backend = LOG_BACKEND_JOURNAL;
 		global.uses_syslog = TRUE;
 		global.debug_stderr = debug;
@@ -888,12 +919,9 @@ byx_logging_syslog_openlog (const char *logging_backend, gboolean debug)
 		byx_utils_get_monotonic_timestamp_ns ();
 	}
 
-	if (obsolete_debug_backend)
-		byx_log_dbg (LOGD_CORE, "config: ignore deprecated logging backend 'debug', fallback to '%s'", logging_backend);
-
-	if (nm_streq (logging_backend, NM_LOG_CONFIG_BACKEND_SYSLOG)) {
+	if (byx_streq (logging_backend, NM_LOG_CONFIG_BACKEND_SYSLOG)) {
 		/* good */
-	} else if (nm_streq (logging_backend, NM_LOG_CONFIG_BACKEND_JOURNAL)) {
+	} else if (byx_streq (logging_backend, NM_LOG_CONFIG_BACKEND_JOURNAL)) {
 #if !SYSTEMD_JOURNAL
 		byx_log_warn (LOGD_CORE, "config: logging backend 'journal' is not available, fallback to 'syslog'");
 #endif

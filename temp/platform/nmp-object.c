@@ -159,7 +159,7 @@ _idx_obj_part (const DedupMultiIdxType *idx_type,
 		if (obj_b) {
 			/* we are in equal() mode. Compare obj_b with obj_a. */
 			return    NMP_OBJECT_GET_TYPE (obj_b) == NMP_OBJECT_TYPE_LINK
-			       && nm_streq (obj_a->link.name, obj_b->link.name);
+			       && byx_streq (obj_a->link.name, obj_b->link.name);
 		}
 		if (h) {
 			nm_hash_update_val (h, idx_type->cache_id_type);
@@ -410,7 +410,7 @@ _nmp_object_fixup_link_udev_fields (NMPObject **obj_new, NMPObject *obj_orig, gb
 		}
 	}
 
-	if (   nm_streq0 (obj->link.driver, driver)
+	if (   byx_streq0 (obj->link.driver, driver)
 	    && obj->link.initialized == initialized)
 		return;
 

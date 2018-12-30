@@ -1610,7 +1610,7 @@ update_auth_cb (NMSettingsConnection *self,
 
 	commit_reason = NM_SETTINGS_CONNECTION_COMMIT_REASON_USER_ACTION;
 	if (   info->new_settings
-	    && !nm_streq0 (nm_connection_get_id (NM_CONNECTION (self)),
+	    && !byx_streq0 (nm_connection_get_id (NM_CONNECTION (self)),
 	                   nm_connection_get_id (info->new_settings)))
 		commit_reason |= NM_SETTINGS_CONNECTION_COMMIT_REASON_ID_CHANGED;
 

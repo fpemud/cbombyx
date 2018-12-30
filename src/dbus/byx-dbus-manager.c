@@ -142,7 +142,7 @@ _objects_by_path_equal (gconstpointer user_data_a, gconstpointer user_data_b)
 	nm_assert (*p_data_b);
 	nm_assert ((*p_data_b)[0] == '/');
 
-	return nm_streq (*p_data_a, *p_data_b);
+	return byx_streq (*p_data_a, *p_data_b);
 }
 
 /*****************************************************************************/
@@ -363,7 +363,7 @@ byx_dbus_manager_private_server_register (ByxDBusManager *self,
 
 	/* Only one instance per tag; but don't warn */
 	c_list_for_each_entry (s, &priv->private_servers_lst_head, private_servers_lst) {
-		if (nm_streq0 (tag, s->tag))
+		if (byx_streq0 (tag, s->tag))
 			return;
 	}
 
@@ -435,7 +435,7 @@ private_server_get_connection_by_owner (PrivateServer *s, const char *owner)
 	nm_assert (owner);
 
 	c_list_for_each_entry (obj_mgr_data, &s->object_mgr_lst_head, object_mgr_lst) {
-		if (nm_streq (owner, obj_mgr_data->fake_sender))
+		if (byx_streq (owner, obj_mgr_data->fake_sender))
 			return g_dbus_object_manager_server_get_connection (obj_mgr_data->manager);
 	}
 	return NULL;
@@ -797,12 +797,12 @@ dbus_vtable_method_call (GDBusConnection *connection,
 	const NMDBusMethodInfoExtended *method_info = NULL;
 	gboolean on_same_interface;
 
-	on_same_interface = nm_streq (interface_info->parent.name, interface_name);
+	on_same_interface = byx_streq (interface_info->parent.name, interface_name);
 
 	/* handle property setter first... */
 	if (   !on_same_interface
-	    && nm_streq (interface_name, DBUS_INTERFACE_PROPERTIES)
-	    && nm_streq (method_name, "Set")) {
+	    && byx_streq (interface_name, DBUS_INTERFACE_PROPERTIES)
+	    && byx_streq (method_name, "Set")) {
 		const ByxDBusPropertyInfoExtended *property_info = NULL;
 		const char *property_interface;
 		const char *property_name;
@@ -813,7 +813,7 @@ dbus_vtable_method_call (GDBusConnection *connection,
 
 		g_variant_get (parameters, "(&s&sv)", &property_interface, &property_name, &value);
 
-		nm_assert (nm_streq (property_interface, interface_info->parent.name));
+		nm_assert (byx_streq (property_interface, interface_info->parent.name));
 
 		property_info = (const ByxDBusPropertyInfoExtended *) nm_dbus_utils_interface_info_lookup_property (&interface_info->parent,
 		                                                                                                   property_name,
@@ -1205,7 +1205,7 @@ _byx_dbus_manager_obj_notify (ByxDBusObject *obj,
 				const GParamSpec *pspec = pspecs[p];
 				gs_unref_variant GVariant *value = NULL;
 
-				if (!nm_streq (property_info->property_name, pspec->name))
+				if (!byx_streq (property_info->property_name, pspec->name))
 					continue;
 
 				value = _obj_get_property (reg_data, i, TRUE);
@@ -1400,10 +1400,10 @@ dbus_vtable_objmgr_method_call (GDBusConnection *connection,
 	GVariantBuilder array_builder;
 	ByxDBusObject *obj;
 
-	nm_assert (nm_streq0 (object_path, OBJECT_MANAGER_SERVER_BASE_PATH));
+	nm_assert (byx_streq0 (object_path, OBJECT_MANAGER_SERVER_BASE_PATH));
 
-	if (   !nm_streq (method_name, "GetManagedObjects")
-	    || !nm_streq (interface_name, interface_info_objmgr.name)) {
+	if (   !byx_streq (method_name, "GetManagedObjects")
+	    || !byx_streq (interface_name, interface_info_objmgr.name)) {
 		g_dbus_method_invocation_return_error (invocation,
 		                                       G_DBUS_ERROR,
 		                                       G_DBUS_ERROR_UNKNOWN_METHOD,

@@ -818,9 +818,9 @@ _linktype_get_type (NMPlatform *platform,
 		 * of messing stuff up. */
 		if (   obj
 		    && !NM_IN_SET (obj->link.type, NM_LINK_TYPE_UNKNOWN, NM_LINK_TYPE_NONE)
-		    && nm_streq (ifname, obj->link.name)
+		    && byx_streq (ifname, obj->link.name)
 		    && (   !kind
-		        || nm_streq0 (kind, obj->link.kind))) {
+		        || byx_streq0 (kind, obj->link.kind))) {
 			nm_assert (obj->link.kind == g_intern_string (obj->link.kind));
 			*out_kind = obj->link.kind;
 			return obj->link.type;
@@ -836,7 +836,7 @@ _linktype_get_type (NMPlatform *platform,
 
 	if (kind) {
 		for (i = 0; i < G_N_ELEMENTS (linktypes); i++) {
-			if (nm_streq0 (kind, linktypes[i].rtnl_type)) {
+			if (byx_streq0 (kind, linktypes[i].rtnl_type)) {
 				return linktypes[i].nm_type;
 			}
 		}
@@ -862,14 +862,14 @@ _linktype_get_type (NMPlatform *platform,
 
 		/* Fallback OVS detection for kernel <= 3.16 */
 		if (nmp_utils_ethtool_get_driver_info (ifindex, &driver_info)) {
-			if (nm_streq (driver_info.driver, "openvswitch"))
+			if (byx_streq (driver_info.driver, "openvswitch"))
 				return NM_LINK_TYPE_OPENVSWITCH;
 
 			if (arptype == 256) {
 				/* Some s390 CTC-type devices report 256 for the encapsulation type
 				 * for some reason, but we need to call them Ethernet.
 				 */
-				if (nm_streq (driver_info.driver, "ctcm"))
+				if (byx_streq (driver_info.driver, "ctcm"))
 					return NM_LINK_TYPE_ETHERNET;
 			}
 		}
@@ -1320,7 +1320,7 @@ _parse_lnk_macsec (const char *kind, struct nlattr *info_data)
 	NMPObject *obj;
 	NMPlatformLnkMacsec *props;
 
-	if (!info_data || !nm_streq0 (kind, "macsec"))
+	if (!info_data || !byx_streq0 (kind, "macsec"))
 		return NULL;
 
 	err = nla_parse_nested (tb, __IFLA_MACSEC_MAX - 1, info_data, policy);
@@ -1409,7 +1409,7 @@ _parse_lnk_tun (const char *kind, struct nlattr *info_data)
 	NMPObject *obj;
 	NMPlatformLnkTun *props;
 
-	if (!info_data || !nm_streq0 (kind, "tun"))
+	if (!info_data || !byx_streq0 (kind, "tun"))
 		return NULL;
 
 	err = nla_parse_nested (tb, IFLA_TUN_MAX, info_data, policy);
@@ -2945,7 +2945,7 @@ _add_action (struct nl_msg *msg,
 
 	NLA_PUT_STRING (msg, TCA_ACT_KIND, action->kind);
 
-	if (nm_streq (action->kind, NM_PLATFORM_ACTION_KIND_SIMPLE))
+	if (byx_streq (action->kind, NM_PLATFORM_ACTION_KIND_SIMPLE))
 		_add_action_simple (msg, &action->simple);
 
 	nla_nest_end (msg, prio);
@@ -3136,7 +3136,7 @@ _log_dbg_sysctl_set_impl (NMPlatform *platform, const char *pathid, int dirfd, c
 	}
 
 	g_strstrip (contents);
-	if (nm_streq (contents, value))
+	if (byx_streq (contents, value))
 		_LOGD ("sysctl: setting '%s' to '%s' (current value is identical)", pathid, value_escaped);
 	else {
 		gs_free char *contents_escaped = g_strescape (contents, NULL);
@@ -3702,12 +3702,6 @@ delayed_action_handle_one (NMPlatform *platform)
 
 		priv->delayed_action.flags &= ~DELAYED_ACTION_TYPE_REFRESH_ALL;
 
-		if (_LOGt_ENABLED ()) {
-			FOR_EACH_DELAYED_ACTION (iflags, flags) {
-				_LOGt_delayed_action (iflags, NULL, "handle");
-			}
-		}
-
 		delayed_action_handle_REFRESH_ALL (platform, flags);
 		return TRUE;
 	}
@@ -3787,12 +3781,6 @@ delayed_action_schedule (NMPlatform *platform, DelayedActionType action_type, gp
 	}
 
 	priv->delayed_action.flags |= action_type;
-
-	if (_LOGt_ENABLED ()) {
-		FOR_EACH_DELAYED_ACTION (iflags, action_type) {
-			_LOGt_delayed_action (iflags, user_data, "schedule");
-		}
-	}
 }
 
 static void
@@ -6124,7 +6112,7 @@ handle_udev_event (ByxUdevClient *udev_client,
 	g_return_if_fail (action);
 
 	subsys = udev_device_get_subsystem (udevice);
-	g_return_if_fail (nm_streq0 (subsys, "net"));
+	g_return_if_fail (byx_streq0 (subsys, "net"));
 
 	if (!nm_platform_netns_push (platform, &netns))
 		return;

@@ -581,7 +581,7 @@ _dbus_path_component_as_num (const char *p)
 	if (!NM_STRCHAR_ALL (&p[1], ch, (ch >= '0' && ch <= '9')))
 		return -1;
 	n = _byx_utils_ascii_str_to_int64 (p, 10, 0, G_MAXINT64, -1);
-	nm_assert (n == -1 || nm_streq0 (p, nm_sprintf_bufa (100, "%"G_GINT64_FORMAT, n)));
+	nm_assert (n == -1 || byx_streq0 (p, nm_sprintf_bufa (100, "%"G_GINT64_FORMAT, n)));
 	return n;
 }
 
@@ -637,7 +637,7 @@ byx_utils_dbus_path_cmp (const char *dbus_path_a, const char *dbus_path_b)
 		return 1;
 
 	NM_CMP_DIRECT (n_a, n_b);
-	nm_assert (nm_streq (dbus_path_a, dbus_path_b));
+	nm_assert (byx_streq (dbus_path_a, dbus_path_b));
 	return 0;
 
 comp_full:
@@ -645,7 +645,7 @@ comp_full:
 	return 0;
 comp_l:
 	NM_CMP_DIRECT_STRCMP0 (l_a, l_b);
-	nm_assert (nm_streq (dbus_path_a, dbus_path_b));
+	nm_assert (byx_streq (dbus_path_a, dbus_path_b));
 	return 0;
 }
 

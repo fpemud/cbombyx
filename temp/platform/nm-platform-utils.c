@@ -793,7 +793,7 @@ nmp_utils_sysctl_open_netdir (int ifindex,
 		/* we only retry, if the name changed since previous attempt.
 		 * Hence, it is extremely unlikely that this loop runes until the
 		 * end of the @try_count. */
-		if (nm_streq (ifname, ifname_buf_last_try))
+		if (byx_streq (ifname, ifname_buf_last_try))
 			return -1;
 		strcpy (ifname_buf_last_try, ifname);
 
