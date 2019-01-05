@@ -31,13 +31,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-#include <c-list.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/resource.h>
 
-#include "main-utils.h"
 #include "config/byx-config-manager.h"
+#include "main-utils.h"
 
 static GMainLoop *main_loop = NULL;
 

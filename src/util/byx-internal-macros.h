@@ -35,12 +35,6 @@
 #define _nm_alignof(type)    __alignof (type)
 #define _nm_alignas(type)    _nm_align (_nm_alignof (type))
 
-#if __GNUC__ >= 7
-#define _nm_fallthrough      __attribute__ ((fallthrough))
-#else
-#define _nm_fallthrough
-#endif
-
 /*****************************************************************************/
 
 #ifdef thread_local
@@ -54,10 +48,6 @@
 #else
 #define _nm_thread_local __thread
 #endif
-
-/*****************************************************************************/
-
-#include "nm-glib.h"
 
 /*****************************************************************************/
 
