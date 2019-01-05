@@ -1,0 +1,9 @@
+gboolean is_valid_device()
+gboolean is_valid_dhcp()
+
+
+wired -> wireless -> mobile
+
+dhcp -> ipv4ll -> other
+
+

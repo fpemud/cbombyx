@@ -119,7 +119,7 @@ nm_main_config_reload (int signal)
 int main (int argc, char *argv[])
 {
 	ByxConfigManager *config_manager = NULL;
-	const ByxConfigCmdLineOptions *config_cli = NULL;
+	const ByxConfig *config = NULL;
     gboolean wrote_pidfile = FALSE;
     GError *local = NULL;
     gboolean success = FALSE;
@@ -131,7 +131,7 @@ int main (int argc, char *argv[])
     GError *error_invalid_logging_config = NULL;
 
     /* Known to cause a possible deadlock upon GDBus initialization:
-     * https://bugzilla.gnome.org/show_bug.cgi?id=674885 */
+     * https://gitlab.gnome.org/GNOME/glib/issues/541 */
     g_type_ensure (G_TYPE_SOCKET);
     g_type_ensure (G_TYPE_DBUS_CONNECTION);
     g_type_ensure (BYX_TYPE_DBUS_MANAGER);
@@ -154,25 +154,24 @@ int main (int argc, char *argv[])
     textdomain (GETTEXT_PACKAGE);
 
     /* Setup config manager */
-    success = byx_config_manager_setup(argc, argv, &local);
-	if (!success) {
+    config_manager = byx_config_manager_setup(argc, argv, &local);
+	if (config_manager == NULL) {
 		g_propagate_error (error, local);
 		exit (1);
 	}
-	config_manager = byx_config_manager_get();
-	cli = byx_config_manager_get_cmd_line_options(config_manager);
+	config = byx_config_manager_get_config(config_manager);
 
-    main_loop = g_main_loop_new (NULL, FALSE);
-
-    if (config_cli->show_version) {
+    if (config->show_version) {
         fprintf (stdout, VERSION "\n");
         exit (0);
     }
 
     byx_main_utils_ensure_root ();
-    byx_main_utils_ensure_no_running_pidfile (config_cli->pidfile);
+    byx_main_utils_ensure_no_running_pidfile (config->pidfile);
     byx_main_utils_ensure_statedir ();
     byx_main_utils_ensure_rundir ();
+
+    main_loop = g_main_loop_new (NULL, FALSE);
 
     if (!byx_logging_setup (global_opt.opt_log_level,
                             global_opt.opt_log_domains,
@@ -189,7 +188,7 @@ int main (int argc, char *argv[])
     /* Initialize logging from config file *only* if not explicitly
      * specified by commandline.
      */
-    if (config_cli->opt_log_level == NULL && config_cli->opt_log_domains == NULL) {
+    if (config->opt_log_level == NULL && config->opt_log_domains == NULL) {
         if (!byx_logging_setup (byx_config_manager_get_log_level (config),
                                byx_config_manager_get_log_domains (config),
                                &bad_domains,
@@ -199,7 +198,7 @@ int main (int argc, char *argv[])
         }
     }
 
-    if (config_cli->become_daemon && !config_cli->is_debug) {
+    if (config->become_daemon && !config->is_debug) {
         if (daemon (0, 0) < 0) {
             int saved_errno;
 
@@ -209,7 +208,7 @@ int main (int argc, char *argv[])
                      saved_errno);
             exit (1);
         }
-        wrote_pidfile = byx_main_utils_write_pidfile (config_cli->pidfile);
+        wrote_pidfile = byx_main_utils_write_pidfile (config->pidfile);
     }
 
     /* Set up unix signal handling - before creating threads, but after daemonizing! */
@@ -238,7 +237,7 @@ int main (int argc, char *argv[])
     if (bad_domains) {
         byx_log_warn (LOGD_CORE, "config: invalid logging domains '%s' from %s",
                      bad_domains,
-                     (config_cli->opt_log_level == NULL && config_cli->opt_log_domains == NULL)
+                     (config->opt_log_level == NULL && config->opt_log_domains == NULL)
                        ? "config file"
                        : "command line");
         nm_clear_g_free (&bad_domains);
@@ -286,8 +285,8 @@ done:
     nm_dns_manager_stop (nm_dns_manager_get ());
 
 done_no_manager:
-    if (config_cli->pidfile && wrote_pidfile)
-        unlink (config_cli->pidfile);
+    if (config->pidfile && wrote_pidfile)
+        unlink (config->pidfile);
 
     byx_log_info (LOGD_CORE, "exiting (%s)", success ? "success" : "error");
 

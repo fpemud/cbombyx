@@ -3,8 +3,13 @@
 #ifndef __BYX_CONFIG_MANAGER_H__
 #define __BYX_CONFIG_MANAGER_H__
 
-#include "config-cmdline-options.h"
-#include "config-data.h"
+#include "config.h"
+#include "run-data.h"
+#include "persist-data.h"
+#include "connection-run-data.h"
+#include "connection-persist-data.h"
+#include "service-run-data.h"
+#include "service-persist-data.h"
 
 #define BYX_TYPE_CONFIG_MANAGER            (byx_config_manager_get_type ())
 #define BYX_CONFIG_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_CONFIG_MANAGER, ByxConfigManager))
@@ -18,26 +23,22 @@ typedef struct _ByxConfigManagerClass ByxConfigManagerClass;
 
 GType byx_config_manager_get_type (void);
 
-gboolean byx_config_manager_setup (int argc, char *argv[], GError **error);
+ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error);
 
 ByxConfigManager *byx_config_manager_get (void);
 
 void byx_config_manager_reload (ByxConfigManager *self);
 
-gboolean byx_config_manager_is_first_start (ByxConfigManager *self);
+const ByxConfig *byx_config_manager_get_config(ByxConfigManager *self);
 
-const GKeyFile *byx_config_manager_get_config(ByxConfigManager *self);
+ByxRunData *byx_config_manager_get_run_data (ByxConfigManager *self);
+ByxPersistData *byx_config_manager_get_persist_data (ByxConfigManager *self);
 
-const ByxConfigCmdLineOptions *byx_config_manager_get_cmd_line_options(ByxConfigManager *self);
+ByxConnectionRunData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid);
+ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid);
 
-ByxConfigData *byx_config_manager_get_run_data (ByxConfigManager *self);
-ByxConfigData *byx_config_manager_get_persist_data (ByxConfigManager *self);
-
-ByxConfigData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid);
-ByxConfigData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid);
-
-ByxConfigData *byx_config_manager_get_service_run_data (ByxConfigManager *self, const char *service_uuid);
-ByxConfigData *byx_config_manager_get_service_persist_data (ByxConfigManager *self, const char *service_uuid);
+ByxServiceRunData *byx_config_manager_get_service_run_data (ByxConfigManager *self, const char *service_uuid);
+ByxServicePersistData *byx_config_manager_get_service_persist_data (ByxConfigManager *self, const char *service_uuid);
 
 void byx_config_manager_cleanup_persist_data(ByxConfigManager *self);
 
@@ -63,7 +64,6 @@ void byx_config_manager_cleanup_persist_data(ByxConfigManager *self);
 
 #define BYX_CONFIG_KEYFILE_GROUP_KEYFILE                     "keyfile"
 
-#define BYX_CONFIG_KEYFILE_KEY_MAIN_AUTOCONNECT_RETRIES_DEFAULT "autoconnect-retries-default"
 #define BYX_CONFIG_KEYFILE_KEY_MAIN_DEBUG                    "debug"
 #define BYX_CONFIG_KEYFILE_KEY_MAIN_SLAVES_ORDER             "slaves-order"
 #define BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND               "backend"
@@ -71,9 +71,6 @@ void byx_config_manager_cleanup_persist_data(ByxConfigManager *self);
 #define BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS            ".was"
 #define BYX_CONFIG_KEYFILE_KEY_KEYFILE_PATH                  "path"
 #define BYX_CONFIG_KEYFILE_KEY_KEYFILE_UNMANAGED_DEVICES     "unmanaged-devices"
-#define BYX_CONFIG_KEYFILE_KEY_IFNET_AUTO_REFRESH            "auto_refresh"
-#define BYX_CONFIG_KEYFILE_KEY_IFNET_MANAGED                 "managed"
-#define BYX_CONFIG_KEYFILE_KEY_IFUPDOWN_MANAGED              "managed"
 
 #define BYX_CONFIG_KEYFILE_KEY_DEVICE_MANAGED                "managed"
 #define BYX_CONFIG_KEYFILE_KEY_DEVICE_IGNORE_CARRIER         "ignore-carrier"

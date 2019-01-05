@@ -36,7 +36,7 @@ struct _ByxConfigManagerClass {
 };
 
 typedef struct {
-    ByxConfigCmdLineOptions cli;
+    ByxCmdLineOptions cli;
 
 	char *system_config_dir;
 	char *system_connection_config_dir;
@@ -73,9 +73,7 @@ typedef struct {
      * itself. */
     State *state;
 
-    GKeyFile *config;
-
-    ByxConfigCmdLineOptions *cmd_line_options;
+    ByxConfig *config;
 
     ByxConfigData *global_run_data;
     ByxConfigData *global_persist_data;
@@ -103,7 +101,7 @@ BYX_DEFINE_SINGLETON_GETTER (ByxConfigManager, byx_config_manager_get, BYX_TYPE_
 
 /*****************************************************************************/
 
-gboolean byx_config_manager_setup (int argc, char *argv[], GError **error)
+ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error)
 {
     ByxConfigManagerPrivate *priv;
     GError *local;
@@ -112,12 +110,12 @@ gboolean byx_config_manager_setup (int argc, char *argv[], GError **error)
 
     singleton_instance = g_object_new();
     if (singleton_instance == NULL) {
-        return FALSE;
+        return NULL;
     }
 
     priv = BYX_CONFIG_GET_PRIVATE ((ByxConfigManager *) singleton_instance);
     priv->first_start = !g_file_test (NMRUNDIR, G_FILE_TEST_IS_DIR),
-    byx_config_cmd_line_options_parse(priv->cmd_line_options, argc, argv);
+    byx_cmd_line_options_parse(priv->cmd_line_options, argc, argv);
 
 /* FIXME */
 #if 0
@@ -130,7 +128,7 @@ gboolean byx_config_manager_setup (int argc, char *argv[], GError **error)
         * ByxConfigManager instance, the logging is not yet set up to print debug message. */
     byx_log_dbg (LOGD_CORE, "setup %s singleton (%p)", "ByxConfigManager", singleton_instance);
 
-    return TRUE;
+    return singleton_instance;
 }
 
 /*****************************************************************************/
@@ -177,7 +175,7 @@ static void byx_config_manager_finalize (GObject *gobject)
     g_free (priv->log_domains);
     g_strfreev (priv->atomic_section_prefixes);
 
-    _byx_config_cmd_line_options_clear (&priv->cli);
+    _byx_cmd_line_options_clear (&priv->cli);
 
     g_clear_object (&priv->config_data);
     g_clear_object (&priv->config_data_orig);
@@ -187,7 +185,7 @@ static void byx_config_manager_finalize (GObject *gobject)
 
 /*****************************************************************************/
 
-const GKeyFile *byx_config_manager_get_config(ByxConfigManager *self)
+const ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
 {
     ByxConfigManagerPrivate *priv;
 
@@ -197,19 +195,6 @@ const GKeyFile *byx_config_manager_get_config(ByxConfigManager *self)
     assert (priv->config != NULL);
 
     return priv->config;
-}
-
-const ByxConfigCmdLineOptions *byx_config_manager_get_cmd_line_options(ByxConfigManager *self)
-{
-    ByxConfigManagerPrivate *priv;
-    ByxConfigData *data;
-
-    assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
-    assert (priv->cmd_line_options != NULL);
-
-    return priv->cmd_line_options;
 }
 
 /*****************************************************************************/
@@ -458,44 +443,16 @@ byx_config_manager_get_data (ByxConfigManager *config)
     return BYX_CONFIG_GET_PRIVATE (config)->config_data;
 }
 
-const char *
-byx_config_manager_get_log_level (ByxConfigManager *config)
-{
-    g_return_val_if_fail (config != NULL, NULL);
-
-    return BYX_CONFIG_GET_PRIVATE (config)->log_level;
-}
-
-const char *
-byx_config_manager_get_log_domains (ByxConfigManager *config)
-{
-    g_return_val_if_fail (config != NULL, NULL);
-
-    return BYX_CONFIG_GET_PRIVATE (config)->log_domains;
-}
-
-gboolean
-byx_config_manager_get_is_debug (ByxConfigManager *config)
-{
-    return BYX_CONFIG_GET_PRIVATE (config)->cli.is_debug;
-}
-
-gboolean
-byx_config_manager_is_first_start (ByxConfigManager *config)
-{
-    return BYX_CONFIG_GET_PRIVATE (config)->cli.first_start;
-}
-
 /*****************************************************************************/
 
 static void
-_byx_config_cmd_line_options_copy (const ByxConfigCmdLineOptions *cli, ByxConfigCmdLineOptions *dst)
+_byx_cmd_line_options_copy (const ByxCmdLineOptions *cli, ByxCmdLineOptions *dst)
 {
     g_return_if_fail (cli);
     g_return_if_fail (dst);
     g_return_if_fail (cli != dst);
 
-    _byx_config_cmd_line_options_clear (dst);
+    _byx_cmd_line_options_clear (dst);
     dst->config_dir = g_strdup (cli->config_dir);
     dst->system_config_dir = g_strdup (cli->system_config_dir);
     dst->config_main_file = g_strdup (cli->config_main_file);
@@ -921,7 +878,7 @@ _confs_to_description (GString *str, const GPtrArray *confs, const char *name)
 }
 
 static GKeyFile *
-read_entire_config (const ByxConfigCmdLineOptions *cli,
+read_entire_config (const ByxCmdLineOptions *cli,
                     const char *config_dir,
                     const char *system_config_dir,
                     char **out_config_main_file,
@@ -1685,7 +1642,7 @@ byx_config_set_values (ByxConfigManager *self,
  ******************************************************************************/
 
 static const char *
-state_get_filename (const ByxConfigCmdLineOptions *cli)
+state_get_filename (const ByxCmdLineOptions *cli)
 {
     /* For an empty filename, we assume the user wants to disable
      * state. ByxConfigManager will not try to read it nor write it out. */
@@ -2224,10 +2181,9 @@ _set_config_data (ByxConfigManager *self, ByxConfigData *new_data, ByxConfigChan
 
 BYX_DEFINE_SINGLETON_REGISTER (ByxConfigManager);
 
-ByxConfigManager *
-byx_config_manager_get (void)
+ByxConfigManager *byx_config_manager_get (void)
 {
-    g_assert (singleton_instance);
+    assert (singleton_instance != NULL);
     return singleton_instance;
 }
 
@@ -2304,7 +2260,7 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 /*****************************************************************************/
 
 ByxConfigManager *
-byx_config_new (const ByxConfigCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
+byx_config_new (const ByxCmdLineOptions *cli, char **atomic_section_prefixes, GError **error)
 {
     return BYX_CONFIG_MANAGER (g_initable_new (BYX_TYPE_CONFIG_MANAGER,
                                       NULL,
