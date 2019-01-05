@@ -189,9 +189,6 @@ config_h.set10('NM_MORE_LOGGING', more_logging)
 generic_support_src = 'int main() { int a = 0; int b = _Generic (a, int: 4); return b + a; };'
 config_h.set10('_BYX_CC_SUPPORT_GENERIC', cc.compiles(generic_support_src))
 
-auto_support_src = 'int main() { int a = 0; __auto_type b = a; return b + a; };'
-config_h.set10('_BYX_CC_SUPPORT_AUTO_TYPE', cc.compiles(auto_support_src))
-
 # Tests, utilities and documentation
 tests = get_option('tests')
 enable_tests = (tests != 'no')

@@ -293,24 +293,12 @@ NM_G_ERROR_MSG (GError *error)
 
 /*****************************************************************************/
 
-#ifndef _BYX_CC_SUPPORT_AUTO_TYPE
-#if (defined (__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9 )))
-#define _BYX_CC_SUPPORT_AUTO_TYPE 1
-#else
-#define _BYX_CC_SUPPORT_AUTO_TYPE 0
-#endif
-#endif
-
 #ifndef _BYX_CC_SUPPORT_GENERIC
 #if (defined (__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9 ))) || (defined (__clang__))
 #define _BYX_CC_SUPPORT_GENERIC 1
 #else
 #define _BYX_CC_SUPPORT_GENERIC 0
 #endif
-#endif
-
-#if _BYX_CC_SUPPORT_AUTO_TYPE
-#define _nm_auto_type __auto_type
 #endif
 
 #if _BYX_CC_SUPPORT_GENERIC
@@ -765,16 +753,13 @@ _notify (obj_type *obj, _PropertyEnums prop) \
 /*****************************************************************************/
 
 #define _BYX_GET_PRIVATE(self, type, is_check, ...) (&(NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__)->_priv))
-#if _BYX_CC_SUPPORT_AUTO_TYPE
+
 #define _BYX_GET_PRIVATE_PTR(self, type, is_check, ...) \
 	({ \
-		_nm_auto_type _self = NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__); \
+		__auto_type _self = NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__); \
 		\
 		NM_PROPAGATE_CONST (_self, _self->_priv); \
 	})
-#else
-#define _BYX_GET_PRIVATE_PTR(self, type, is_check, ...) (NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__)->_priv)
-#endif
 
 /*****************************************************************************/
 
