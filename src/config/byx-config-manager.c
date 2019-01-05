@@ -380,7 +380,7 @@ byx_config_keyfile_get_value (const GKeyFile *keyfile,
 {
     char *value;
 
-    if (NM_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_RAW))
+    if (BYX_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_RAW))
         value = g_key_file_get_value ((GKeyFile *) keyfile, section, key, NULL);
     else
         value = g_key_file_get_string ((GKeyFile *) keyfile, section, key, NULL);
@@ -388,10 +388,10 @@ byx_config_keyfile_get_value (const GKeyFile *keyfile,
     if (!value)
         return NULL;
 
-    if (NM_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_STRIP))
+    if (BYX_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_STRIP))
         g_strstrip (value);
 
-    if (   NM_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_NO_EMPTY)
+    if (   BYX_FLAGS_HAS (flags, BYX_CONFIG_GET_VALUE_NO_EMPTY)
         && !*value) {
         g_free (value);
         return NULL;
@@ -2064,13 +2064,13 @@ byx_config_reload (ByxConfigManager *self, ByxConfigChangeFlags reload_flags)
 
     g_return_if_fail (BYX_IS_CONFIG_MANAGER (self));
     g_return_if_fail (   reload_flags
-                      && !NM_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES)
-                      && !NM_FLAGS_ANY (reload_flags,   BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT
+                      && !BYX_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES)
+                      && !BYX_FLAGS_ANY (reload_flags,   BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT
                                                       | BYX_CONFIG_CHANGE_CAUSE_SET_VALUES));
 
     priv = BYX_CONFIG_GET_PRIVATE (self);
 
-    if (!NM_FLAGS_ANY (reload_flags, BYX_CONFIG_CHANGE_CAUSE_SIGHUP | BYX_CONFIG_CHANGE_CAUSE_CONF)) {
+    if (!BYX_FLAGS_ANY (reload_flags, BYX_CONFIG_CHANGE_CAUSE_SIGHUP | BYX_CONFIG_CHANGE_CAUSE_CONF)) {
         /* unless SIGHUP is specified, we don't reload the configuration from disc. */
         _set_config_data (self, NULL, reload_flags);
         return;
@@ -2142,9 +2142,9 @@ _set_config_data (ByxConfigManager *self, ByxConfigData *new_data, ByxConfigChan
     gboolean had_new_data = !!new_data;
 
     nm_assert (reload_flags);
-    nm_assert (!NM_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES));
+    nm_assert (!BYX_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES));
     nm_assert (   NM_IN_SET (reload_flags, BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT, BYX_CONFIG_CHANGE_CAUSE_SET_VALUES)
-               || !NM_FLAGS_ANY (reload_flags, BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT | BYX_CONFIG_CHANGE_CAUSE_SET_VALUES));
+               || !BYX_FLAGS_ANY (reload_flags, BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT | BYX_CONFIG_CHANGE_CAUSE_SET_VALUES));
 
     changes = reload_flags;
 

@@ -37,39 +37,16 @@
 #include <sys/resource.h>
 
 #include "main-utils.h"
-#include "config/config-manager.h"
+#include "config/byx-config-manager.h"
 
 static GMainLoop *main_loop = NULL;
 
-static void _init_nm_debug (ByxConfigManager *config)
+static void _init_nm_debug (ByxConfig *config)
 {
-    ByxConfigManager *config_manager = byx_config_manager_get();
-    config GKeyFile *kf = byx_config_manager_get_config(config_manager);
-    GError *local = NULL;
-
-
-    gs_free gchar *debug = NULL;
-    enum {
-        D_RLIMIT_CORE =    (1 << 0),
-        D_FATAL_WARNINGS = (1 << 1),
-    };
-    GDebugKey keys[] = {
-        { "RLIMIT_CORE", D_RLIMIT_CORE },
-        { "fatal-warnings", D_FATAL_WARNINGS },
-    };
-    guint flags;
-    const char *env = getenv ("NM_DEBUG");
-
-    debug = g_key_file_get_string(kf, "main", "debug", &local);
-
-
-
-
-    flags  = byx_utils_parse_debug_string (env, keys, G_N_ELEMENTS (keys));
-    flags |= byx_utils_parse_debug_string (debug, keys, G_N_ELEMENTS (keys));
-
 #if ! defined (__SANITIZE_ADDRESS__)
-    if (NM_FLAGS_HAS (flags, D_RLIMIT_CORE)) {
+    guint flags = byx_config_get_debug_flags(config);
+
+    if (BYX_FLAGS_HAS (flags, BYX_CONFIG_DEBUG_FLAG_RLIMIT_CORE)) {
         /* only enable this, if explicitly requested, because it might
          * expose sensitive data. */
 

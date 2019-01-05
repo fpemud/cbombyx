@@ -819,7 +819,7 @@ dbus_vtable_method_call (GDBusConnection *connection,
 		                                                                                                   property_name,
 		                                                                                                   NULL);
 		if (   !property_info
-		    || !NM_FLAGS_HAS (property_info->parent.flags, G_DBUS_PROPERTY_INFO_FLAGS_WRITABLE))
+		    || !BYX_FLAGS_HAS (property_info->parent.flags, G_DBUS_PROPERTY_INFO_FLAGS_WRITABLE))
 			g_return_if_reached ();
 
 		if (!priv->set_property_handler) {

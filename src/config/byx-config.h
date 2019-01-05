@@ -28,13 +28,24 @@ ByxConfig *byx_config_new (gboolean first_start);
 
 void byx_config_free (ByxConfig *config);
 
-const char *byx_config_get_log_level (ByxConfig *config)
+const char *byx_config_get_log_level (ByxConfig *config);
 
-const char *byx_config_get_log_domains (ByxConfig *config)
+const char *byx_config_get_log_domains (ByxConfig *config);
 
-gboolean byx_config_get_is_debug (ByxConfig *config)
+gboolean byx_config_get_is_debug (ByxConfig *config);
 
-gboolean byx_config_get_is_first_start (ByxConfig *config)
+/*****************************************************************************/
+
+enum {
+	BYX_CONFIG_DEBUG_FLAG_RLIMIT_CORE =    (1 << 0),
+	BYX_CONFIG_DEBUG_FLAG_FATAL_WARNINGS = (1 << 1),
+} ByxConfigDebugFlags;
+
+guint byx_config_get_debug_flags(ByxConfig *config);
+
+/*****************************************************************************/
+
+gboolean byx_config_get_is_first_start (ByxConfig *config);
 
 
 

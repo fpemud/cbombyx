@@ -1110,7 +1110,7 @@ byx_connection_ipv6_sysctl_get_uint32 (ByxConnection *self, const char *property
 gboolean
 byx_connection_has_capability (ByxConnection *self, ByxConnectionCapabilities caps)
 {
-	return NM_FLAGS_ANY (BYX_CONNECTION_GET_PRIVATE (self)->capabilities, caps);
+	return BYX_FLAGS_ANY (BYX_CONNECTION_GET_PRIVATE (self)->capabilities, caps);
 }
 
 static void
@@ -1118,7 +1118,7 @@ _add_capabilities (ByxConnection *self, ByxConnectionCapabilities capabilities)
 {
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 
-	if (!NM_FLAGS_ALL (priv->capabilities, capabilities)) {
+	if (!BYX_FLAGS_ALL (priv->capabilities, capabilities)) {
 		priv->capabilities |= capabilities;
 		_notify (self, PROP_CAPABILITIES);
 	}
@@ -1281,7 +1281,7 @@ byx_connection_take_over_link (ByxConnection *self, int ifindex, char **old_name
 		return FALSE;
 
 	if (!byx_streq (plink->name, byx_connection_get_iface (self))) {
-		up = NM_FLAGS_HAS (plink->n_ifi_flags, IFF_UP);
+		up = BYX_FLAGS_HAS (plink->n_ifi_flags, IFF_UP);
 		name = g_strdup (plink->name);
 
 		/* Rename the link to the device ifname */
@@ -1323,7 +1323,7 @@ byx_connection_get_ifindex (ByxConnection *self)
 gboolean
 byx_connection_is_software (ByxConnection *self)
 {
-	return NM_FLAGS_HAS (BYX_CONNECTION_GET_PRIVATE (self)->capabilities, BYX_CONNECTION_CAP_IS_SOFTWARE);
+	return BYX_FLAGS_HAS (BYX_CONNECTION_GET_PRIVATE (self)->capabilities, BYX_CONNECTION_CAP_IS_SOFTWARE);
 }
 
 /**
@@ -2292,7 +2292,7 @@ concheck_is_possible (ByxConnection *self)
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 
 	if (   !byx_connection_is_real (self)
-	    || NM_FLAGS_HAS (priv->unmanaged_flags, NM_UNMANAGED_LOOPBACK))
+	    || BYX_FLAGS_HAS (priv->unmanaged_flags, NM_UNMANAGED_LOOPBACK))
 		return FALSE;
 
 	/* we enable periodic checks for every device state (except UNKNOWN). Especially with
@@ -3467,7 +3467,7 @@ device_link_changed (ByxConnection *self)
 		byx_connection_update_dynamic_ip_setup (self);
 
 	was_up = priv->up;
-	priv->up = NM_FLAGS_HAS (pllink->n_ifi_flags, IFF_UP);
+	priv->up = BYX_FLAGS_HAS (pllink->n_ifi_flags, IFF_UP);
 
 	if (   pllink->initialized
 	    && byx_connection_get_unmanaged_flags (self, NM_UNMANAGED_PLATFORM_INIT)) {
@@ -3904,7 +3904,7 @@ byx_connection_update_from_platform_link (ByxConnection *self, const NMPlatformL
 	}
 
 	if (plink) {
-		priv->up = NM_FLAGS_HAS (plink->n_ifi_flags, IFF_UP);
+		priv->up = BYX_FLAGS_HAS (plink->n_ifi_flags, IFF_UP);
 		if (plink->ifindex == byx_connection_get_ip_ifindex (self))
 			_stats_update_counters_from_pllink (self, plink);
 	} else {
@@ -4483,7 +4483,7 @@ byx_connection_master_add_slave (ByxConnection *self, ByxConnection *slave, gboo
 		 * because slave_priv->is_enslaved is not true, thus the value
 		 * didn't change yet. */
 
-		g_warn_if_fail (!NM_FLAGS_HAS (slave_priv->unmanaged_mask, NM_UNMANAGED_IS_SLAVE));
+		g_warn_if_fail (!BYX_FLAGS_HAS (slave_priv->unmanaged_mask, NM_UNMANAGED_IS_SLAVE));
 		byx_connection_set_unmanaged_by_flags (slave, NM_UNMANAGED_IS_SLAVE, FALSE, BYX_CONNECTION_STATE_REASON_CONNECTION_ASSUMED);
 		changed = TRUE;
 	} else
@@ -4850,7 +4850,7 @@ is_available (ByxConnection *self, ByxConnectionCheckDevAvailableFlags flags)
 	    || priv->ignore_carrier)
 		return TRUE;
 
-	if (NM_FLAGS_HAS (flags, _BYX_CONNECTION_CHECK_DEV_AVAILABLE_IGNORE_CARRIER))
+	if (BYX_FLAGS_HAS (flags, _BYX_CONNECTION_CHECK_DEV_AVAILABLE_IGNORE_CARRIER))
 		return TRUE;
 
 	/* master types are always available even without carrier. */
@@ -4946,8 +4946,8 @@ byx_connection_autoconnect_blocked_set_full (ByxConnection *self, ByxConnectionA
 
 	g_return_if_fail (BYX_IS_CONNECTION (self));
 	nm_assert (mask);
-	nm_assert (!NM_FLAGS_ANY (mask, ~BYX_CONNECTION_AUTOCONNECT_BLOCKED_ALL));
-	nm_assert (!NM_FLAGS_ANY (value, ~mask));
+	nm_assert (!BYX_FLAGS_ANY (mask, ~BYX_CONNECTION_AUTOCONNECT_BLOCKED_ALL));
+	nm_assert (!BYX_FLAGS_ANY (value, ~mask));
 
 	priv = BYX_CONNECTION_GET_PRIVATE (self);
 
@@ -8683,7 +8683,7 @@ ndisc_config_changed (NMNDisc *ndisc, const NMNDiscData *rdata, guint changed_in
 		}
 	}
 
-	if (NM_FLAGS_ANY (changed,   NM_NDISC_CONFIG_ROUTES
+	if (BYX_FLAGS_ANY (changed,   NM_NDISC_CONFIG_ROUTES
 	                           | NM_NDISC_CONFIG_GATEWAYS)) {
 		nm_ip6_config_reset_routes_ndisc ((NMIP6Config *) priv->ac_ip6_config.orig,
 		                                  rdata->gateways,
@@ -9860,9 +9860,9 @@ dad6_add_pending_address (ByxConnection *self,
 	                                       ifindex,
 	                                       *address);
 	if (   pl_addr
-	    && NM_FLAGS_HAS (pl_addr->n_ifa_flags, IFA_F_TENTATIVE)
-	    && !NM_FLAGS_HAS (pl_addr->n_ifa_flags, IFA_F_DADFAILED)
-	    && !NM_FLAGS_HAS (pl_addr->n_ifa_flags, IFA_F_OPTIMISTIC)) {
+	    && BYX_FLAGS_HAS (pl_addr->n_ifa_flags, IFA_F_TENTATIVE)
+	    && !BYX_FLAGS_HAS (pl_addr->n_ifa_flags, IFA_F_DADFAILED)
+	    && !BYX_FLAGS_HAS (pl_addr->n_ifa_flags, IFA_F_OPTIMISTIC)) {
 		_LOGt (LOGD_DEVICE, "IPv6 DAD: pending address %s",
 		       nm_platform_ip6_address_to_string (pl_addr, NULL, 0));
 
@@ -12397,15 +12397,15 @@ _get_managed_by_flags(NMUnmanagedFlags flags, NMUnmanagedFlags mask, gboolean fo
 		flags &= ~NM_UNMANAGED_USER_EXPLICIT;
 	}
 
-	if (   NM_FLAGS_ANY (mask, NM_UNMANAGED_USER_SETTINGS)
-	    && !NM_FLAGS_ANY (flags, NM_UNMANAGED_USER_SETTINGS)) {
+	if (   BYX_FLAGS_ANY (mask, NM_UNMANAGED_USER_SETTINGS)
+	    && !BYX_FLAGS_ANY (flags, NM_UNMANAGED_USER_SETTINGS)) {
 		/* NM_UNMANAGED_USER_SETTINGS can only explicitly unmanage a device. It cannot
 		 * *manage* it. Having NM_UNMANAGED_USER_SETTINGS explicitly not set, is the
 		 * same as having it not set at all. */
 		mask &= ~NM_UNMANAGED_USER_SETTINGS;
 	}
 
-	if (NM_FLAGS_ANY (mask, NM_UNMANAGED_USER_UDEV)) {
+	if (BYX_FLAGS_ANY (mask, NM_UNMANAGED_USER_UDEV)) {
 		/* configuration from udev or nm-config overwrites the by-default flag
 		 * which is based on the device type.
 		 * configuration from udev overwrites external-down */
@@ -12413,7 +12413,7 @@ _get_managed_by_flags(NMUnmanagedFlags flags, NMUnmanagedFlags mask, gboolean fo
 		           | NM_UNMANAGED_EXTERNAL_DOWN);
 	}
 
-	if (NM_FLAGS_ANY (mask, NM_UNMANAGED_USER_CONF)) {
+	if (BYX_FLAGS_ANY (mask, NM_UNMANAGED_USER_CONF)) {
 		/* configuration from NetworkManager.conf overwrites the by-default flag
 		 * which is based on the device type.
 		 * It also overwrites the udev configuration and external-down */
@@ -12422,13 +12422,13 @@ _get_managed_by_flags(NMUnmanagedFlags flags, NMUnmanagedFlags mask, gboolean fo
 		           | NM_UNMANAGED_EXTERNAL_DOWN);
 	}
 
-	if (   NM_FLAGS_HAS (mask, NM_UNMANAGED_IS_SLAVE)
-	    && !NM_FLAGS_HAS (flags, NM_UNMANAGED_IS_SLAVE)) {
+	if (   BYX_FLAGS_HAS (mask, NM_UNMANAGED_IS_SLAVE)
+	    && !BYX_FLAGS_HAS (flags, NM_UNMANAGED_IS_SLAVE)) {
 		/* for an enslaved device, by-default doesn't matter */
 		flags &= ~NM_UNMANAGED_BY_DEFAULT;
 	}
 
-	if (NM_FLAGS_HAS (mask, NM_UNMANAGED_USER_EXPLICIT)) {
+	if (BYX_FLAGS_HAS (mask, NM_UNMANAGED_USER_EXPLICIT)) {
 		/* if the device is managed by user-decision, certain other flags
 		 * are ignored. */
 		flags &= ~(  NM_UNMANAGED_BY_DEFAULT
@@ -12546,11 +12546,11 @@ _set_unmanaged_flags (ByxConnection *self,
 		allow_state_transition = FALSE;
 	was_managed = allow_state_transition && byx_connection_get_managed (self, FALSE);
 
-	if (   NM_FLAGS_HAS (priv->unmanaged_flags, NM_UNMANAGED_PLATFORM_INIT)
-	    && NM_FLAGS_HAS (flags, NM_UNMANAGED_PLATFORM_INIT)
+	if (   BYX_FLAGS_HAS (priv->unmanaged_flags, NM_UNMANAGED_PLATFORM_INIT)
+	    && BYX_FLAGS_HAS (flags, NM_UNMANAGED_PLATFORM_INIT)
 	    && NM_IN_SET (set_op, NM_UNMAN_FLAG_OP_SET_MANAGED)) {
 		/* we are clearing the platform-init flags. This triggers additional actions. */
-		if (!NM_FLAGS_HAS (flags, NM_UNMANAGED_USER_SETTINGS)) {
+		if (!BYX_FLAGS_HAS (flags, NM_UNMANAGED_USER_SETTINGS)) {
 			gboolean unmanaged;
 
 			unmanaged = byx_connection_spec_match_list (self,
@@ -12952,16 +12952,16 @@ _byx_connection_check_connection_available (ByxConnection *self,
 	if (state < BYX_CONNECTION_STATE_UNMANAGED)
 		return FALSE;
 	if (   state < BYX_CONNECTION_STATE_UNAVAILABLE
-	    && (   (   !NM_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
+	    && (   (   !BYX_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
 	            && !byx_connection_get_managed (self, FALSE))
-	        || (    NM_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
+	        || (    BYX_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
 	            && !byx_connection_get_managed (self, TRUE))))
 		return FALSE;
 	if (   state < BYX_CONNECTION_STATE_DISCONNECTED
 	    && !byx_connection_is_software (self)
-	    && (   (   !NM_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
+	    && (   (   !BYX_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
 	            && !byx_connection_is_available (self, BYX_CONNECTION_CHECK_DEV_AVAILABLE_NONE))
-	        || (    NM_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
+	        || (    BYX_FLAGS_ANY (flags, BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST)
 	            && !byx_connection_is_available (self, BYX_CONNECTION_CHECK_DEV_AVAILABLE_FOR_USER_REQUEST))))
 		return FALSE;
 
@@ -13008,7 +13008,7 @@ byx_connection_check_connection_available (ByxConnection *self,
 
 		for (i = 0; i <= BYX_CONNECTION_CHECK_CON_AVAILABLE_ALL; i++) {
 			for (j = 1; j <= BYX_CONNECTION_CHECK_CON_AVAILABLE_ALL; j <<= 1) {
-				if (NM_FLAGS_ANY (i, j)) {
+				if (BYX_FLAGS_ANY (i, j)) {
 					k = i & ~j;
 					nm_assert (   available_all[i] == available_all[k]
 					           || available_all[i]);
@@ -13057,7 +13057,7 @@ check_connection_available (ByxConnection *self,
 	    || !connection_requires_carrier (connection))
 		return TRUE;
 
-	if (   NM_FLAGS_HAS (flags, _BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST_WAITING_CARRIER)
+	if (   BYX_FLAGS_HAS (flags, _BYX_CONNECTION_CHECK_CON_AVAILABLE_FOR_USER_REQUEST_WAITING_CARRIER)
 	    && priv->carrier_wait_id != 0) {
 		/* The device has no carrier though the connection requires it.
 		 *
@@ -14933,7 +14933,7 @@ constructor (GType type,
 
 		if (pllink && link_type_compatible (self, pllink->type, NULL, NULL)) {
 			priv->ifindex = pllink->ifindex;
-			priv->up = NM_FLAGS_HAS (pllink->n_ifi_flags, IFF_UP);
+			priv->up = BYX_FLAGS_HAS (pllink->n_ifi_flags, IFF_UP);
 		}
 	}
 

@@ -3,13 +3,13 @@
 #ifndef __BYX_CONFIG_MANAGER_H__
 #define __BYX_CONFIG_MANAGER_H__
 
-#include "config.h"
-#include "run-data.h"
-#include "persist-data.h"
-#include "connection-run-data.h"
-#include "connection-persist-data.h"
-#include "service-run-data.h"
-#include "service-persist-data.h"
+#include "byx-config.h"
+#include "byx-run-data.h"
+#include "byx-persist-data.h"
+#include "byx-connection-run-data.h"
+#include "byx-connection-persist-data.h"
+#include "byx-service-run-data.h"
+#include "byx-service-persist-data.h"
 
 #define BYX_TYPE_CONFIG_MANAGER            (byx_config_manager_get_type ())
 #define BYX_CONFIG_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_CONFIG_MANAGER, ByxConfigManager))

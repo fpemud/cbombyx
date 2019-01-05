@@ -9,7 +9,7 @@ static void _cmd_line_options_clear (ByxConfig *config)
 	config->first_start = FALSE;
 }
 
-void byx_cmd_line_options_parse(ByxCmdLineOptions *cli, int argc, char **argv[])
+void byx_cmd_line_options_parse(ByxCmdLineOptions *config, int argc, char **argv[])
 {
 	for (i = 0; options[i].long_name; i++) {
 		NM_PRAGMA_WARNING_DISABLE("-Wformat-nonliteral")
@@ -53,19 +53,19 @@ void byx_cmd_line_options_parse(ByxCmdLineOptions *cli, int argc, char **argv[])
 
 
 
-void byx_cmd_line_options_add_to_entries (ByxCmdLineOptions *cli, GOptionContext *opt_ctx) {
+static void _byx_cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext *opt_ctx) {
 
     GOptionEntry config_options[] = {
         {
             "debug", 'd', 0, G_OPTION_ARG_NONE,
-            &cli->is_debug, N_("Don't become a daemon, and log to stderr"),
+            &config->is_debug, N_("Don't become a daemon, and log to stderr"),
             NULL,
         },
 
         /* These three are hidden for now, and should eventually just go away. */
-        { "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cli->connectivity_uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
-        { "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &cli->connectivity_interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
-        { "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cli->connectivity_response, N_("The expected start of the response"), BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
+        { "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity_uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
+        { "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &config->connectivity_interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
+        { "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity_response, N_("The expected start of the response"), BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
         { 0 },
     };
 
@@ -75,7 +75,7 @@ void byx_cmd_line_options_add_to_entries (ByxCmdLineOptions *cli, GOptionContext
             'V',
             0,
             G_OPTION_ARG_NONE,
-            &cli->show_version,
+            &config->show_version,
             N_("Print NetworkManager version and exit"),
             NULL,
         },
@@ -84,7 +84,7 @@ void byx_cmd_line_options_add_to_entries (ByxCmdLineOptions *cli, GOptionContext
             'n',
             G_OPTION_FLAG_REVERSE,
             G_OPTION_ARG_NONE,
-            &cli->become_daemon,
+            &config->become_daemon,
             N_("Don't become a daemon"),
             NULL,
         },
@@ -93,7 +93,7 @@ void byx_cmd_line_options_add_to_entries (ByxCmdLineOptions *cli, GOptionContext
             0,
             0,
             G_OPTION_ARG_STRING,
-            &cli->opt_log_level,
+            &config->opt_log_level,
             N_("Log level: one of [TRACE,DEBUG,INFO,WARN,ERR,OFF,KEEP]"),       /* FIXME: should be provided by logging module */
             "INFO",
         },
@@ -102,13 +102,13 @@ void byx_cmd_line_options_add_to_entries (ByxCmdLineOptions *cli, GOptionContext
             0,
             0,
             G_OPTION_ARG_STRING,
-            &cli->opt_log_domains,
+            &config->opt_log_domains,
             N_("Log domains separated by ',': any combination of [%s]"),
             "PLATFORM,RFKILL,WIFI"
         },
 		{
             "pid-file", 'p', 0, G_OPTION_ARG_FILENAME,
-            &cli->pidfile,
+            &config->pidfile,
             N_("Specify the location of a PID file"),
             BYX_PID_FILE,
         },
@@ -146,6 +146,71 @@ gboolean byx_config_get_is_debug (ByxConfig *config)
 
     return config->is_debug;
 }
+
+/*****************************************************************************/
+
+static gboolean _debug_key_matches (const gchar *key, const gchar *token, guint length)
+{
+	/* may not call GLib functions: see note in g_parse_debug_string() */
+	for (; length; length--, key++, token++) {
+		char k = (*key   == '_') ? '-' : g_ascii_tolower (*key  );
+		char t = (*token == '_') ? '-' : g_ascii_tolower (*token);
+
+		if (k != t)
+			return FALSE;
+	}
+
+	return *key == '\0';
+}
+
+/* Similar to g_parse_debug_string(), but does not special case "help" or "all" */
+static guint _parse_debug_string (const char *string, const GDebugKey *keys, guint nkeys)
+{
+	guint i;
+	guint result = 0;
+	const char *q;
+
+	if (string == NULL)
+		return 0;
+
+	while (*string) {
+		q = strpbrk (string, ":;, \t");
+		if (!q)
+			q = string + strlen (string);
+
+		for (i = 0; i < nkeys; i++) {
+			if (_debug_key_matches (keys[i].key, string, q - string))
+				result |= keys[i].value;
+		}
+
+		string = q;
+		if (*string)
+			string++;
+	}
+
+	return result;
+}
+
+guint byx_config_get_debug_flags(ByxConfig *config)
+{
+    GDebugKey keys[] = {
+        { "RLIMIT_CORE", BYX_CONFIG_DEBUG_FLAG_RLIMIT_CORE },
+        { "fatal-warnings", BYX_CONFIG_DEBUG_FLAG_FATAL_WARNINGS },
+    };
+    gs_free gchar *debug = NULL;
+    guint flags = 0;
+    const char *env = getenv ("NM_DEBUG");
+    GError *local = NULL;
+
+    debug = g_key_file_get_string(config->keyfile, "main", "debug", &local);
+
+    flags |= _parse_debug_string (env, keys, G_N_ELEMENTS (keys));
+    flags |= _parse_debug_string (debug, keys, G_N_ELEMENTS (keys));
+
+    return flags;
+}
+
+/*****************************************************************************/
 
 gboolean byx_config_get_is_first_start (ByxConfig *config)
 {

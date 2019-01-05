@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <glib.h>
+#include <glib-object.h>
 #include <glib/gi18n.h>
 
 #ifndef BYX_MORE_ASSERTS
