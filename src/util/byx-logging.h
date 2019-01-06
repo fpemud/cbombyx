@@ -105,10 +105,6 @@ gboolean inline byx_logging_setup (const char  *level,
 	return TRUE;
 }
 
-void     byx_logging_openlog (const char *logging_backend, gboolean debug)
-{
-}
-
 /*****************************************************************************/
 
 #define _LOGT(...)

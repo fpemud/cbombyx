@@ -31,6 +31,6 @@ void     byx_main_utils_ensure_rundir (void);
 
 void     byx_main_utils_ensure_no_running_pidfile (const char *pidfile);
 
-gboolean byx_main_utils_write_pidfile (const char *pidfile);
+gboolean byx_main_utils_write_pidfile (const char *pidfile, GError **error);
 
 #endif /* __MAIN_UTILS_H__ */

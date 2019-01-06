@@ -37,6 +37,7 @@
 #include <sys/resource.h>
 
 #include "config/byx-config-manager.h"
+#include "dbus/byx-dbus-manager.h"
 #include "main-utils.h"
 
 static GMainLoop *main_loop = NULL;
@@ -66,13 +67,14 @@ static void _init_nm_debug (ByxConfig *config)
 int main (int argc, char *argv[])
 {
 	ByxConfigManager *config_manager = NULL;
-	const ByxConfig *config = NULL;
-    gboolean wrote_pidfile = FALSE;
-    GError *local = NULL;
+    ByxDBusManager *dbus_manager = NULL;
+
+	ByxConfig *config = NULL;
+    g_autoptr(GError) error = NULL;
     gboolean success = FALSE;
 
 
-    g_autoptr(GError) error = NULL;
+
     char *bad_domains = NULL;
     guint sd_id = 0;
     GError *error_invalid_logging_config = NULL;
@@ -101,51 +103,39 @@ int main (int argc, char *argv[])
     textdomain (GETTEXT_PACKAGE);
 
     /* Setup config manager */
-    config_manager = byx_config_manager_setup(argc, argv, &local);
-	if (config_manager == NULL) {
-		g_propagate_error (error, local);
-		exit (1);
-	}
+    config_manager = byx_config_manager_get();
+    if (!byx_config_manager_add_cmd_line_options(config_manager, argc, argv, &error)) {
+		fprintf (stderr, error->message);        /* FIXME */
+        goto done;
+    }
+
 	config = byx_config_manager_get_config(config_manager);
 
-    if (config->show_version) {
+    if (byx_config_get_show_version(config)) {
         fprintf (stdout, VERSION "\n");
-        exit (0);
+        return 0;
     }
 
     byx_main_utils_ensure_root ();
-    byx_main_utils_ensure_no_running_pidfile (config->pidfile);
+    byx_main_utils_ensure_no_running_pidfile (byx_config_get_pidfile(config));
     byx_main_utils_ensure_statedir ();
     byx_main_utils_ensure_rundir ();
 
-    main_loop = g_main_loop_new (NULL, FALSE);
-
-    if (!byx_logging_setup (global_opt.opt_log_level,
-                            global_opt.opt_log_domains,
+    if (!byx_logging_setup (byx_config_get_log_level(config),
+                            byx_config_get_log_domains(config),        
                             &bad_domains,
                             &error)) {
         fprintf (stderr,
                  _("%s.  Please use --help to see a list of valid options.\n"),
                  error->message);
-        exit (1);
+        goto done;
     }
+
+    main_loop = g_main_loop_new (NULL, FALSE);
 
     _init_nm_debug (config);
 
-    /* Initialize logging from config file *only* if not explicitly
-     * specified by commandline.
-     */
-    if (config->opt_log_level == NULL && config->opt_log_domains == NULL) {
-        if (!byx_logging_setup (byx_config_manager_get_log_level (config),
-                               byx_config_manager_get_log_domains (config),
-                               &bad_domains,
-                               &error_invalid_logging_config)) {
-            /* ignore error, and print the failure reason below.
-             * Likewise, print about bad_domains below. */
-        }
-    }
-
-    if (config->become_daemon && !config->is_debug) {
+    if (byx_config_get_become_daemon(config) && !byx_config_get_is_debug(config)) {
         if (daemon (0, 0) < 0) {
             int saved_errno;
 
@@ -153,28 +143,22 @@ int main (int argc, char *argv[])
             fprintf (stderr, _("Could not daemonize: %s [error %u]\n"),
                      g_strerror (saved_errno),
                      saved_errno);
-            exit (1);
+            goto done;
         }
-        wrote_pidfile = byx_main_utils_write_pidfile (config->pidfile);
+        if (!byx_main_utils_write_pidfile (byx_config_get_pidfile(config), &error)) {
+    		fprintf (stderr, error->message);        /* FIXME */
+            goto done;
+        }
     }
 
     /* Set up unix signal handling - before creating threads, but after daemonizing! */
     byx_main_utils_setup_signals (main_loop);
 
-    {
-        g_autofree char *v = NULL;
+    byx_log_info (LOGD_CORE, "Bombyx (version " VERSION ") is starting... (%s)",
+                  byx_config_get_is_first_start (config) ? "for the first time" : "after a restart");
 
-        v = byx_config_data_get_value (BYX_CONFIG_GET_DATA_ORIG,
-                                      BYX_CONFIG_KEYFILE_GROUP_LOGGING,
-                                      BYX_CONFIG_KEYFILE_KEY_LOGGING_BACKEND,
-                                      BYX_CONFIG_GET_VALUE_STRIP | BYX_CONFIG_GET_VALUE_NO_EMPTY);
-        byx_logging_openlog (v, byx_config_manager_get_is_debug (config));
-    }
-
-    byx_log_info (LOGD_CORE, "NetworkManager (version " VERSION ") is starting... (%s)",
-                  byx_config_manager_is_first_start (config) ? "for the first time" : "after a restart");
-
-    byx_log_info (LOGD_CORE, "Read config: %s", byx_config_data_get_config_description (byx_config_manager_get_data (config)));
+    /*
+    byx_log_info (LOGD_CORE, "Read config: %s", byx_config_get_config_description (config));
     byx_config_data_log (byx_config_manager_get_data (config), "CONFIG: ", "  ", NULL);
 
     if (error_invalid_logging_config) {
@@ -190,22 +174,21 @@ int main (int argc, char *argv[])
         nm_clear_g_free (&bad_domains);
     }
 
-    /* the first access to State causes the file to be read (and possibly print a warning) */
-    byx_config_state_get (config);
-
-    /* Set up platform interaction layer */
-    nm_linux_platform_setup ();
-
     NM_UTILS_KEEP_ALIVE (config, nm_netns_get (), "ByxConfigManager-depends-on-NMNetns");
+    */
 
-    if (!byx_dbus_manager_acquire_bus (byx_dbus_manager_get ()))
-        goto done_no_manager;
+    dbus_manager = byx_dbus_manager_get();
 
-    byx_dbus_manager_start (byx_dbus_manager_get(),
+    if (!byx_dbus_manager_acquire_bus (dbus_manager))
+        goto done;
+
+    byx_dbus_manager_start (dbus_manager,
                            byx_manager_dbus_set_property_handle,
                            manager);
 
+    /*
     nm_platform_process_events (NM_PLATFORM_GET);
+    */
 
     /* Make sure the loopback interface is up. If interface is down, we bring
      * it up and kernel will assign it link-local IPv4 and IPv6 addresses. If
@@ -218,26 +201,26 @@ int main (int argc, char *argv[])
      * physical interfaces.
      */
     byx_log_dbg (LOGD_CORE, "setting up local loopback");
-    nm_platform_link_set_up (NM_PLATFORM_GET, 1, NULL);
+    if (!byx_platform_link_set_up (1, &error)) {
+        fprintf (stderr, error->message);        /* FIXME */
+        goto done;
+    }
 
     success = TRUE;
 
+    /*
     sd_id = nm_sd_event_attach_default ();
+    */
 
     g_main_loop_run (main_loop);
 
 done:
-    byx_config_state_set (config, TRUE, TRUE);
-
-    nm_dns_manager_stop (nm_dns_manager_get ());
-
-done_no_manager:
-    if (config->pidfile && wrote_pidfile)
-        unlink (config->pidfile);
+    if (config != NULL && access(byx_config_get_pidfile(config), F_OK) == 0)
+        unlink(byx_config_get_pidfile(config));
 
     byx_log_info (LOGD_CORE, "exiting (%s)", success ? "success" : "error");
 
     nm_clear_g_source (&sd_id);
 
-    exit (success ? 0 : 1);
+    return (success ? 0 : 1);
 }

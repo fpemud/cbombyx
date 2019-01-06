@@ -23,13 +23,15 @@ typedef struct _ByxConfigManagerClass ByxConfigManagerClass;
 
 GType byx_config_manager_get_type (void);
 
-ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error);
-
 ByxConfigManager *byx_config_manager_get (void);
+
+/*****************************************************************************/
+
+gboolean byx_config_manager_add_cmd_line_options (ByxConfigManager *self, int argc, char *argv[], GError **error);
 
 void byx_config_manager_reload (ByxConfigManager *self);
 
-const ByxConfig *byx_config_manager_get_config(ByxConfigManager *self);
+ByxConfig *byx_config_manager_get_config(ByxConfigManager *self);
 
 ByxRunData *byx_config_manager_get_run_data (ByxConfigManager *self);
 ByxPersistData *byx_config_manager_get_persist_data (ByxConfigManager *self);

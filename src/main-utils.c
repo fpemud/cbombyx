@@ -93,11 +93,13 @@ void byx_main_utils_setup_signals (GMainLoop *main_loop)
 	g_unix_signal_add (SIGTERM, sigterm_handler, main_loop);
 }
 
-gboolean byx_main_utils_write_pidfile (const char *pidfile)
+gboolean byx_main_utils_write_pidfile (const char *pidfile, GError **error)
 {
 	char pid[16];
 	int fd;
-	gboolean success = FALSE;
+	gboolean success = TRUE;
+
+	assert (pidfile != NULL);
 
 	if ((fd = open (pidfile, O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, 00644)) < 0) {
 		fprintf (stderr, _("Opening %s failed: %s\n"), pidfile, strerror (errno));
@@ -105,13 +107,15 @@ gboolean byx_main_utils_write_pidfile (const char *pidfile)
 	}
 
 	g_snprintf (pid, sizeof (pid), "%d", getpid ());
-	if (write (fd, pid, strlen (pid)) < 0)
+	if (write (fd, pid, strlen (pid)) < 0) {
 		fprintf (stderr, _("Writing to %s failed: %s\n"), pidfile, strerror (errno));
-	else
-		success = TRUE;
+		success = FALSE;
+	}
 
-	if (nm_close (fd))
+	if (close (fd)) {
 		fprintf (stderr, _("Closing %s failed: %s\n"), pidfile, strerror (errno));
+		return FALSE;
+	}
 
 	return success;
 }

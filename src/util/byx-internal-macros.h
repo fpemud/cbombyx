@@ -51,32 +51,6 @@
 
 #define nm_auto(fcn) __attribute__ ((cleanup(fcn)))
 
-static inline int nm_close (int fd);
-
-static inline void
-nm_free_secret (char *secret)
-{
-	if (secret) {
-		memset (secret, 0, strlen (secret));
-		g_free (secret);
-	}
-}
-
-static inline void
-_nm_auto_free_secret_impl (char **v)
-{
-	nm_free_secret (*v);
-}
-
-/**
- * nm_auto_free_secret:
- *
- * Call g_free() on a variable location when it goes out of scope.
- * Also, previously, calls memset(loc, 0, strlen(loc)) to clear out
- * the secret.
- */
-#define nm_auto_free_secret nm_auto(_nm_auto_free_secret_impl)
-
 static inline void
 _nm_auto_unset_gvalue_impl (GValue *v)
 {
@@ -106,7 +80,7 @@ _nm_auto_close_impl (int *pfd)
 	if (*pfd >= 0) {
 		int errsv = errno;
 
-		(void) nm_close (*pfd);
+		(void) close (*pfd);
 		errno = errsv;
 	}
 }
@@ -1194,24 +1168,5 @@ nm_steal_fd (int *p_fd)
 	}
 	return -1;
 }
-
-/**
- * nm_close:
- *
- * Like close() but throws an assertion if the input fd is
- * invalid.  Closing an invalid fd is a programming error, so
- * it's better to catch it early.
- */
-static inline int
-nm_close (int fd)
-{
-	int r;
-
-	r = close (fd);
-	nm_assert (r != -1 || fd < 0 || errno != EBADF);
-	return r;
-}
-
-#define NM_PID_T_INVAL ((pid_t) -1)
 
 #endif /* __BYX_INTERNAL_MACROS_H__ */

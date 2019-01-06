@@ -1,27 +1,6 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-/* Bombyx -- Network link manager
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Copyright (C) 2006 - 2013 Red Hat, Inc.
- * Copyright (C) 2006 - 2008 Novell, Inc.
- */
 
 #include "byx-default.h"
-
-#include "nm-dbus-manager.h"
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -35,6 +14,7 @@
 #include "nm-dbus-compat.h"
 #include "nm-dbus-object.h"
 #include "BombyxUtils.h"
+#include "nm-dbus-manager.h"
 
 /* The base path for our GDBusObjectManagerServers.  They do not contain
  * "Bombyx" because GDBusObjectManagerServer requires that all
@@ -1209,16 +1189,6 @@ _byx_dbus_manager_obj_notify (ByxDBusObject *obj,
 					continue;
 
 				value = _obj_get_property (reg_data, i, TRUE);
-
-				if (   property_info->include_in_legacy_property_changed
-				    && any_legacy_signals) {
-					/* also track the value in the legacy_builder to emit legacy signals below. */
-					if (!any_legacy_properties) {
-						any_legacy_properties = TRUE;
-						g_variant_builder_init (&legacy_builder, G_VARIANT_TYPE ("a{sv}"));
-					}
-					g_variant_builder_add (&legacy_builder, "{sv}", property_info->parent.name, value);
-				}
 
 				if (!has_properties) {
 					has_properties = TRUE;

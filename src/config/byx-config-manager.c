@@ -36,8 +36,6 @@ struct _ByxConfigManagerClass {
 };
 
 typedef struct {
-    ByxCmdLineOptions cli;
-
 	char *system_config_dir;
 	char *system_connection_config_dir;
 	char *system_service_config_dir;
@@ -55,11 +53,18 @@ typedef struct {
 	char *connection_persist_data_dir;
 	char *service_persist_data_dir;
 
-    char *log_level;
-    char *log_domains;
+    ByxConfig *config;
 
-    char **atomic_section_prefixes;
+    ByxConfigData *run_data;
+    ByxConfigData *persist_data;
 
+    GHashTable *connection_run_data;
+    GHashTable *connection_persist_data;
+
+    GHashTable *service_run_data;
+    GHashTable *service_persist_data;
+
+#if 1
     /* The state. This is actually a mutable data member and it makes sense:
      * The regular config is immutable (ByxConfigData) and can old be swapped
      * as a whole (via byx_config_set_values() or during reload). Thus, it can
@@ -73,19 +78,12 @@ typedef struct {
      * itself. */
     State *state;
 
-    ByxConfig *config;
+    char *log_level;
+    char *log_domains;
 
-    ByxConfigData *global_run_data;
-    ByxConfigData *global_persist_data;
+    char **atomic_section_prefixes;
+#endif
 
-    GHashTable *connection_run_data;
-    GHashTable *connection_persist_data;
-
-    /*
-     * It is true, if NM is started the first time -- contrary to a restart
-     * during the same boot up. That is determined by the content of the
-     * /var/run/NetworManager state directory. */
-    bool first_start;
 } ByxConfigManagerPrivate;
 
 struct _ByxConfigManager {
@@ -182,7 +180,7 @@ static void byx_config_manager_finalize (GObject *gobject)
 
 /*****************************************************************************/
 
-const ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
+ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     return priv->config;
@@ -193,13 +191,13 @@ const ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
 ByxConfigData *byx_config_manager_get_run_data (ByxConfigManager *self)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
-    return priv->global_run_data;
+    return priv->run_data;
 }
 
 ByxConfigData *byx_config_manager_get_persist_data (ByxConfigManager *self)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
-    return priv->global_persist_data;
+    return priv->persist_data;
 }
 
 /*****************************************************************************/

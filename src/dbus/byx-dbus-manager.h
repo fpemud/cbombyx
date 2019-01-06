@@ -1,45 +1,23 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-/* NetworkManager -- Network link manager
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Copyright (C) 2006 - 2008 Red Hat, Inc.
- * Copyright (C) 2006 - 2008 Novell, Inc.
- */
-
 #ifndef __BYX_DBUS_MANAGER_H__
 #define __BYX_DBUS_MANAGER_H__
 
-#include "nm-dbus-utils.h"
+#define BYX_TYPE_DBUS_MANAGER            (byx_dbus_manager_get_type ())
+#define BYX_DBUS_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_DBUS_MANAGER, ByxDBusManager))
+#define BYX_DBUS_MANAGER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), BYX_TYPE_DBUS_MANAGER, ByxDBusManagerClass))
+#define BYX_IS_DBUS_MANAGER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), BYX_TYPE_DBUS_MANAGER))
+#define BYX_IS_DBUS_MANAGER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), BYX_TYPE_DBUS_MANAGER))
+#define BYX_DBUS_MANAGER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), BYX_TYPE_DBUS_MANAGER, ByxDBusManagerClass))
 
-#define BYX_TYPE_DBUS_MANAGER (byx_dbus_manager_get_type ())
-#define BYX_DBUS_MANAGER(o) (G_TYPE_CHECK_INSTANCE_CAST ((o), BYX_TYPE_DBUS_MANAGER, ByxDBusManager))
-#define BYX_DBUS_MANAGER_CLASS(k) (G_TYPE_CHECK_CLASS_CAST((k), BYX_TYPE_DBUS_MANAGER, ByxDBusManagerClass))
-#define BYX_IS_DBUS_MANAGER(o) (G_TYPE_CHECK_INSTANCE_TYPE ((o), BYX_TYPE_DBUS_MANAGER))
-#define BYX_IS_DBUS_MANAGER_CLASS(k) (G_TYPE_CHECK_CLASS_TYPE ((k), BYX_TYPE_DBUS_MANAGER))
-#define BYX_DBUS_MANAGER_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS ((o), BYX_TYPE_DBUS_MANAGER, ByxDBusManagerClass))
-
-#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_NEW           "private-connection-new"
-#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_DISCONNECTED  "private-connection-disconnected"
-
+typedef struct _ByxDBusManager ByxDBusManager;
 typedef struct _ByxDBusManagerClass ByxDBusManagerClass;
 
 GType byx_dbus_manager_get_type (void);
 
 ByxDBusManager *byx_dbus_manager_get (void);
+
+/*****************************************************************************/
 
 typedef void (*ByxDBusManagerSetPropertyHandler) (ByxDBusObject *obj,
                                                  const ByxDBusInterfaceInfoExtended *interface_info,
@@ -53,8 +31,16 @@ typedef void (*ByxDBusManagerSetPropertyHandler) (ByxDBusObject *obj,
 gboolean byx_dbus_manager_acquire_bus (ByxDBusManager *self);
 
 void byx_dbus_manager_start (ByxDBusManager *self,
-                            ByxDBusManagerSetPropertyHandler set_property_handler,
-                            gpointer set_property_handler_data);
+                             ByxDBusManagerSetPropertyHandler set_property_handler,
+                             gpointer set_property_handler_data);
+
+#if 0
+
+#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_NEW           "private-connection-new"
+#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_DISCONNECTED  "private-connection-disconnected"
+
+
+
 
 void byx_dbus_manager_stop (ByxDBusManager *self);
 
@@ -110,5 +96,6 @@ GDBusProxy *byx_dbus_manager_new_proxy (ByxDBusManager *self,
                                        const char *name,
                                        const char *path,
                                        const char *iface);
+#endif
 
 #endif /* __BYX_DBUS_MANAGER_H__ */

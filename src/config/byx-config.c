@@ -1,6 +1,75 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-static void _cmd_line_options_clear (ByxConfig *config)
+struct _ByxConfigClass {
+    GObjectClass parent;
+};
+
+typedef struct {
+	char *self_description;
+
+	gboolean show_version;
+	gboolean become_daemon;
+	char *opt_log_level;
+	char *opt_log_domains;
+	char *pidfile;
+
+	gboolean is_debug;
+
+	struct {
+		gboolean enabled;
+		char *uri;
+		char *response;
+		guint interval;
+	} connectivity;
+
+	int autoconnect_retries_default;
+
+	struct {
+		char **arr;
+		GSList *specs;
+		GSList *specs_config;
+	} no_auto_default;
+
+	GSList *ignore_carrier;
+
+    /*
+     * It is true, if NM is started the first time -- contrary to a restart
+     * during the same boot up. That is determined by the content of the
+     * /var/run/NetworManager state directory. */
+    bool first_start;
+
+    GKeyFile *keyfile;
+} ByxConfigPrivate;
+
+G_DEFINE_TYPE_WITH_PRIVATE (ByxConfig, byx_config, G_TYPE_OBJECT)
+
+#define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfig, BYX_IS_CONFIG)
+
+/*****************************************************************************/
+
+static void byx_config_classinit (ByxConfigClass *self_class)
+{
+    GObjectClass *object_class = G_OBJECT_CLASS (config_class);
+
+    object_class->byx_config_finalize = byx_config_finalize;
+}
+
+static void byx_config_init (ByxConfig *self)
+{
+}
+
+static void byx_config_finalize (GObject *gobject)
+{
+    ByxConfigPrivate *priv = byx_config_get_instance_private ((ByxConfig *) gobject);
+
+	/* TODO */
+
+    G_OBJECT_CLASS (byx_config_parent_class)->finalize (gobject);
+}
+
+/*****************************************************************************/
+
+static void _cmd_line_options_clear (ByxConfig *self)
 {
 	config->is_debug = FALSE;
 	g_clear_pointer (&config->connectivity_uri, g_free);
@@ -9,51 +78,7 @@ static void _cmd_line_options_clear (ByxConfig *config)
 	config->first_start = FALSE;
 }
 
-void byx_cmd_line_options_parse(ByxCmdLineOptions *config, int argc, char **argv[])
-{
-	for (i = 0; options[i].long_name; i++) {
-		NM_PRAGMA_WARNING_DISABLE("-Wformat-nonliteral")
-		if (!strcmp (options[i].long_name, "log-level")) {
-			opt_fmt_log_level = options[i].description;
-			opt_loc_log_level = &options[i].description;
-			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_levels_to_string ());
-		} else if (!strcmp (options[i].long_name, "log-domains")) {
-			opt_fmt_log_domains = options[i].description;
-			opt_loc_log_domains = &options[i].description;
-			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_domains_to_string ());
-		}
-		NM_PRAGMA_WARNING_REENABLE
-	}
-
-	/* Parse options */
-	opt_ctx = g_option_context_new (NULL);
-	g_option_context_set_translation_domain (opt_ctx, GETTEXT_PACKAGE);
-	g_option_context_set_ignore_unknown_options (opt_ctx, FALSE);
-	g_option_context_set_help_enabled (opt_ctx, TRUE);
-	g_option_context_add_main_entries (opt_ctx, options, NULL);
-	g_option_context_set_summary (opt_ctx, summary);
-
-	success = g_option_context_parse (opt_ctx, argc, argv, &error);
-	if (!success) {
-		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"),
-		         error->message);
-		g_clear_error (&error);
-	}
-	g_option_context_free (opt_ctx);
-
-	if (opt_loc_log_level) {
-		g_free ((char *) *opt_loc_log_level);
-		*opt_loc_log_level = opt_fmt_log_level;
-	}
-	if (opt_loc_log_domains) {
-		g_free ((char *) *opt_loc_log_domains);
-		*opt_loc_log_domains = opt_fmt_log_domains;
-	}
-}
-
-
-
-static void _byx_cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext *opt_ctx) {
+static void _cmd_line_options_add_to_entries (ByxConfig *self, GOptionContext *opt_ctx) {
 
     GOptionEntry config_options[] = {
         {
@@ -122,29 +147,90 @@ static void _byx_cmd_line_options_add_to_entries (ByxConfig *config, GOptionCont
 }
 
 
-
-
-
-
-const char *byx_config_get_log_level (ByxConfig *config)
+void byx_cmd_line_options_parse(ByxCmdLineOptions *self, int argc, char **argv[])
 {
-    assert (config != NULL);
+	for (i = 0; options[i].long_name; i++) {
+		NM_PRAGMA_WARNING_DISABLE("-Wformat-nonliteral")
+		if (!strcmp (options[i].long_name, "log-level")) {
+			opt_fmt_log_level = options[i].description;
+			opt_loc_log_level = &options[i].description;
+			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_levels_to_string ());
+		} else if (!strcmp (options[i].long_name, "log-domains")) {
+			opt_fmt_log_domains = options[i].description;
+			opt_loc_log_domains = &options[i].description;
+			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_domains_to_string ());
+		}
+		NM_PRAGMA_WARNING_REENABLE
+	}
 
-    return config->log_level;
+	/* Parse options */
+	opt_ctx = g_option_context_new (NULL);
+	g_option_context_set_translation_domain (opt_ctx, GETTEXT_PACKAGE);
+	g_option_context_set_ignore_unknown_options (opt_ctx, FALSE);
+	g_option_context_set_help_enabled (opt_ctx, TRUE);
+	g_option_context_add_main_entries (opt_ctx, options, NULL);
+	g_option_context_set_summary (opt_ctx, summary);
+
+	success = g_option_context_parse (opt_ctx, argc, argv, &error);
+	if (!success) {
+		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"),
+		         error->message);
+		g_clear_error (&error);
+	}
+	g_option_context_free (opt_ctx);
+
+	if (opt_loc_log_level) {
+		g_free ((char *) *opt_loc_log_level);
+		*opt_loc_log_level = opt_fmt_log_level;
+	}
+	if (opt_loc_log_domains) {
+		g_free ((char *) *opt_loc_log_domains);
+		*opt_loc_log_domains = opt_fmt_log_domains;
+	}
 }
 
-const char *byx_config_get_log_domains (ByxConfig *config)
-{
-    assert (config != NULL);
+/*****************************************************************************/
 
-    return config->log_domains;
+gboolean byx_config_get_show_version (ByxConfig *self)
+{
+    ByxConfigPrivate *priv = byx_config_get_instance_private(self);
+    return priv->show_version;
 }
 
-gboolean byx_config_get_is_debug (ByxConfig *config)
+gboolean byx_config_get_become_daemon (ByxConfig *self);
 {
-    assert (config != NULL);
+    ByxConfigPrivate *priv = byx_config_get_instance_private(self);
+    return priv->become_daemon;
+}
 
-    return config->is_debug;
+const char *byx_config_get_log_level (ByxConfig *self)
+{
+    ByxConfigPrivate *priv = byx_config_get_instance_private(self);
+    return priv->log_level;
+}
+
+const char *byx_config_get_log_domains (ByxConfig *self)
+{
+    ByxConfigPrivate *priv = byx_config_get_instance_private(self);
+    return priv->log_domains;
+}
+
+const char *byx_config_get_pidfile (ByxConfig *self)
+{
+    ByxConfigPrivate *priv = byx_config_get_instance_private(self);
+    return priv->pidfile;
+}
+
+gboolean byx_config_get_is_debug (ByxConfig *self)
+{
+    ByxConfigPrivate *priv = byx_config_get_instance_private(self);
+    return priv->is_debug;
+}
+
+gboolean byx_config_get_is_first_start (ByxConfig *self)
+{
+    ByxConfigPrivate *priv = byx_config_get_instance_private(self);
+    return priv->first_start;
 }
 
 /*****************************************************************************/
@@ -191,7 +277,7 @@ static guint _parse_debug_string (const char *string, const GDebugKey *keys, gui
 	return result;
 }
 
-guint byx_config_get_debug_flags(ByxConfig *config)
+guint byx_config_get_debug_flags(ByxConfig *self)
 {
     GDebugKey keys[] = {
         { "RLIMIT_CORE", BYX_CONFIG_DEBUG_FLAG_RLIMIT_CORE },
@@ -208,13 +294,4 @@ guint byx_config_get_debug_flags(ByxConfig *config)
     flags |= _parse_debug_string (debug, keys, G_N_ELEMENTS (keys));
 
     return flags;
-}
-
-/*****************************************************************************/
-
-gboolean byx_config_get_is_first_start (ByxConfig *config)
-{
-    assert (config != NULL);
-
-    return config->first_start;
 }

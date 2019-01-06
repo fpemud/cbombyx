@@ -10,7 +10,7 @@ typedef struct {
 
 /*****************************************************************************/
 
-ByxPersistData *byx_persist_data_new();
+ByxPersistData *byx_persist_data_new(void);
 void byx_persist_data_free(ByxPersistData *data);
 
 void byx_persist_data_save(ByxPersistData *data);
