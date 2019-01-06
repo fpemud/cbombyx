@@ -101,7 +101,7 @@ int main (int argc, char *argv[])
     gboolean success = FALSE;
 
 
-    gs_free_error GError *error = NULL;
+    g_autofree_error GError *error = NULL;
     char *bad_domains = NULL;
     guint sd_id = 0;
     GError *error_invalid_logging_config = NULL;
@@ -191,7 +191,7 @@ int main (int argc, char *argv[])
     byx_main_utils_setup_signals (main_loop);
 
     {
-        gs_free char *v = NULL;
+        g_autofree char *v = NULL;
 
         v = byx_config_data_get_value (BYX_CONFIG_GET_DATA_ORIG,
                                       BYX_CONFIG_KEYFILE_GROUP_LOGGING,

@@ -93,7 +93,7 @@ struct _ByxConfigManager {
     ByxConfigManagerPrivate _priv;
 };
 
-G_DEFINE_TYPE (ByxConfigManager, byx_config_manager, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_PRIVATE (ByxConfigManager, byx_config_manager, G_TYPE_OBJECT)
 
 #define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfigManager, BYX_IS_CONFIG_MANAGER)
 
@@ -113,7 +113,7 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
         return NULL;
     }
 
-    priv = BYX_CONFIG_GET_PRIVATE ((ByxConfigManager *) singleton_instance);
+    priv = byx_config_manager_get_instance_private ((ByxConfigManager *) singleton_instance);
     priv->first_start = !g_file_test (NMRUNDIR, G_FILE_TEST_IS_DIR),
     byx_cmd_line_options_parse(priv->cmd_line_options, argc, argv);
 
@@ -169,7 +169,7 @@ static void byx_config_manager_init (ByxConfigManager *self)
 
 static void byx_config_manager_finalize (GObject *gobject)
 {
-    ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE ((ByxConfigManager *) gobject);
+    ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private ((ByxConfigManager *) gobject);
 
     g_free (priv->log_level);
     g_free (priv->log_domains);
@@ -187,13 +187,7 @@ static void byx_config_manager_finalize (GObject *gobject)
 
 const ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
 {
-    ByxConfigManagerPrivate *priv;
-
-    assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
-    assert (priv->config != NULL);
-
+    ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     return priv->config;
 }
 
@@ -201,27 +195,13 @@ const ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
 
 ByxConfigData *byx_config_manager_get_run_data (ByxConfigManager *self)
 {
-    ByxConfigManagerPrivate *priv;
-    ByxConfigData *data;
-
-    assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
-    assert (priv->global_run_data != NULL);
-
+    ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     return priv->global_run_data;
 }
 
 ByxConfigData *byx_config_manager_get_persist_data (ByxConfigManager *self)
 {
-    ByxConfigManagerPrivate *priv;
-    ByxConfigData *data;
-
-    assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
-    assert (priv->global_persist_data != NULL);
-
+    ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     return priv->global_persist_data;
 }
 
@@ -229,7 +209,7 @@ ByxConfigData *byx_config_manager_get_persist_data (ByxConfigManager *self)
 
 static ByxConfigData *_byx_config_manager_get_connection_data (ByxConfigManager *self, const char *uuid, gboolean run_data_or_persist_data)
 {
-    ByxConfigManagerPrivate *priv;
+    ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     GHashTable *htable;
     char *datadir;
     char *dataname;
@@ -237,10 +217,7 @@ static ByxConfigData *_byx_config_manager_get_connection_data (ByxConfigManager 
     char *new_uuid;
     GError *local;
 
-    assert (self != NULL && BYX_IS_CONFIG_MANAGER(self));
     assert (uuid != NULL);
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
 
     if (run_data_or_persist_data) {
         htable = priv->connection_run_data;
@@ -335,7 +312,7 @@ byx_config_keyfile_get_boolean (const GKeyFile *keyfile,
                                const char *key,
                                gint default_value)
 {
-    gs_free char *str = NULL;
+    g_autofree char *str = NULL;
 
     g_return_val_if_fail (keyfile != NULL, default_value);
     g_return_val_if_fail (section != NULL, default_value);
@@ -609,7 +586,7 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
     char **groups, **keys;
     gsize ngroups, nkeys;
     int g, k;
-    gs_free char *path_free = NULL;
+    g_autofree char *path_free = NULL;
 
     g_return_val_if_fail (keyfile, FALSE);
     g_return_val_if_fail (path, FALSE);
@@ -693,7 +670,7 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
             last_char = key[key_len - 1];
             if (   key_len > 1
                 && (last_char == '+' || last_char == '-')) {
-                gs_free char *base_key = g_strndup (key, key_len - 1);
+                g_autofree char *base_key = g_strndup (key, key_len - 1);
                 gboolean is_string_list;
 
                 is_string_list = _setting_is_string_list (group, base_key);
@@ -703,16 +680,16 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
                     gs_unref_ptrarray GPtrArray *new = g_ptr_array_new_with_free_func (g_free);
                     char **iter_val;
                     gs_strfreev  char **old_val = NULL;
-                    gs_free char **new_val = NULL;
+                    g_autofree char **new_val = NULL;
 
                     if (is_string_list) {
                         old_val = g_key_file_get_string_list (keyfile, group, base_key, NULL, NULL);
                         new_val = g_key_file_get_string_list (kf, group, key, NULL, NULL);
                     } else {
-                        gs_free char *old_sval = byx_config_keyfile_get_value (keyfile, group, base_key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
-                        gs_free char *new_sval = byx_config_keyfile_get_value (kf, group, key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
-                        gs_free_slist GSList *old_specs = nm_match_spec_split (old_sval);
-                        gs_free_slist GSList *new_specs = nm_match_spec_split (new_sval);
+                        g_autofree char *old_sval = byx_config_keyfile_get_value (keyfile, group, base_key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
+                        g_autofree char *new_sval = byx_config_keyfile_get_value (kf, group, key, BYX_CONFIG_GET_VALUE_TYPE_SPEC);
+                        g_autofree_slist GSList *old_specs = nm_match_spec_split (old_sval);
+                        g_autofree_slist GSList *new_specs = nm_match_spec_split (new_sval);
 
                         /* the key is a device spec. This is a special kind of string-list, that
                          * we must split differently. */
@@ -740,8 +717,8 @@ read_config (GKeyFile *keyfile, gboolean is_base_config, const char *dirname, co
                         if (is_string_list)
                             byx_config_keyfile_set_string_list (keyfile, group, base_key, (const char *const*) new->pdata, new->len);
                         else {
-                            gs_free_slist GSList *specs = NULL;
-                            gs_free char *specs_joined = NULL;
+                            g_autofree_slist GSList *specs = NULL;
+                            g_autofree char *specs_joined = NULL;
 
                             g_ptr_array_add (new, NULL);
                             specs = _byx_utils_strv_to_slist ((char **) new->pdata, FALSE);
@@ -890,7 +867,7 @@ read_entire_config (const ByxCmdLineOptions *cli,
     gs_unref_ptrarray GPtrArray *confs = NULL;
     gs_unref_ptrarray GPtrArray *run_confs = NULL;
     guint i;
-    gs_free char *o_config_main_file = NULL;
+    g_autofree char *o_config_main_file = NULL;
     const char *run_config_dir = "";
 
     g_return_val_if_fail (config_dir, NULL);
@@ -1024,7 +1001,7 @@ _keyfile_serialize_section (GKeyFile *keyfile, const char *group)
 
     for (k = 0; keys[k]; k++) {
         const char *key = keys[k];
-        gs_free char *value = NULL;
+        g_autofree char *value = NULL;
 
         _string_append_val (str, key);
         g_string_append_c (str, ':');
@@ -1127,8 +1104,8 @@ intern_config_read (const char *filename,
         is_atomic = !is_intern && _is_atomic_section (atomic_section_prefixes, group);
 
         if (is_atomic) {
-            gs_free char *conf_section_was = NULL;
-            gs_free char *conf_section_is = NULL;
+            g_autofree char *conf_section_was = NULL;
+            g_autofree char *conf_section_is = NULL;
 
             conf_section_is = _keyfile_serialize_section (keyfile_conf, group);
             conf_section_was = g_key_file_get_string (keyfile, group, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, NULL);
@@ -1145,7 +1122,7 @@ intern_config_read (const char *filename,
         }
 
         for (k = 0; keys[k]; k++) {
-            gs_free char *value_set = NULL;
+            g_autofree char *value_set = NULL;
             const char *key = keys[k];
 
             value_set = g_key_file_get_value (keyfile, group, key, NULL);
@@ -1159,9 +1136,9 @@ intern_config_read (const char *filename,
                 g_key_file_set_value (keyfile_intern, group, key, value_set);
             } else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)) {
                 const char *key_base = &key[BYX_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_SET)];
-                gs_free char *value_was = NULL;
-                gs_free char *value_conf = NULL;
-                gs_free char *key_was = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key_base);
+                g_autofree char *value_was = NULL;
+                g_autofree char *value_conf = NULL;
+                g_autofree char *key_was = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key_base);
 
                 if (keyfile_conf)
                     value_conf = g_key_file_get_value (keyfile_conf, group, key_base, NULL);
@@ -1179,9 +1156,9 @@ intern_config_read (const char *filename,
                 g_key_file_set_value (keyfile_intern, group, key_base, value_set);
             } else if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)) {
                 const char *key_base = &key[BYX_STRLEN (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS)];
-                gs_free char *key_set = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_SET"%s", key_base);
-                gs_free char *value_was = NULL;
-                gs_free char *value_conf = NULL;
+                g_autofree char *key_set = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_SET"%s", key_base);
+                g_autofree char *value_was = NULL;
+                g_autofree char *value_conf = NULL;
 
                 if (g_key_file_has_key (keyfile, group, key_set, NULL)) {
                     /* we have a matching "set" key too. Handle the "was" key there. */
@@ -1323,7 +1300,7 @@ intern_config_write (const char *filename,
                  * We don't have to write an empty section (i.e. skip the useless ".was=0#"). */
                 continue;
             } else {
-                gs_free char *conf_section_is = NULL;
+                g_autofree char *conf_section_is = NULL;
 
                 conf_section_is = _keyfile_serialize_section (keyfile_conf, group);
                 g_key_file_set_string (keyfile, group, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS, conf_section_is);
@@ -1335,8 +1312,8 @@ intern_config_write (const char *filename,
 
         for (k = 0; keys[k]; k++) {
             const char *key = keys[k];
-            gs_free char *value_set = NULL;
-            gs_free char *key_set = NULL;
+            g_autofree char *value_set = NULL;
+            g_autofree char *key_set = NULL;
 
             if (   !is_intern
                 && strcmp (key, BYX_CONFIG_KEYFILE_KEY_ATOMIC_SECTION_WAS) == 0) {
@@ -1349,7 +1326,7 @@ intern_config_write (const char *filename,
             if (is_intern || is_atomic)
                 g_key_file_set_value (keyfile, group, key, value_set);
             else {
-                gs_free char *value_was = NULL;
+                g_autofree char *value_was = NULL;
 
                 if (_HAS_PREFIX (key, BYX_CONFIG_KEYFILE_KEYPREFIX_SET)) {
                     /* Setting a key with .set prefix has no meaning, as these keys
@@ -1385,7 +1362,7 @@ intern_config_write (const char *filename,
                             continue;
                         }
                         if (value_was) {
-                            gs_free char *key_was = NULL;
+                            g_autofree char *key_was = NULL;
 
                             key_was = g_strdup_printf (BYX_CONFIG_KEYFILE_KEYPREFIX_WAS"%s", key);
                             g_key_file_set_value (keyfile, group, key_was, value_was);
@@ -1441,7 +1418,7 @@ intern_config_write (const char *filename,
 GSList *
 byx_config_manager_get_match_spec (const GKeyFile *keyfile, const char *group, const char *key, gboolean *out_has_key)
 {
-    gs_free char *value = NULL;
+    g_autofree char *value = NULL;
 
     /* nm_match_spec_split() already supports full escaping and is basically
      * a modified version of g_key_file_parse_value_as_string(). So we first read
@@ -1501,7 +1478,7 @@ byx_config_set_global_dns (ByxConfigManager *self, NMGlobalDnsConfig *global_dns
 
     for (i = 0; i < nm_global_dns_config_get_num_domains (global_dns); i++) {
         NMGlobalDnsDomain *domain = nm_global_dns_config_get_domain (global_dns, i);
-        gs_free char *group_name = NULL;
+        g_autofree char *group_name = NULL;
 
         group_name = g_strdup_printf (BYX_CONFIG_KEYFILE_GROUPPREFIX_INTERN_GLOBAL_DNS_DOMAIN "%s",
                                       nm_global_dns_domain_get_name (domain));
@@ -1676,7 +1653,7 @@ static State *
 state_new_from_file (const char *filename)
 {
     GKeyFile *keyfile;
-    gs_free_error GError *error = NULL;
+    g_autofree_error GError *error = NULL;
     State *state;
 
     state = state_new ();
@@ -1834,8 +1811,8 @@ static ByxConfigDeviceStateData *
 _config_device_state_data_new (int ifindex, GKeyFile *kf)
 {
     ByxConfigDeviceStateData *device_state;
-    gs_free char *connection_uuid = NULL;
-    gs_free char *perm_hw_addr_fake = NULL;
+    g_autofree char *connection_uuid = NULL;
+    g_autofree char *perm_hw_addr_fake = NULL;
     gsize connection_uuid_len;
     gsize perm_hw_addr_fake_len;
     gint nm_owned = -1;

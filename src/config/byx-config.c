@@ -197,7 +197,7 @@ guint byx_config_get_debug_flags(ByxConfig *config)
         { "RLIMIT_CORE", BYX_CONFIG_DEBUG_FLAG_RLIMIT_CORE },
         { "fatal-warnings", BYX_CONFIG_DEBUG_FLAG_FATAL_WARNINGS },
     };
-    gs_free gchar *debug = NULL;
+    g_autofree gchar *debug = NULL;
     guint flags = 0;
     const char *env = getenv ("NM_DEBUG");
     GError *local = NULL;

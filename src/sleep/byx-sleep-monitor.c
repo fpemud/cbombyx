@@ -115,7 +115,7 @@ inhibit_done (GObject      *source,
 {
 	GDBusProxy *proxy = G_DBUS_PROXY (source);
 	ByxSleepMonitor *self = user_data;
-	gs_free_error GError *error = NULL;
+	g_autofree_error GError *error = NULL;
 	gs_unref_variant GVariant *res = NULL;
 	gs_unref_object GUnixFDList *fd_list = NULL;
 
@@ -280,7 +280,7 @@ on_proxy_acquired (GObject *object,
 	                                          G_VARIANT_TYPE ("(b)"),
 	                                          G_CALLBACK (prepare_for_sleep_cb), self);
 	{
-		gs_free char *owner = NULL;
+		g_autofree char *owner = NULL;
 
 		owner = g_dbus_proxy_get_name_owner (self->proxy);
 		if (owner)

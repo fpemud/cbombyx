@@ -162,7 +162,7 @@ vpn_dir_changed (GFileMonitor *monitor,
 	ByxServiceManager *self = BYX_SERVICE_MANAGER (user_data);
 	ByxServiceManagerPrivate *priv = BYX_SERVICE_MANAGER_GET_PRIVATE (self);
 	NMVpnPluginInfo *plugin_info;
-	gs_free char *path = NULL;
+	g_autofree char *path = NULL;
 	GError *error = NULL;
 
 	path = g_file_get_path (file);

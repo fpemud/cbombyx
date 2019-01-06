@@ -1003,7 +1003,7 @@ byx_connection_assume_state_reset (ByxConnection *self)
 static void
 init_ip_config_dns_priority (ByxConnection *self, NMIPConfig *config)
 {
-	gs_free char *value = NULL;
+	g_autofree char *value = NULL;
 	gint priority;
 
 	value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
@@ -1021,7 +1021,7 @@ static gboolean
 byx_connection_ipv4_sysctl_set (ByxConnection *self, const char *property, const char *value)
 {
 	NMPlatform *platform = byx_connection_get_platform (self);
-	gs_free char *value_to_free = NULL;
+	g_autofree char *value_to_free = NULL;
 	const char *value_to_set;
 	char buf[NM_UTILS_SYSCTL_IP_CONF_PATH_BUFSIZE];
 
@@ -1147,8 +1147,8 @@ _get_stable_id (ByxConnection *self,
 	 * Especially with ${RANDOM} stable-id we want to generate *one* configuration
 	 * for each activation. */
 	if (G_UNLIKELY (!priv->current_stable_id)) {
-		gs_free char *default_id = NULL;
-		gs_free char *generated = NULL;
+		g_autofree char *default_id = NULL;
+		g_autofree char *generated = NULL;
 		NMUtilsStableType stable_type;
 		NMSettingConnection *s_con;
 		const char *stable_id;
@@ -1269,7 +1269,7 @@ byx_connection_take_over_link (ByxConnection *self, int ifindex, char **old_name
 	const NMPlatformLink *plink;
 	NMPlatform *platform;
 	gboolean up, success = TRUE;
-	gs_free char *name = NULL;
+	g_autofree char *name = NULL;
 
 	g_return_val_if_fail (priv->ifindex <= 0, FALSE);
 
@@ -2031,7 +2031,7 @@ _get_mdns (ByxConnection *self)
 		mdns = nm_setting_connection_get_mdns (nm_connection_get_setting_connection (connection));
 
 	if (mdns == NM_SETTING_CONNECTION_MDNS_DEFAULT) {
-		gs_free char *value = NULL;
+		g_autofree char *value = NULL;
 
 		value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                               "connection.mdns",
@@ -2086,7 +2086,7 @@ byx_connection_get_route_table (ByxConnection *self,
 		 * connection. Otherwise, the connection is not active, and the
 		 * connection default doesn't matter. */
 		if (route_table == 0) {
-			gs_free char *value = NULL;
+			g_autofree char *value = NULL;
 
 			value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 			                                               addr_family == AF_INET
@@ -2174,7 +2174,7 @@ get_type_description (ByxConnection *self)
 	klass = BYX_CONNECTION_GET_CLASS (self);
 	if (G_UNLIKELY (klass->default_type_description_klass != klass)) {
 		const char *typename;
-		gs_free char *s = NULL;
+		g_autofree char *s = NULL;
 
 		typename = G_OBJECT_TYPE_NAME (self);
 		if (g_str_has_prefix (typename, "ByxConnection"))
@@ -2814,7 +2814,7 @@ byx_connection_check_connectivity (ByxConnection *self,
 void
 byx_connection_check_connectivity_cancel (ByxConnectionConnectivityHandle *handle)
 {
-	gs_free_error GError *cancelled_error = NULL;
+	g_autofree_error GError *cancelled_error = NULL;
 
 	g_return_if_fail (handle);
 	g_return_if_fail (BYX_IS_CONNECTION (handle->self));
@@ -3625,7 +3625,7 @@ _v4_has_shadowed_routes_detect (ByxConnection *self)
 	const NMPObject *o;
 	guint data_len;
 	gs_unref_hashtable GHashTable *data_hash = NULL;
-	gs_free IP4RPFilterData *data_arr = NULL;
+	g_autofree IP4RPFilterData *data_arr = NULL;
 
 	ifindex = byx_connection_get_ip_ifindex (self);
 	if (ifindex <= 0)
@@ -3926,7 +3926,7 @@ static void
 device_init_sriov_num_vfs (ByxConnection *self)
 {
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
-	gs_free char *value = NULL;
+	g_autofree char *value = NULL;
 	int num_vfs;
 
 	if (   priv->ifindex > 0
@@ -5381,7 +5381,7 @@ static gboolean
 check_connection_compatible (ByxConnection *self, NMConnection *connection)
 {
 	const char *device_iface = byx_connection_get_iface (self);
-	gs_free char *conn_iface = byx_manager_get_connection_iface (byx_manager_get (),
+	g_autofree char *conn_iface = byx_manager_get_connection_iface (byx_manager_get (),
 	                                                            connection,
 	                                                            NULL, NULL);
 
@@ -5805,7 +5805,7 @@ lldp_rx_enabled (ByxConnection *self)
 
 	lldp = nm_setting_connection_get_lldp (s_con);
 	if (lldp == NM_SETTING_CONNECTION_LLDP_DEFAULT) {
-		gs_free char *value = NULL;
+		g_autofree char *value = NULL;
 
 		value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                               "connection.lldp",
@@ -5896,7 +5896,7 @@ lldp_init (ByxConnection *self, gboolean restart)
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 
 	if (priv->ifindex > 0 && lldp_rx_enabled (self)) {
-		gs_free_error GError *error = NULL;
+		g_autofree_error GError *error = NULL;
 
 		if (priv->lldp_listener) {
 			if (restart && nm_lldp_listener_is_running (priv->lldp_listener))
@@ -6140,7 +6140,7 @@ get_ipv4_dad_timeout (ByxConnection *self)
 {
 	NMConnection *connection;
 	NMSettingIPConfig *s_ip4 = NULL;
-	gs_free char *value = NULL;
+	g_autofree char *value = NULL;
 	gint ret = 0;
 
 	connection = byx_connection_get_applied_connection (self);
@@ -6989,7 +6989,7 @@ get_dhcp_timeout (ByxConnection *self, int addr_family)
 		return timeout;
 
 	{
-		gs_free char *value = NULL;
+		g_autofree char *value = NULL;
 
 		value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 		                                               addr_family == AF_INET
@@ -7028,14 +7028,14 @@ dhcp4_get_client_id (ByxConnection *self,
 {
 	NMSettingIPConfig *s_ip4;
 	const char *client_id;
-	gs_free char *client_id_default = NULL;
+	g_autofree char *client_id_default = NULL;
 	guint8 *client_id_buf;
 	const char *fail_reason;
 	guint8 hwaddr_bin_buf[NM_UTILS_HWADDR_LEN_MAX];
 	const guint8 *hwaddr_bin;
 	gsize hwaddr_len;
 	GBytes *result;
-	gs_free char *logstr1 = NULL;
+	g_autofree char *logstr1 = NULL;
 
 	s_ip4 = nm_connection_get_setting_ip4_config (connection);
 	client_id = nm_setting_ip4_config_get_dhcp_client_id (NM_SETTING_IP4_CONFIG (s_ip4));
@@ -7797,7 +7797,7 @@ generate_duid_uuid (guint8 *data, gsize data_len)
 static GBytes *
 generate_duid_from_machine_id (void)
 {
-	gs_free const char *machine_id_s = NULL;
+	g_autofree const char *machine_id_s = NULL;
 	uuid_t uuid;
 	GChecksum *sum;
 	guint8 sha256_digest[32];
@@ -7826,13 +7826,13 @@ dhcp6_get_duid (ByxConnection *self, NMConnection *connection, GBytes *hwaddr, g
 {
 	NMSettingIPConfig *s_ip6;
 	const char *duid;
-	gs_free char *duid_default = NULL;
+	g_autofree char *duid_default = NULL;
 	const char *duid_error;
 	GBytes *duid_out;
 	guint8 sha256_digest[32];
 	gsize len = sizeof (sha256_digest);
 	gboolean duid_enforce = TRUE;
-	gs_free char *logstr1 = NULL;
+	g_autofree char *logstr1 = NULL;
 
 	s_ip6 = nm_connection_get_setting_ip6_config (connection);
 	duid = nm_setting_ip6_config_get_dhcp_duid (NM_SETTING_IP6_CONFIG (s_ip6));
@@ -8358,7 +8358,7 @@ gint64
 byx_connection_get_configured_mtu_from_connection_default (ByxConnection *self,
                                                       const char *property_name)
 {
-	gs_free char *str = NULL;
+	g_autofree char *str = NULL;
 
 	str = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA, property_name, self);
 	return _byx_utils_ascii_str_to_int64 (str, 10, 0, G_MAXUINT32, -1);
@@ -9057,7 +9057,7 @@ static NMSettingIP6ConfigPrivacy
 _ip6_privacy_get (ByxConnection *self)
 {
 	NMSettingIP6ConfigPrivacy ip6_privacy;
-	gs_free char *value = NULL;
+	g_autofree char *value = NULL;
 	NMConnection *connection;
 
 	g_return_val_if_fail (self, NM_SETTING_IP6_CONFIG_PRIVACY_UNKNOWN);
@@ -9785,7 +9785,7 @@ activate_stage5_ip4_config_result (ByxConnection *self)
 	method = byx_utils_get_ip_config_method (connection, NM_TYPE_SETTING_IP4_CONFIG);
 
 	if (strcmp (method, NM_SETTING_IP4_CONFIG_METHOD_SHARED) == 0) {
-		gs_free_error GError *error = NULL;
+		g_autofree_error GError *error = NULL;
 
 		if (!start_sharing (self, priv->ip_config_4, &error)) {
 			_LOGW (LOGD_SHARING, "Activation: Stage 5 of 5 (IPv4 Commit) start sharing failed: %s", error->message);
@@ -10134,7 +10134,7 @@ delete_on_deactivate_link_delete (gpointer user_data)
 
 	if (data->device) {
 		ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (data->device);
-		gs_free_error GError *error = NULL;
+		g_autofree_error GError *error = NULL;
 
 		g_object_remove_weak_pointer (G_OBJECT (data->device), (void **) &data->device);
 		priv->delete_on_deactivate_data = NULL;
@@ -11565,11 +11565,11 @@ static gboolean
 spawn_ping (ByxConnection *self)
 {
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
-	gs_free char *str_timeout = NULL;
-	gs_free char *tmp_str = NULL;
+	g_autofree char *str_timeout = NULL;
+	g_autofree char *tmp_str = NULL;
 	const char *args[] = { priv->gw_ping.binary, "-I", byx_connection_get_ip_iface (self),
 	                       "-c", "1", "-w", NULL, priv->gw_ping.address, NULL };
-	gs_free_error GError *error = NULL;
+	g_autofree_error GError *error = NULL;
 	gboolean ret;
 
 	args[6] = str_timeout = g_strdup_printf ("%u", priv->gw_ping.deadline);
@@ -11774,7 +11774,7 @@ byx_connection_is_up (ByxConnection *self)
 static gint64
 _get_carrier_wait_ms (ByxConnection *self)
 {
-	gs_free char *value = NULL;
+	g_autofree char *value = NULL;
 
 	value = byx_config_data_get_device_config (BYX_CONFIG_GET_DATA,
 	                                          BYX_CONFIG_KEYFILE_KEY_DEVICE_CARRIER_WAIT_TIMEOUT,
@@ -13611,7 +13611,7 @@ byx_connection_spawn_iface_helper (ByxConnection *self)
 	GError *error = NULL;
 	const char *method;
 	GPtrArray *argv;
-	gs_free char *dhcp4_address = NULL;
+	g_autofree char *dhcp4_address = NULL;
 	char *logging_backend;
 	NMUtilsStableType stable_type;
 	const char *stable_id;
@@ -14776,7 +14776,7 @@ byx_connection_get_supplicant_timeout (ByxConnection *self)
 {
 	NMConnection *connection;
 	NMSetting8021x *s_8021x;
-	gs_free char *value = NULL;
+	g_autofree char *value = NULL;
 	gint timeout;
 #define SUPPLICANT_DEFAULT_TIMEOUT 25
 
@@ -14818,7 +14818,7 @@ byx_connection_auth_retries_try_next (ByxConnection *self)
 			auth_retries = nm_setting_connection_get_auth_retries (s_con);
 
 		if (auth_retries == -1) {
-			gs_free char *value = NULL;
+			g_autofree char *value = NULL;
 
 			value = byx_config_data_get_connection_default (BYX_CONFIG_GET_DATA,
 			                                               "connection.auth-retries",
@@ -15000,7 +15000,7 @@ dispose (GObject *object)
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 	NMPlatform *platform;
 	ByxConnectionConnectivityHandle *con_handle;
-	gs_free_error GError *cancelled_error = NULL;
+	g_autofree_error GError *cancelled_error = NULL;
 
 	_LOGD (LOGD_DEVICE, "disposing");
 

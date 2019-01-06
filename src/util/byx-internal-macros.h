@@ -302,81 +302,6 @@ NM_G_ERROR_MSG (GError *error)
 #endif
 
 #if _BYX_CC_SUPPORT_GENERIC
-#define _NM_CONSTCAST_FULL_1(type, obj_expr, obj) \
-	(_Generic ((obj_expr), \
-	           const void        *const: ((const type *) (obj)), \
-	           const void        *     : ((const type *) (obj)), \
-	                 void        *const: ((      type *) (obj)), \
-	                 void        *     : ((      type *) (obj)), \
-	           const type        *const: ((const type *) (obj)), \
-	           const type        *     : ((const type *) (obj)), \
-	                 type        *const: ((      type *) (obj)), \
-	                 type        *     : ((      type *) (obj))))
-#define _NM_CONSTCAST_FULL_2(type, obj_expr, obj, alias_type2) \
-	(_Generic ((obj_expr), \
-	           const void        *const: ((const type *) (obj)), \
-	           const void        *     : ((const type *) (obj)), \
-	                 void        *const: ((      type *) (obj)), \
-	                 void        *     : ((      type *) (obj)), \
-	           const alias_type2 *const: ((const type *) (obj)), \
-	           const alias_type2 *     : ((const type *) (obj)), \
-	                 alias_type2 *const: ((      type *) (obj)), \
-	                 alias_type2 *     : ((      type *) (obj)), \
-	           const type        *const: ((const type *) (obj)), \
-	           const type        *     : ((const type *) (obj)), \
-	                 type        *const: ((      type *) (obj)), \
-	                 type        *     : ((      type *) (obj))))
-#define _NM_CONSTCAST_FULL_3(type, obj_expr, obj, alias_type2, alias_type3) \
-	(_Generic ((obj_expr), \
-	           const void        *const: ((const type *) (obj)), \
-	           const void        *     : ((const type *) (obj)), \
-	                 void        *const: ((      type *) (obj)), \
-	                 void        *     : ((      type *) (obj)), \
-	           const alias_type2 *const: ((const type *) (obj)), \
-	           const alias_type2 *     : ((const type *) (obj)), \
-	                 alias_type2 *const: ((      type *) (obj)), \
-	                 alias_type2 *     : ((      type *) (obj)), \
-	           const alias_type3 *const: ((const type *) (obj)), \
-	           const alias_type3 *     : ((const type *) (obj)), \
-	                 alias_type3 *const: ((      type *) (obj)), \
-	                 alias_type3 *     : ((      type *) (obj)), \
-	           const type        *const: ((const type *) (obj)), \
-	           const type        *     : ((const type *) (obj)), \
-	                 type        *const: ((      type *) (obj)), \
-	                 type        *     : ((      type *) (obj))))
-#define _NM_CONSTCAST_FULL_4(type, obj_expr, obj, alias_type2, alias_type3, alias_type4) \
-	(_Generic ((obj_expr), \
-	           const void        *const: ((const type *) (obj)), \
-	           const void        *     : ((const type *) (obj)), \
-	                 void        *const: ((      type *) (obj)), \
-	                 void        *     : ((      type *) (obj)), \
-	           const alias_type2 *const: ((const type *) (obj)), \
-	           const alias_type2 *     : ((const type *) (obj)), \
-	                 alias_type2 *const: ((      type *) (obj)), \
-	                 alias_type2 *     : ((      type *) (obj)), \
-	           const alias_type3 *const: ((const type *) (obj)), \
-	           const alias_type3 *     : ((const type *) (obj)), \
-	                 alias_type3 *const: ((      type *) (obj)), \
-	                 alias_type3 *     : ((      type *) (obj)), \
-	           const alias_type4 *const: ((const type *) (obj)), \
-	           const alias_type4 *     : ((const type *) (obj)), \
-	                 alias_type4 *const: ((      type *) (obj)), \
-	                 alias_type4 *     : ((      type *) (obj)), \
-	           const type        *const: ((const type *) (obj)), \
-	           const type        *     : ((const type *) (obj)), \
-	                 type        *const: ((      type *) (obj)), \
-	                 type        *     : ((      type *) (obj))))
-#define _NM_CONSTCAST_FULL_x(type, obj_expr, obj, n, ...)   (_NM_CONSTCAST_FULL_##n (type, obj_expr, obj,                        ##__VA_ARGS__))
-#define _NM_CONSTCAST_FULL_y(type, obj_expr, obj, n, ...)   (_NM_CONSTCAST_FULL_x   (type, obj_expr, obj, n,                     ##__VA_ARGS__))
-#define NM_CONSTCAST_FULL(   type, obj_expr, obj,    ...)   (_NM_CONSTCAST_FULL_y   (type, obj_expr, obj, NM_NARG (dummy, ##__VA_ARGS__), ##__VA_ARGS__))
-#else
-#define NM_CONSTCAST_FULL(   type, obj_expr, obj,    ...)   ((type *) (obj))
-#endif
-
-#define NM_CONSTCAST(type, obj, ...) \
-	NM_CONSTCAST_FULL(type, (obj), (obj), ##__VA_ARGS__)
-
-#if _BYX_CC_SUPPORT_GENERIC
 #define NM_UNCONST_PTR(type, arg) \
 	_Generic ((arg), \
 	          const type *: ((type *) (arg)), \
@@ -385,34 +310,6 @@ NM_G_ERROR_MSG (GError *error)
 #define NM_UNCONST_PTR(type, arg) \
 	((type *) (arg))
 #endif
-
-#if _BYX_CC_SUPPORT_GENERIC
-#define NM_UNCONST_PPTR(type, arg) \
-	_Generic ((arg), \
-	          const type *     *: ((type **) (arg)), \
-	                type *     *: ((type **) (arg)), \
-	          const type *const*: ((type **) (arg)), \
-	                type *const*: ((type **) (arg)))
-#else
-#define NM_UNCONST_PPTR(type, arg) \
-	((type **) (arg))
-#endif
-
-#define NM_GOBJECT_CAST(type, obj, is_check, ...) \
-	({ \
-		const void *_obj = (obj); \
-		\
-		nm_assert (_obj || (is_check (_obj))); \
-		NM_CONSTCAST_FULL (type, (obj), _obj, GObject, ##__VA_ARGS__); \
-	})
-
-#define NM_GOBJECT_CAST_NON_NULL(type, obj, is_check, ...) \
-	({ \
-		const void *_obj = (obj); \
-		\
-		nm_assert (is_check (_obj)); \
-		NM_CONSTCAST_FULL (type, (obj), _obj, GObject, ##__VA_ARGS__); \
-	})
 
 #if _BYX_CC_SUPPORT_GENERIC
 /* returns @value, if the type of @value matches @type.
@@ -459,16 +356,6 @@ NM_G_ERROR_MSG (GError *error)
 #else
 #define NM_CAST_STRV_MC(value) ((const char *     *) (value))
 #define NM_CAST_STRV_CC(value) ((const char *const*) (value))
-#endif
-
-#if _BYX_CC_SUPPORT_GENERIC
-#define NM_PROPAGATE_CONST(test_expr, ptr) \
-	(_Generic ((test_expr), \
-	           const typeof (*(test_expr)) *: ((const typeof (*(ptr)) *) (ptr)), \
-	                                 default: (_Generic ((test_expr), \
-	                                                     typeof (*(test_expr)) *: (ptr)))))
-#else
-#define NM_PROPAGATE_CONST(test_expr, ptr) (ptr)
 #endif
 
 /*****************************************************************************/
@@ -676,7 +563,7 @@ nm_strdup_not_empty (const char *str)
 static inline char *
 nm_str_realloc (char *str)
 {
-	gs_free char *s = str;
+	g_autofree char *s = str;
 
 	/* Returns a new clone of @str and frees @str. The point is that @str
 	 * possibly points to a larger chunck of memory. We want to freshly allocate
@@ -749,17 +636,6 @@ _notify (obj_type *obj, _PropertyEnums prop) \
 	nm_assert ((gsize) prop < G_N_ELEMENTS (obj_properties)); \
 	g_object_notify_by_pspec ((GObject *) obj, obj_properties[prop]); \
 }
-
-/*****************************************************************************/
-
-#define _BYX_GET_PRIVATE(self, type, is_check, ...) (&(NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__)->_priv))
-
-#define _BYX_GET_PRIVATE_PTR(self, type, is_check, ...) \
-	({ \
-		__auto_type _self = NM_GOBJECT_CAST_NON_NULL (type, (self), is_check, ##__VA_ARGS__); \
-		\
-		NM_PROPAGATE_CONST (_self, _self->_priv); \
-	})
 
 /*****************************************************************************/
 

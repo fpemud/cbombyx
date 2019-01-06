@@ -109,7 +109,7 @@ gboolean byx_main_utils_write_pidfile (const char *pidfile)
 
 void byx_main_utils_ensure_statedir ()
 {
-	gs_free char *parent = NULL;
+	g_autofree char *parent = NULL;
 	int errsv;
 
 	parent = g_path_get_dirname (NMSTATEDIR);
@@ -154,8 +154,8 @@ void byx_main_utils_ensure_rundir ()
  */
 void byx_main_utils_ensure_no_running_pidfile (const char *pidfile)
 {
-	gs_free char *contents = NULL;
-	gs_free char *proc_cmdline = NULL;
+	g_autofree char *contents = NULL;
+	g_autofree char *proc_cmdline = NULL;
 	gsize len = 0;
 	glong pid;
 	const char *process_name;

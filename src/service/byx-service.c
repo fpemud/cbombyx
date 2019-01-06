@@ -1871,7 +1871,7 @@ connect_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_data)
 {
 	ByxService *self;
 	gs_unref_variant GVariant *reply = NULL;
-	gs_free_error GError *error = NULL;
+	g_autofree_error GError *error = NULL;
 
 	reply = g_dbus_proxy_call_finish (proxy, result, &error);
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
@@ -1894,7 +1894,7 @@ connect_interactive_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_d
 	ByxService *self;
 	NMVpnConnectionPrivate *priv;
 	gs_unref_variant GVariant *reply = NULL;
-	gs_free_error GError *error = NULL;
+	g_autofree_error GError *error = NULL;
 
 	reply = g_dbus_proxy_call_finish (proxy, result, &error);
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
@@ -2176,7 +2176,7 @@ nm_vpn_service_daemon_exec (ByxService *self, GError **error)
 	gboolean success = FALSE;
 	GError *spawn_error = NULL;
 	guint i, j, n_environ;
-	gs_free char **envp = NULL;
+	g_autofree char **envp = NULL;
 	char env_log_level[BYX_STRLEN ("NM_VPN_LOG_LEVEL=") + 100];
 	char env_log_syslog[BYX_STRLEN ("NM_VPN_LOG_SYSLOG=") + 10];
 	const int N_ENVIRON_EXTRA = 3;
@@ -2240,7 +2240,7 @@ on_proxy_acquired (GObject *object, GAsyncResult *result, gpointer user_data)
 {
 	ByxService *self;
 	NMVpnConnectionPrivate *priv;
-	gs_free_error GError *error = NULL;
+	g_autofree_error GError *error = NULL;
 	GDBusProxy *proxy;
 
 	proxy = g_dbus_proxy_new_for_bus_finish (result, &error);
@@ -2481,7 +2481,7 @@ plugin_need_secrets_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_d
 	ByxService *self;
 	NMVpnConnectionPrivate *priv;
 	gs_unref_variant GVariant *reply = NULL;
-	gs_free_error GError *error = NULL;
+	g_autofree_error GError *error = NULL;
 	const char *setting_name;
 
 	reply = _nm_dbus_proxy_call_finish (proxy, result, G_VARIANT_TYPE ("(s)"), &error);
@@ -2524,7 +2524,7 @@ plugin_new_secrets_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_da
 {
 	ByxService *self;
 	gs_unref_variant GVariant *reply = NULL;
-	gs_free_error GError *error = NULL;
+	g_autofree_error GError *error = NULL;
 
 	reply = g_dbus_proxy_call_finish (proxy, result, &error);
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
@@ -2660,8 +2660,8 @@ plugin_interactive_secrets_required (ByxService *self,
 	NMVpnConnectionPrivate *priv = NM_VPN_CONNECTION_GET_PRIVATE (self);
 	const gsize secrets_len = NM_PTRARRAY_LEN (secrets);
 	gsize i;
-	gs_free const char **hints = NULL;
-	gs_free char *message_hint = NULL;
+	g_autofree const char **hints = NULL;
+	g_autofree char *message_hint = NULL;
 
 	_LOGI ("VPN plugin: requested secrets; state %s (%d)",
 	       vpn_state_to_string (priv->vpn_state), priv->vpn_state);
