@@ -23,7 +23,6 @@
 #include "byx-default.h"
 
 #include <getopt.h>
-#include <locale.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -31,6 +30,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <libintl.h>
+#include <locale.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/resource.h>
@@ -58,36 +59,6 @@ static void _init_nm_debug (ByxConfig *config)
 #endif
 }
 
-void
-nm_main_config_reload (int signal)
-{
-    ByxConfigChangeFlags reload_flags;
-
-    switch (signal) {
-        case SIGHUP:
-            reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGHUP;
-            break;
-        case SIGUSR1:
-            reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR1;
-            break;
-        case SIGUSR2:
-            reload_flags = BYX_CONFIG_CHANGE_CAUSE_SIGUSR2;
-            break;
-        default:
-            g_return_if_reached ();
-    }
-
-    byx_log_info (LOGD_CORE, "reload configuration (signal %s)...", strsignal (signal));
-
-    /* The signal handler thread is only installed after
-     * creating ByxConfigManager instance, and on shut down we
-     * no longer run the mainloop (to reach this point).
-     *
-     * Hence, a ByxConfigManager singleton instance must always be
-     * available. */
-    byx_config_reload (byx_config_manager_get (), reload_flags);
-}
-
 /*
  * main
  *
@@ -101,7 +72,7 @@ int main (int argc, char *argv[])
     gboolean success = FALSE;
 
 
-    g_autofree_error GError *error = NULL;
+    g_autoptr(GError) error = NULL;
     char *bad_domains = NULL;
     guint sd_id = 0;
     GError *error_invalid_logging_config = NULL;
@@ -110,7 +81,7 @@ int main (int argc, char *argv[])
      * https://gitlab.gnome.org/GNOME/glib/issues/541 */
     g_type_ensure (G_TYPE_SOCKET);
     g_type_ensure (G_TYPE_DBUS_CONNECTION);
-    g_type_ensure (BYX_TYPE_DBUS_MANAGER);
+    /*g_type_ensure (BYX_TYPE_DBUS_MANAGER);*/
 
     /* Make GIO ignore the remote VFS service; otherwise it tries to use the
      * session bus to contact the remote service, and NM shouldn't ever be

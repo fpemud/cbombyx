@@ -33,10 +33,13 @@
 
 #include "config.h"
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <glib.h>
 #include <glib-object.h>
 #include <glib/gi18n.h>
+#include <gio/gio.h>
 
 #ifndef BYX_MORE_ASSERTS
 #define BYX_MORE_ASSERTS 0
@@ -177,7 +180,7 @@ _nm_g_return_if_fail_warning (const char *log_domain,
 /*****************************************************************************/
 
 #include "util/byx-internal-macros.h"
-/*#include "util/byx-version-macros.h"*/
+#include "util/byx-version-macros.h"
 
 /*****************************************************************************/
 

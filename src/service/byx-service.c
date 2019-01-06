@@ -1871,7 +1871,7 @@ connect_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_data)
 {
 	ByxService *self;
 	gs_unref_variant GVariant *reply = NULL;
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 
 	reply = g_dbus_proxy_call_finish (proxy, result, &error);
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
@@ -1894,7 +1894,7 @@ connect_interactive_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_d
 	ByxService *self;
 	NMVpnConnectionPrivate *priv;
 	gs_unref_variant GVariant *reply = NULL;
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 
 	reply = g_dbus_proxy_call_finish (proxy, result, &error);
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
@@ -2240,7 +2240,7 @@ on_proxy_acquired (GObject *object, GAsyncResult *result, gpointer user_data)
 {
 	ByxService *self;
 	NMVpnConnectionPrivate *priv;
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 	GDBusProxy *proxy;
 
 	proxy = g_dbus_proxy_new_for_bus_finish (result, &error);
@@ -2481,7 +2481,7 @@ plugin_need_secrets_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_d
 	ByxService *self;
 	NMVpnConnectionPrivate *priv;
 	gs_unref_variant GVariant *reply = NULL;
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 	const char *setting_name;
 
 	reply = _nm_dbus_proxy_call_finish (proxy, result, G_VARIANT_TYPE ("(s)"), &error);
@@ -2524,7 +2524,7 @@ plugin_new_secrets_cb (GDBusProxy *proxy, GAsyncResult *result, gpointer user_da
 {
 	ByxService *self;
 	gs_unref_variant GVariant *reply = NULL;
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 
 	reply = g_dbus_proxy_call_finish (proxy, result, &error);
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))

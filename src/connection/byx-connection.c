@@ -2814,7 +2814,7 @@ byx_connection_check_connectivity (ByxConnection *self,
 void
 byx_connection_check_connectivity_cancel (ByxConnectionConnectivityHandle *handle)
 {
-	g_autofree_error GError *cancelled_error = NULL;
+	g_autoptr(GError) cancelled_error = NULL;
 
 	g_return_if_fail (handle);
 	g_return_if_fail (BYX_IS_CONNECTION (handle->self));
@@ -5896,7 +5896,7 @@ lldp_init (ByxConnection *self, gboolean restart)
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 
 	if (priv->ifindex > 0 && lldp_rx_enabled (self)) {
-		g_autofree_error GError *error = NULL;
+		g_autoptr(GError) error = NULL;
 
 		if (priv->lldp_listener) {
 			if (restart && nm_lldp_listener_is_running (priv->lldp_listener))
@@ -9785,7 +9785,7 @@ activate_stage5_ip4_config_result (ByxConnection *self)
 	method = byx_utils_get_ip_config_method (connection, NM_TYPE_SETTING_IP4_CONFIG);
 
 	if (strcmp (method, NM_SETTING_IP4_CONFIG_METHOD_SHARED) == 0) {
-		g_autofree_error GError *error = NULL;
+		g_autoptr(GError) error = NULL;
 
 		if (!start_sharing (self, priv->ip_config_4, &error)) {
 			_LOGW (LOGD_SHARING, "Activation: Stage 5 of 5 (IPv4 Commit) start sharing failed: %s", error->message);
@@ -10134,7 +10134,7 @@ delete_on_deactivate_link_delete (gpointer user_data)
 
 	if (data->device) {
 		ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (data->device);
-		g_autofree_error GError *error = NULL;
+		g_autoptr(GError) error = NULL;
 
 		g_object_remove_weak_pointer (G_OBJECT (data->device), (void **) &data->device);
 		priv->delete_on_deactivate_data = NULL;
@@ -11569,7 +11569,7 @@ spawn_ping (ByxConnection *self)
 	g_autofree char *tmp_str = NULL;
 	const char *args[] = { priv->gw_ping.binary, "-I", byx_connection_get_ip_iface (self),
 	                       "-c", "1", "-w", NULL, priv->gw_ping.address, NULL };
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 	gboolean ret;
 
 	args[6] = str_timeout = g_strdup_printf ("%u", priv->gw_ping.deadline);
@@ -15000,7 +15000,7 @@ dispose (GObject *object)
 	ByxConnectionPrivate *priv = BYX_CONNECTION_GET_PRIVATE (self);
 	NMPlatform *platform;
 	ByxConnectionConnectivityHandle *con_handle;
-	g_autofree_error GError *cancelled_error = NULL;
+	g_autoptr(GError) cancelled_error = NULL;
 
 	_LOGD (LOGD_DEVICE, "disposing");
 

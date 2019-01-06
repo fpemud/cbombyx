@@ -5,6 +5,8 @@ cflags = [
   '-DBINDIR="@0@"'.format(byx_bindir),
   '-DDATADIR="@0@"'.format(byx_datadir),
   '-DLIBEXECDIR="@0@"'.format(byx_libexecdir),
+  '-DLOCALSTATEDIR="@0@"'.format(byx_localstatedir),
+  '-DRUNSTATEDIR="@0@"'.format(byx_runstatedir),
   '-DSBINDIR="@0@"'.format(byx_sbindir),
   '-DSYSCONFDIR="@0@"'.format(byx_sysconfdir),
   '-DRUNDIR="@0@"'.format(byx_pkgrundir),
@@ -33,6 +35,8 @@ deps = [
 if enable_concheck
   deps += libcurl_dep
 endif
+
+subdir('util')
 
 byx_daemon = executable(byx_name, sources,
   dependencies: deps,

@@ -230,10 +230,9 @@ if enable_docs
   assert(false)
 endif
 
-config = 'config.h'
 configure_file(
-  input: config + '.meson',
-  output: config,
+  input: 'config.h.in',
+  output: 'config.h',
   configuration: config_h
 )
 

@@ -39,7 +39,16 @@
 static gboolean
 sighup_handler (gpointer user_data)
 {
-	nm_main_config_reload (GPOINTER_TO_INT (user_data));
+    byx_log_info (LOGD_CORE, "reload configuration (signal %s)...", strsignal (signal));
+
+    /* The signal handler thread is only installed after
+     * creating ByxConfigManager instance, and on shut down we
+     * no longer run the mainloop (to reach this point).
+     *
+     * Hence, a ByxConfigManager singleton instance must always be
+     * available. */
+    byx_config_manager_reload (byx_config_manager_get ());
+
 	return G_SOURCE_CONTINUE;
 }
 

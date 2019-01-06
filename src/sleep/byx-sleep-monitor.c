@@ -115,7 +115,7 @@ inhibit_done (GObject      *source,
 {
 	GDBusProxy *proxy = G_DBUS_PROXY (source);
 	ByxSleepMonitor *self = user_data;
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 	gs_unref_variant GVariant *res = NULL;
 	gs_unref_object GUnixFDList *fd_list = NULL;
 

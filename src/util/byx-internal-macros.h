@@ -22,10 +22,6 @@
 #ifndef __BYX_INTERNAL_MACROS_H__
 #define __BYX_INTERNAL_MACROS_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-
 #define _nm_packed           __attribute__ ((packed))
 #define _nm_unused           __attribute__ ((unused))
 #define _nm_pure             __attribute__ ((pure))
@@ -56,14 +52,6 @@
 #define nm_auto(fcn) __attribute__ ((cleanup(fcn)))
 
 static inline int nm_close (int fd);
-
-/**
- * nm_auto_free:
- *
- * Call free() on a variable location when it goes out of scope.
- */
-#define nm_auto_free nm_auto(_nm_auto_free_impl)
-GS_DEFINE_CLEANUP_FUNCTION(void*, _nm_auto_free_impl, free)
 
 static inline void
 nm_free_secret (char *secret)
@@ -1058,7 +1046,7 @@ nm_decode_version (guint version, guint *major, guint *minor, guint *micro)
 		\
 		/* ensure that the buffer is statically allocated */ \
 		assert (sizeof(buf) / sizeof((buf)[0]) == sizeof(buf)); \
-		assert (sizeof(buf) != sizeof(char *));
+		assert (sizeof(buf) != sizeof(char *)); \
 		\
 		_buf_len = g_snprintf (buf, sizeof(buf), ""format"", ##__VA_ARGS__); \
 		assert (_buf_len < sizeof(buf)); \

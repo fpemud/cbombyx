@@ -138,9 +138,6 @@ static void byx_config_manager_classinit (ByxConfigManagerClass *config_manager_
     GObjectClass *object_class = G_OBJECT_CLASS (config_manager_class);
 
     object_class->byx_config_manager_finalize = byx_config_manager_finalize;
-
-    G_STATIC_ASSERT_EXPR (sizeof (guint) == sizeof (ByxConfigChangeFlags));
-    G_STATIC_ASSERT_EXPR (((gint64) ((ByxConfigChangeFlags) -1)) > ((gint64) 0));
 }
 
 static void byx_config_manager_init (ByxConfigManager *self)
@@ -1653,7 +1650,7 @@ static State *
 state_new_from_file (const char *filename)
 {
     GKeyFile *keyfile;
-    g_autofree_error GError *error = NULL;
+    g_autoptr(GError) error = NULL;
     State *state;
 
     state = state_new ();
@@ -2028,30 +2025,15 @@ byx_config_connection_data_get (ByxConfigManager *self,
 
 /*****************************************************************************/
 
-void
-byx_config_reload (ByxConfigManager *self, ByxConfigChangeFlags reload_flags)
+void byx_config_manager_reload (ByxConfigManager *self)
 {
-    ByxConfigManagerPrivate *priv;
+    ByxConfigManagerPrivate *priv = byx_config_maanger_instance_get_private(self);
     GError *error = NULL;
     GKeyFile *keyfile, *keyfile_intern;
     ByxConfigData *new_data = NULL;
     char *config_main_file = NULL;
     char *config_description = NULL;
     gboolean intern_config_needs_rewrite;
-
-    g_return_if_fail (BYX_IS_CONFIG_MANAGER (self));
-    g_return_if_fail (   reload_flags
-                      && !BYX_FLAGS_ANY (reload_flags, ~BYX_CONFIG_CHANGE_CAUSES)
-                      && !BYX_FLAGS_ANY (reload_flags,   BYX_CONFIG_CHANGE_CAUSE_NO_AUTO_DEFAULT
-                                                      | BYX_CONFIG_CHANGE_CAUSE_SET_VALUES));
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
-
-    if (!BYX_FLAGS_ANY (reload_flags, BYX_CONFIG_CHANGE_CAUSE_SIGHUP | BYX_CONFIG_CHANGE_CAUSE_CONF)) {
-        /* unless SIGHUP is specified, we don't reload the configuration from disc. */
-        _set_config_data (self, NULL, reload_flags);
-        return;
-    }
 
     /* pass on the original command line options. This means, that
      * options specified at command line cannot ever be reloaded from

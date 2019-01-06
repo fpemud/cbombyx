@@ -976,7 +976,7 @@ _obj_register (ByxDBusManager *self,
 		for (i = 0; klass->interface_infos[i]; i++) {
 			const ByxDBusInterfaceInfoExtended *interface_info = klass->interface_infos[i];
 			RegistrationData *reg_data;
-			g_autofree_error GError *error = NULL;
+			g_autoptr(GError) error = NULL;
 			guint registration_id;
 			guint prop_len = NM_PTRARRAY_LEN (interface_info->parent.properties);
 
@@ -1494,7 +1494,7 @@ gboolean
 byx_dbus_manager_acquire_bus (ByxDBusManager *self)
 {
 	ByxDBusManagerPrivate *priv;
-	g_autofree_error GError *error = NULL;
+	g_autoptr(GError) error = NULL;
 	gs_unref_variant GVariant *ret = NULL;
 	gs_unref_object GDBusConnection *connection = NULL;
 	gs_unref_object GDBusProxy *proxy = NULL;
