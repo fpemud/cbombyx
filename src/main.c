@@ -77,8 +77,7 @@ int main (int argc, char *argv[])
 
     char *bad_domains = NULL;
     guint sd_id = 0;
-    GError *error_invalid_logging_config = NULL;
-
+ 
     /* Known to cause a possible deadlock upon GDBus initialization:
      * https://gitlab.gnome.org/GNOME/glib/issues/541 */
     g_type_ensure (G_TYPE_SOCKET);
@@ -178,13 +177,8 @@ int main (int argc, char *argv[])
     */
 
     dbus_manager = byx_dbus_manager_get();
-
-    if (!byx_dbus_manager_acquire_bus (dbus_manager))
+    if (!byx_dbus_manager_start (dbus_manager, &error))
         goto done;
-
-    byx_dbus_manager_start (dbus_manager,
-                           byx_manager_dbus_set_property_handle,
-                           manager);
 
     /*
     nm_platform_process_events (NM_PLATFORM_GET);

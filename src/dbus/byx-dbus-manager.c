@@ -837,8 +837,7 @@ dbus_vtable_method_call (GDBusConnection *connection,
 
 	self = nm_dbus_object_get_manager (obj);
 	priv = BYX_DBUS_MANAGER_GET_PRIVATE (self);
-	if (   priv->shutting_down
-	    && !method_info->allow_during_shutdown) {
+	if (   priv->shutting_down) {
 		g_dbus_method_invocation_return_error_literal (invocation,
 		                                               G_DBUS_ERROR,
 		                                               G_DBUS_ERROR_FAILED,
@@ -1441,9 +1440,7 @@ static const GDBusInterfaceInfo interface_info_objmgr = NM_DEFINE_GDBUS_INTERFAC
 /*****************************************************************************/
 
 void
-byx_dbus_manager_start (ByxDBusManager *self,
-                       ByxDBusManagerSetPropertyHandler set_property_handler,
-                       gpointer set_property_handler_data)
+byx_dbus_manager_start (ByxDBusManager *self)
 {
 	ByxDBusManagerPrivate *priv;
 	ByxDBusObject *obj;
@@ -1452,8 +1449,8 @@ byx_dbus_manager_start (ByxDBusManager *self,
 	priv = BYX_DBUS_MANAGER_GET_PRIVATE (self);
 	g_return_if_fail (priv->connection);
 
-	priv->set_property_handler = set_property_handler;
-	priv->set_property_handler_data = set_property_handler_data;
+	priv->set_property_handler = NULL;
+	priv->set_property_handler_data = NULL;
 	priv->started = TRUE;
 
 	c_list_for_each_entry (obj, &priv->objects_lst_head, internal.objects_lst)

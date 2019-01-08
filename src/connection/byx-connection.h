@@ -25,13 +25,6 @@
 
 #include <netinet/in.h>
 
-#include "nm-setting-connection.h"
-#include "nm-dbus-object.h"
-#include "nm-dbus-interface.h"
-#include "nm-connection.h"
-#include "nm-rfkill-manager.h"
-#include "NetworkManagerUtils.h"
-
 #define BYX_TYPE_CONNECTION            (byx_connection_get_type ())
 #define BYX_CONNECTION(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_CONNECTION, ByxConnection))
 #define BYX_CONNECTION_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  BYX_TYPE_CONNECTION, ByxConnectionClass))

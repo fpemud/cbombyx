@@ -22,20 +22,7 @@ ByxDBusManager *byx_dbus_manager_get (void);
 
 /*****************************************************************************/
 
-gboolean byx_dbus_manager_acquire_bus (ByxDBusManager *self);
-
-typedef void (*ByxDBusManagerSetPropertyHandler) (ByxDBusObject *obj,
-                                                 const ByxDBusInterfaceInfoExtended *interface_info,
-                                                 const ByxDBusPropertyInfoExtended *property_info,
-                                                 GDBusConnection *connection,
-                                                 const char *sender,
-                                                 GDBusMethodInvocation *invocation,
-                                                 GVariant *value,
-                                                 gpointer user_data);
-
-void byx_dbus_manager_start (ByxDBusManager *self,
-                             ByxDBusManagerSetPropertyHandler set_property_handler,
-                             gpointer set_property_handler_data);
+gboolean byx_dbus_manager_start (ByxDBusManager *self, GError **error);
 
 #if 0
 
