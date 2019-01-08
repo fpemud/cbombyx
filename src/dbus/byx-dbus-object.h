@@ -3,6 +3,8 @@
 #ifndef __BYX_DBUS_OBJECT_H__
 #define __BYX_DBUS_OBJECT_H__
 
+#include "byx-dbus-common.h"
+
 #define BYX_TYPE_DBUS_OBJECT            (byx_dbus_object_get_type ())
 #define BYX_DBUS_OBJECT(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_DBUS_OBJECT, ByxDBusObject))
 #define BYX_DBUS_OBJECT_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  BYX_TYPE_DBUS_OBJECT, ByxDBusObjectClass))

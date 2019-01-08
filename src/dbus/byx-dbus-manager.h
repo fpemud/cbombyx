@@ -3,6 +3,9 @@
 #ifndef __BYX_DBUS_MANAGER_H__
 #define __BYX_DBUS_MANAGER_H__
 
+#include "byx-dbus-common.h"
+#include "byx-dbus-object.h"
+
 #define BYX_TYPE_DBUS_MANAGER            (byx_dbus_manager_get_type ())
 #define BYX_DBUS_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_DBUS_MANAGER, ByxDBusManager))
 #define BYX_DBUS_MANAGER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), BYX_TYPE_DBUS_MANAGER, ByxDBusManagerClass))
@@ -19,6 +22,8 @@ ByxDBusManager *byx_dbus_manager_get (void);
 
 /*****************************************************************************/
 
+gboolean byx_dbus_manager_acquire_bus (ByxDBusManager *self);
+
 typedef void (*ByxDBusManagerSetPropertyHandler) (ByxDBusObject *obj,
                                                  const ByxDBusInterfaceInfoExtended *interface_info,
                                                  const ByxDBusPropertyInfoExtended *property_info,
@@ -27,8 +32,6 @@ typedef void (*ByxDBusManagerSetPropertyHandler) (ByxDBusObject *obj,
                                                  GDBusMethodInvocation *invocation,
                                                  GVariant *value,
                                                  gpointer user_data);
-
-gboolean byx_dbus_manager_acquire_bus (ByxDBusManager *self);
 
 void byx_dbus_manager_start (ByxDBusManager *self,
                              ByxDBusManagerSetPropertyHandler set_property_handler,
