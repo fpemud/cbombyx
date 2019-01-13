@@ -183,6 +183,7 @@ _nm_g_return_if_fail_warning (const char *log_domain,
 #include "util/byx-version-macros.h"
 #include "util/byx-logging.h"
 #include "util/byx-platform.h"
+#include "common/byx-common.h"
 
 /*****************************************************************************/
 

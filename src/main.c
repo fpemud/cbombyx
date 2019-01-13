@@ -37,6 +37,8 @@
 #include <sys/resource.h>
 
 #include "config/byx-config-manager.h"
+#include "device/byx-device-manager.h"
+#include "connection/byx-connection-manager.h"
 #include "dbus/byx-dbus-manager.h"
 #include "main-utils.h"
 
@@ -68,6 +70,8 @@ int main (int argc, char *argv[])
 {
 	ByxConfigManager *config_manager = NULL;
     ByxDBusManager *dbus_manager = NULL;
+    ByxDeviceManager *device_manager = NULL;
+    ByxConnectionManager *connection_manager = NULL;
 
 	ByxConfig *config = NULL;
     g_autoptr(GError) error = NULL;
@@ -175,6 +179,14 @@ int main (int argc, char *argv[])
 
     NM_UTILS_KEEP_ALIVE (config, nm_netns_get (), "ByxConfigManager-depends-on-NMNetns");
     */
+
+    device_manager = byx_device_manager_get();
+    if (!byx_device_manager_start (device_manager, &error))
+        goto done;
+
+    connection_manager = byx_connection_manager_get();
+    if (!byx_connection_manager_start (connection_manager, &error))
+        goto done;
 
     dbus_manager = byx_dbus_manager_get();
     if (!byx_dbus_manager_start (dbus_manager, &error))

@@ -1,25 +1,5 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-/* bombyx
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Copyright (C) 2005 - 2017 Red Hat, Inc.
- * Copyright (C) 2006 - 2008 Novell, Inc.
- */
-
 #ifndef __BYX_CONNECTION_H__
 #define __BYX_CONNECTION_H__
 
@@ -32,269 +12,29 @@
 #define BYX_IS_CONNECTION_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  BYX_TYPE_CONNECTION))
 #define BYX_CONNECTION_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  BYX_TYPE_CONNECTION, ByxConnectionClass))
 
-struct _ByxConnectionPrivate;
-
-struct _ByxConnection {
-	ByxDBusObject parent;
-	struct _ByxConnectionPrivate *_priv;
-	CList devices_lst;
-};
-
-typedef struct _ByxConnectionClass {
-	ByxDBusObjectClass parent;
-
-	struct _ByxConnectionClass *default_type_description_klass;
-	const char *default_type_description;
-
-	const char *connection_type;
-	const NMLinkType *link_types;
-
-	/* Whether the device type is a master-type. This depends purely on the
-	 * type (ByxConnectionClass), not the actual device instance. */
-	bool is_master:1;
-
-	void (*state_changed) (ByxConnection *device,
-	                       ByxConnectionState new_state,
-	                       ByxConnectionState old_state,
-	                       ByxConnectionStateReason reason);
-
-	void            (* link_changed) (ByxConnection *self,
-	                                  const NMPlatformLink *pllink);
-
-	/**
-	 * create_and_realize():
-	 * @self: the #ByxConnection
-	 * @connection: the #NMConnection being activated
-	 * @parent: the parent #ByxConnection, if any
-	 * @out_plink: on success, a backing kernel network device if one exists.
-	 *   The returned pointer is owned by platform and only valid until the
-	 *   next platform operation.
-	 * @error: location to store error, or %NULL
-	 *
-	 * Create any backing resources (kernel devices, etc) required for this
-	 * device to activate @connection.  If the device is backed by a kernel
-	 * network device, that device should be returned in @out_plink after
-	 * being created.
-	 *
-	 * Returns: %TRUE on success, %FALSE on error
-	 */
-	gboolean        (*create_and_realize) (ByxConnection *self,
-	                                       NMConnection *connection,
-	                                       ByxConnection *parent,
-	                                       const NMPlatformLink **out_plink,
-	                                       GError **error);
-
-	/**
-	 * realize_start_notify():
-	 * @self: the #ByxConnection
-	 * @pllink: the #NMPlatformLink if backed by a kernel netdevice
-	 *
-	 * Hook for derived classes to be notfied during realize_start_setup()
-	 * and perform additional setup.
-	 *
-	 * The default implemention of ByxConnection calls link_changed().
-	 */
-	void        (*realize_start_notify) (ByxConnection *self,
-	                                     const NMPlatformLink *pllink);
-
-	/**
-	 * unrealize():
-	 * @self: the #ByxConnection
-	 *
-	 * Remove the device backing resources.
-	 */
-	gboolean               (*unrealize) (ByxConnection *self, GError **error);
-
-	/**
-	 * unrealize_notify():
-	 * @self: the #ByxConnection
-	 *
-	 * Hook for derived classes to clear any properties that depend on backing resources
-	 * (kernel devices, etc). This is called by byx_connection_unrealize() during unrealization.
-	 */
-	void            (*unrealize_notify)  (ByxConnection *self);
-
-	/* Hardware state (IFF_UP) */
-	gboolean        (*can_unmanaged_external_down)  (ByxConnection *self);
-
-	/* Carrier state (IFF_LOWER_UP) */
-	void            (*carrier_changed_notify) (ByxConnection *, gboolean carrier);
-
-	gboolean    (* get_ip_iface_identifier) (ByxConnection *self, NMUtilsIPv6IfaceId *out_iid);
-
-	ByxConnectionCapabilities (* get_generic_capabilities) (ByxConnection *self);
-
-	gboolean    (* is_available) (ByxConnection *self, ByxConnectionCheckDevAvailableFlags flags);
-
-	gboolean    (* get_enabled) (ByxConnection *self);
-
-	void        (* set_enabled) (ByxConnection *self, gboolean enabled);
-
-	/* allow derived classes to override the result of byx_connection_autoconnect_allowed().
-	 * If the value changes, the class should call byx_connection_emit_recheck_auto_activate(),
-	 * which emits BYX_CONNECTION_RECHECK_AUTO_ACTIVATE signal. */
-	gboolean    (* get_autoconnect_allowed) (ByxConnection *self);
-
-	gboolean    (* can_auto_connect) (ByxConnection *self,
-	                                  NMConnection *connection,
-	                                  char **specific_object);
-
-	guint32     (*get_configured_mtu) (ByxConnection *self, ByxConnectionMtuSource *out_source);
-
-	/* Checks whether the connection is compatible with the device using
-	 * only the devices type and characteristics.  Does not use any live
-	 * network information like WiFi scan lists etc.
-	 */
-	gboolean    (* check_connection_compatible) (ByxConnection *self, NMConnection *connection);
-
-	/* Checks whether the connection is likely available to be activated,
-	 * including any live network information like scan lists.  The connection
-	 * is checked against the object defined by @specific_object, if given.
-	 * Returns TRUE if the connection is available; FALSE if not.
-	 *
-	 * The passed @flags affect whether a connection is considered
-	 * available or not. Adding more flags, means the connection is
-	 * *more* available.
-	 *
-	 * Specifying @specific_object can only reduce the availability of a connection.
-	 */
-	gboolean    (* check_connection_available) (ByxConnection *self,
-	                                            NMConnection *connection,
-	                                            ByxConnectionCheckConAvailableFlags flags,
-	                                            const char *specific_object);
-
-	gboolean    (* complete_connection)         (ByxConnection *self,
-	                                             NMConnection *connection,
-	                                             const char *specific_object,
-	                                             NMConnection *const*existing_connections,
-	                                             GError **error);
-
-	NMActStageReturn    (* act_stage1_prepare)  (ByxConnection *self,
-	                                             ByxConnectionStateReason *out_failure_reason);
-	NMActStageReturn    (* act_stage2_config)   (ByxConnection *self,
-	                                             ByxConnectionStateReason *out_failure_reason);
-	NMActStageReturn    (* act_stage3_ip4_config_start) (ByxConnection *self,
-	                                                     NMIP4Config **out_config,
-	                                                     ByxConnectionStateReason *out_failure_reason);
-	NMActStageReturn    (* act_stage3_ip6_config_start) (ByxConnection *self,
-	                                                     NMIP6Config **out_config,
-	                                                     ByxConnectionStateReason *out_failure_reason);
-	NMActStageReturn    (* act_stage4_ip4_config_timeout)   (ByxConnection *self,
-	                                                         ByxConnectionStateReason *out_failure_reason);
-	NMActStageReturn    (* act_stage4_ip6_config_timeout)   (ByxConnection *self,
-	                                                         ByxConnectionStateReason *out_failure_reason);
-
-	void                (* ip4_config_pre_commit) (ByxConnection *self, NMIP4Config *config);
-
-	/* Async deactivating (in the DEACTIVATING phase) */
-	void            (* deactivate_async)        (ByxConnection *self,
-	                                             GCancellable *cancellable,
-	                                             GAsyncReadyCallback callback,
-	                                             gpointer user_data);
-	gboolean        (* deactivate_async_finish) (ByxConnection *self,
-	                                             GAsyncResult *res,
-	                                             GError **error);
-
-	void            (* deactivate_reset_hw_addr) (ByxConnection *self);
-
-	/* Sync deactivating (in the DISCONNECTED phase) */
-	void            (* deactivate) (ByxConnection *self);
-
-	const char *(*get_type_description) (ByxConnection *self);
-
-	const char *(*get_s390_subchannels) (ByxConnection *self);
-
-	/* Update the connection with currently configured L2 settings */
-	void            (* update_connection) (ByxConnection *device, NMConnection *connection);
-
-	gboolean (*master_update_slave_connection) (ByxConnection *self,
-	                                            ByxConnection *slave,
-	                                            NMConnection *connection,
-	                                            GError **error);
-
-	gboolean        (* enslave_slave) (ByxConnection *self,
-	                                   ByxConnection *slave,
-	                                   NMConnection *connection,
-	                                   gboolean configure);
-
-	void            (* release_slave) (ByxConnection *self,
-	                                   ByxConnection *slave,
-	                                   gboolean configure);
-
-	void            (* parent_changed_notify) (ByxConnection *self,
-	                                           int old_ifindex,
-	                                           ByxConnection *old_parent,
-	                                           int new_ifindex,
-	                                           ByxConnection *new_parent);
-
-	/**
-	 * component_added:
-	 * @self: the #ByxConnection
-	 * @component: the component (device, modem, etc) which was added
-	 *
-	 * Notifies @self that a new component that a device might be interested
-	 * in was detected by some device factory. It may include an object of
-	 * %GObject subclass to help the devices decide whether it claims that
-	 * particular object itself and the emitting factory should not.
-	 *
-	 * Returns: %TRUE if the component was claimed exclusively and no further
-	 * devices should be notified of the new component.  %FALSE to indicate
-	 * that the component was not exclusively claimed and other devices should
-	 * be notified.
-	 */
-	gboolean        (* component_added) (ByxConnection *self, GObject *component);
-
-	gboolean        (* owns_iface) (ByxConnection *self, const char *iface);
-
-	NMConnection *  (* new_default_connection) (ByxConnection *self);
-
-	gboolean        (* unmanaged_on_quit) (ByxConnection *self);
-
-	gboolean        (* can_reapply_change) (ByxConnection *self,
-	                                        const char *setting_name,
-	                                        NMSetting *s_old,
-	                                        NMSetting *s_new,
-	                                        GHashTable *diffs,
-	                                        GError **error);
-
-	void            (* reapply_connection) (ByxConnection *self,
-	                                        NMConnection *con_old,
-	                                        NMConnection *con_new);
-
-	guint32         (* get_dhcp_timeout) (ByxConnection *self,
-	                                      int addr_family);
-} ByxConnectionClass;
-
-typedef void (*ByxConnectionAuthRequestFunc) (ByxConnection *device,
-                                         GDBusMethodInvocation *context,
-                                         NMAuthSubject *subject,
-                                         GError *error,
-                                         gpointer user_data);
+typedef struct _ByxConnection ByxConnection;
+typedef struct _ByxConnectionClass ByxConnectionClass;
 
 GType byx_connection_get_type (void);
 
-struct _NMDedupMultiIndex *byx_connection_get_multi_index (ByxConnection *self);
-NMNetns *byx_connection_get_netns (ByxConnection *self);
-NMPlatform *byx_connection_get_platform (ByxConnection *self);
+void *byx_connection_get_uuid(ByxConnection *self);
 
-const char *    byx_connection_get_udi               (ByxConnection *dev);
-const char *    byx_connection_get_iface             (ByxConnection *dev);
+void *byx_connection_get_name(ByxConnection *self);
 
-static inline const char *
-_byx_connection_get_iface (ByxConnection *device)
-{
-	/* like byx_connection_get_iface(), but gracefully accept NULL without
-	 * asserting. */
-	return device ? byx_connection_get_iface (device) : NULL;
-}
+ByxConnectionPlugin *byx_connection_get_plugin(ByxConnection *self);
 
-int             byx_connection_get_ifindex           (ByxConnection *dev);
+ByxNetworkType byx_connection_get_network_type(ByxConnection *self);
+
+GSList *byx_connection_get_associated_devices(ByxConnection *self);
+
+
+/*NMNetns *byx_connection_get_netns (ByxConnection *self);*/
+
+#if 0
 gboolean        byx_connection_is_software           (ByxConnection *dev);
 gboolean        byx_connection_is_real               (ByxConnection *dev);
 const char *    byx_connection_get_ip_iface          (ByxConnection *dev);
 int             byx_connection_get_ip_ifindex        (const ByxConnection *dev);
-const char *    byx_connection_get_driver            (ByxConnection *dev);
-const char *    byx_connection_get_driver_version    (ByxConnection *dev);
 const char *    byx_connection_get_type_desc         (ByxConnection *dev);
 const char *    byx_connection_get_type_description  (ByxConnection *dev);
 ByxConnectionType    byx_connection_get_device_type       (ByxConnection *dev);
@@ -650,5 +390,6 @@ struct _NMBtVTableNetworkServer {
 
 const char *byx_connection_state_to_str (ByxConnectionState state);
 const char *byx_connection_state_reason_to_str (ByxConnectionStateReason reason);
+#endif
 
 #endif /* __BYX_CONNECTION_H__ */

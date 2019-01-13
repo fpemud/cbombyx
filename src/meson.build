@@ -1,4 +1,4 @@
-#src_inc = include_directories('.')
+src_inc = include_directories('.')
 
 cflags = [
   '-DPREFIX="@0@"'.format(byx_prefix),
