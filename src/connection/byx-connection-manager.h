@@ -23,6 +23,19 @@ ByxConnectionManager *byx_connection_manager_get(void);
 /*****************************************************************************/
 
 gboolean byx_connection_manager_start (ByxConnectionManager *self, GError **error);
+void byx_connection_manager_stop (ByxConnectionManager *self);
+
+/*****************************************************************************/
+
+typedef struct {
+    char *uuid;
+    char *name;
+    char *inactivatable_reasone;
+} ByxConnectionInfo;
+
+GSList *byx_connection_manager_get_connection_info(ByxConnectionManager *self, size_t offset, size_t count);
+
+/*****************************************************************************/
 
 GSList *byx_connection_manager_get_all_plugins(ByxConnectionManager *self);
 
