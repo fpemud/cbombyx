@@ -30,7 +30,7 @@ void byx_connection_manager_stop (ByxConnectionManager *self);
 typedef struct {
     char *uuid;
     char *name;
-    char *inactivatable_reasone;
+    char *inactivatable_reason;
 } ByxConnectionInfo;
 
 GSList *byx_connection_manager_get_connection_info(ByxConnectionManager *self, size_t offset, size_t count);

@@ -7,6 +7,14 @@
 
 G_BEGIN_DECLS
 
+typdef struct {
+
+} ByxConnectionPluginWirelessParam;
+
+typdef struct {
+
+} ByxConnectionPluginDhcpParam;
+
 #define BYX_TYPE_CONNECTION_PLUGIN (byx_connection_plugin_get_type ())
 
 G_DECLARE_INTERFACE (ByxConnectionPlugin, byx_connection_plugin, BYX, CONNECTION_PLUGIN, GObject)
@@ -15,8 +23,30 @@ struct _ByxConnectionPluginInterface
 {
 	GTypeInterface g_iface;
 
-	/* Virtual public methods */
-	void (*activate) (ByxConnectionPlugin *plugin, ByxConnection *connection);
+	/* General */
+	ByxPluginFeature (*belong_to_network_type) (ByxConnection *plugin, ByxNetworkType network_type);
+
+	/* Physical layer */
+	ByxPluginFeature (*ignore_carrier)   (ByxConnectionPlugin *plugin);
+
+	/* Data-link layer (general) */
+	ByxPluginFeature (*need_fake_hwaddr) (ByxConnectionPlugin *plugin);
+
+	/* Data-link layer (wireless) */
+	ByxPluginFeature                        (*depend_on_wireless_scan)            (ByxConnectionPlugin *plugin);
+	gboolean                                (*check_wireless_scan)                (ByxConnectionPlugin *plugin);
+	gboolean                                (*check_wireless_scan_for_connection) (ByxConnectionPlugin *plugin, ByxConnection *connection);
+	const ByxConnectionPluginWirelessParam* (*get_wireless_param)                 (ByxConnectionPlugin *plugin, ByxConnection *connection);
+
+	/* Network layer */
+	ByxPluginFeature                    (*depend_on_dhcp_discovery)            (ByxConnectionPlugin *plugin);
+	gboolean                            (*check_dhcp_discovery)                (ByxConnectionPlugin *plugin);
+	gboolean                            (*check_dhcp_discovery_for_connection) (ByxConnectionPlugin *plugin, ByxConnection *connection);
+	const ByxConnectionPluginDhcpParam* (*get_dhcp_param)                      (ByxConnectionPlugin *plugin, ByxConnection *connection);
+	gboolean                            (*check_dhcp_lease_for_connection)     (ByxConnectionPlugin *plugin, ByxConnection *connection);
+
+	/* */
+	gboolean (*activate) (ByxConnectionPlugin *plugin, ByxConnection *connection, char *reason);		/* FIXME */
 	void (*deactivate) (ByxConnectionPlugin *plugin, ByxConnection *connection);
 };
 
