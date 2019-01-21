@@ -3,7 +3,6 @@
 #ifndef __BYX_CONNECTION_MANAGER_H__
 #define __BYX_CONNECTION_MANAGER_H__
 
-#include "byx-connection-plugin.h"
 #include "byx-connection.h"
 
 #define BYX_TYPE_CONNECTION_MANAGER            (byx_connection_manager_get_type ())
