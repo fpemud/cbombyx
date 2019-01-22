@@ -1,5 +1,3 @@
-src_inc = include_directories('.')
-
 cflags = [
   '-DPREFIX="@0@"'.format(byx_prefix),
   '-DBINDIR="@0@"'.format(byx_bindir),
@@ -39,9 +37,10 @@ endif
 subdir('util')
 
 byx_daemon = executable(byx_name, sources,
-  dependencies: deps,
-        c_args: cflags,
-     link_args: ldflags,
-       install: true,
-   install_dir: byx_sbindir
+  include_directories: top_inc,
+         dependencies: deps,
+               c_args: cflags,
+            link_args: ldflags,
+              install: true,
+          install_dir: byx_sbindir
 )

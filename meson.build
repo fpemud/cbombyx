@@ -221,6 +221,14 @@ test_args = [
 i18n = import('i18n')
 pkg = import('pkgconfig')
 
+configure_file(
+  input: 'config.h.in',
+  output: 'config.h',
+  configuration: config_h
+)
+
+top_inc = include_directories('.')
+
 subdir('src')
 subdir('data')
 subdir('po')
@@ -229,12 +237,6 @@ enable_docs = get_option('docs')
 if enable_docs
   assert(false)
 endif
-
-configure_file(
-  input: 'config.h.in',
-  output: 'config.h',
-  configuration: config_h
-)
 
 #meson.add_install_script(
 #  'meson_post_install.py',

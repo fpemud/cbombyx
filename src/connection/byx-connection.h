@@ -21,7 +21,7 @@ void *byx_connection_get_uuid(ByxConnection *self);
 
 void *byx_connection_get_name(ByxConnection *self);
 
-ByxConnectionPlugin *byx_connection_get_plugin(ByxConnection *self);
+const char *byx_connection_get_plugin(ByxConnection *self);
 
 ByxNetworkType byx_connection_get_network_type(ByxConnection *self);
 

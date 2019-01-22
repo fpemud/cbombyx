@@ -36,8 +36,6 @@ GSList *byx_connection_manager_get_connection_info(ByxConnectionManager *self, s
 
 /*****************************************************************************/
 
-GSList *byx_connection_manager_get_all_plugins(ByxConnectionManager *self);
-
 GSList *byx_connection_manager_get_activatable_connections(ByxConnectionManager *self,
                                                            gboolean sort);
 
