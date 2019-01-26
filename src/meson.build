@@ -22,6 +22,13 @@ ldflags = [
 
 sources = files(
   'main.c',
+  'util/byx-glib-keyfile.c',
+  'config/byx-persist-data.c',
+
+
+
+
+#  'config/byx-config-manager.c'
 )
 
 deps = [
@@ -34,7 +41,7 @@ if enable_concheck
   deps += libcurl_dep
 endif
 
-subdir('util')
+subdir('common')
 
 byx_daemon = executable(byx_name, sources,
   include_directories: top_inc,

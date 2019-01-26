@@ -5,10 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "nm-utils.h"
-#include "NetworkManagerUtils.h"
-#include "nm-core-internal.h"
-#include "nm-keyfile-internal.h"
+#include "byx-config-manager.h"
 
 #define BYX_SYSTEM_CONFIG_DIR                    NMLIBDIR "/conf.d"
 #define BYX_SYSTEM_CONNECTION_CONFIG_DIR         NMLIBDIR "/connection.d"
@@ -55,8 +52,8 @@ typedef struct {
 
     ByxConfig *config;
 
-    ByxConfigData *run_data;
-    ByxConfigData *persist_data;
+    ByxRunData *run_data;
+    ByxPersistData *persist_data;
 
     GHashTable *connection_run_data;
     GHashTable *connection_persist_data;
@@ -65,19 +62,6 @@ typedef struct {
     GHashTable *service_persist_data;
 
 #if 1
-    /* The state. This is actually a mutable data member and it makes sense:
-     * The regular config is immutable (ByxConfigData) and can old be swapped
-     * as a whole (via byx_config_set_values() or during reload). Thus, it can
-     * be changed, but it is still immutable and is swapped atomically as a
-     * whole. Also, we emit a config-changed signal on that occasion.
-     *
-     * For state, there are no events. You can query it and set it.
-     * It only gets read *once* at startup, and later is cached and only
-     * written out to disk. Hence, no need for the immutable dance here
-     * because the state changes only on explicit actions from the daemon
-     * itself. */
-    State *state;
-
     char *log_level;
     char *log_domains;
 
@@ -188,13 +172,13 @@ ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
 
 /*****************************************************************************/
 
-ByxConfigData *byx_config_manager_get_run_data (ByxConfigManager *self)
+ByxRunData *byx_config_manager_get_run_data (ByxConfigManager *self)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     return priv->run_data;
 }
 
-ByxConfigData *byx_config_manager_get_persist_data (ByxConfigManager *self)
+ByxPersistData *byx_config_manager_get_persist_data (ByxConfigManager *self)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     return priv->persist_data;
@@ -1607,189 +1591,6 @@ byx_config_set_values (ByxConfigManager *self,
         _set_config_data (self, new_data, BYX_CONFIG_CHANGE_CAUSE_SET_VALUES);
 
     g_key_file_unref (keyfile_new);
-}
-
-/******************************************************************************
- * State
- ******************************************************************************/
-
-static const char *
-state_get_filename (const ByxCmdLineOptions *cli)
-{
-    /* For an empty filename, we assume the user wants to disable
-     * state. ByxConfigManager will not try to read it nor write it out. */
-    if (!cli->persist_data_file)
-        return DEFAULT_STATE_FILE;
-    return cli->persist_data_file[0] ? cli->persist_data_file : NULL;
-}
-
-static State *
-state_new (void)
-{
-    State *state;
-
-    state = g_slice_new0 (State);
-    state->p.net_enabled = TRUE;
-    state->p.wifi_enabled = TRUE;
-    state->p.wwan_enabled = TRUE;
-
-    return state;
-}
-
-static void
-state_free (State *state)
-{
-    if (!state)
-        return;
-    g_slice_free (State, state);
-}
-
-static State *
-state_new_from_file (const char *filename)
-{
-    GKeyFile *keyfile;
-    g_autoptr(GError) error = NULL;
-    State *state;
-
-    state = state_new ();
-
-    if (!filename)
-        return state;
-
-    keyfile = g_key_file_new ();
-    g_key_file_set_list_separator (keyfile, ',');
-    if (!g_key_file_load_from_file (keyfile, filename, G_KEY_FILE_NONE, &error)) {
-        if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-            _LOGD ("state: missing state file \"%s\": %s", filename, error->message);
-        else
-            _LOGW ("state: error reading state file \"%s\": %s", filename, error->message);
-        goto out;
-    }
-
-    _LOGD ("state: successfully read state file \"%s\"", filename);
-
-    state->p.net_enabled  = byx_config_keyfile_get_boolean (keyfile, "main", "NetworkingEnabled", state->p.net_enabled);
-    state->p.wifi_enabled = byx_config_keyfile_get_boolean (keyfile, "main", "WirelessEnabled", state->p.wifi_enabled);
-    state->p.wwan_enabled = byx_config_keyfile_get_boolean (keyfile, "main", "WWANEnabled", state->p.wwan_enabled);
-
-out:
-    g_key_file_unref (keyfile);
-    return state;
-}
-
-const ByxConfigState *
-byx_config_state_get (ByxConfigManager *self)
-{
-    ByxConfigManagerPrivate *priv;
-
-    g_return_val_if_fail (BYX_IS_CONFIG_MANAGER (self), NULL);
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
-
-    if (G_UNLIKELY (!priv->state)) {
-        /* read the state from file lazy on first access. The reason is that
-         * we want to log a failure to read the file via nm-logging.
-         *
-         * So we cannot read the state during construction of ByxConfigManager,
-         * because at that time nm-logging is not yet configured.
-         */
-        priv->state = state_new_from_file (state_get_filename (&priv->cli));
-    }
-
-    return &priv->state->p;
-}
-
-static void
-state_write (ByxConfigManager *self)
-{
-    ByxConfigManagerPrivate *priv = BYX_CONFIG_GET_PRIVATE (self);
-    const char *filename;
-    GString *str;
-    GError *error = NULL;
-
-    filename = state_get_filename (&priv->cli);
-
-    if (!filename) {
-        priv->state->p.dirty = FALSE;
-        return;
-    }
-
-    str = g_string_sized_new (256);
-
-    /* Let's construct the keyfile data by hand. */
-
-    g_string_append (str, "[main]\n");
-    g_string_append_printf (str, "NetworkingEnabled=%s\n", priv->state->p.net_enabled ? "true" : "false");
-    g_string_append_printf (str, "WirelessEnabled=%s\n", priv->state->p.wifi_enabled ? "true" : "false");
-    g_string_append_printf (str, "WWANEnabled=%s\n", priv->state->p.wwan_enabled ? "true" : "false");
-
-    if (!g_file_set_contents (filename,
-                              str->str, str->len,
-                              &error)) {
-        _LOGD ("state: error writing state file \"%s\": %s", filename, error->message);
-        g_clear_error (&error);
-        /* we leave the state dirty. That potentally means, that we try to
-         * write the file over and over again, although it isn't possible. */
-        priv->state->p.dirty = TRUE;
-    } else
-        priv->state->p.dirty = FALSE;
-
-    _LOGT ("state: success writing state file \"%s\"", filename);
-
-    g_string_free (str, TRUE);
-}
-
-void
-_byx_config_state_set (ByxConfigManager *self,
-                      gboolean allow_persist,
-                      gboolean force_persist,
-                      ...)
-{
-    ByxConfigManagerPrivate *priv;
-    va_list ap;
-    ByxConfigRunStatePropertyType property_type;
-
-    g_return_if_fail (BYX_IS_CONFIG_MANAGER (self));
-
-    priv = BYX_CONFIG_GET_PRIVATE (self);
-
-    va_start (ap, force_persist);
-
-    /* We expect that the ByxConfigRunStatePropertyType is an integer type <= sizeof (int).
-     * Smaller would be fine, since the variadic arguments get promoted to int.
-     * Larger would be a problem, also, because we want that "0" is a valid sentinel. */
-    G_STATIC_ASSERT_EXPR (sizeof (ByxConfigRunStatePropertyType) <= sizeof (int));
-
-    while ((property_type = va_arg (ap, int)) != BYX_CONFIG_STATE_PROPERTY_NONE) {
-        bool *p_bool, v_bool;
-
-        switch (property_type) {
-        case BYX_CONFIG_STATE_PROPERTY_NETWORKING_ENABLED:
-            p_bool = &priv->state->p.net_enabled;
-            break;
-        case BYX_CONFIG_STATE_PROPERTY_WIFI_ENABLED:
-            p_bool = &priv->state->p.wifi_enabled;
-            break;
-        case BYX_CONFIG_STATE_PROPERTY_WWAN_ENABLED:
-            p_bool = &priv->state->p.wwan_enabled;
-            break;
-        default:
-            va_end (ap);
-            g_return_if_reached ();
-        }
-
-        v_bool = va_arg (ap, gboolean);
-        if (*p_bool == v_bool)
-            continue;
-        *p_bool = v_bool;
-        priv->state->p.dirty = TRUE;
-    }
-
-    va_end (ap);
-
-    if (   allow_persist
-        && (force_persist || priv->state->p.dirty))
-        state_write (self);
 }
 
 /*****************************************************************************/
