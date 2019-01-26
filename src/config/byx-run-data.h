@@ -3,9 +3,6 @@
 #ifndef __BYX_RUN_DATA__
 #define __BYX_RUN_DATA__
 
-typedef struct {
-    GKeyFile *keyfile;
-    gchar *filename;
-} ByxRunData;
+typedef struct _ByxRunData ByxRunData;
 
 #endif /* __BYX_RUN_DATA__ */

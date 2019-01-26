@@ -3,7 +3,6 @@
 #include "byx-default.h"
 
 #include <assert.h>
-
 #include "util/byx-glib-keyfile.h"
 #include "byx-persist-data.h"
 

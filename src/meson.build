@@ -23,6 +23,7 @@ ldflags = [
 sources = files(
   'main.c',
   'util/byx-glib-keyfile.c',
+  'config/byx-run-data.c',
   'config/byx-persist-data.c',
 
 

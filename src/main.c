@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 
+#include "util/byx-platform.h"
 #include "config/byx-config-manager.h"
 #include "device/byx-device-manager.h"
 #include "connection/byx-connection-manager.h"
