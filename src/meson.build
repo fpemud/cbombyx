@@ -1,15 +1,14 @@
 cflags = [
-  '-DPREFIX="@0@"'.format(byx_prefix),
-  '-DCONFDIR="@0@"'.format(byx_confdir),
-  '-DBINDIR="@0@"'.format(byx_bindir),
-  '-DSBINDIR="@0@"'.format(byx_sbindir),
-  '-DLIBDIR="@0@"'.format(byx_libdir),
-  '-DPLUGINDIR="@0@"'.format(byx_plugindir),
-  '-DLIBEXECDIR="@0@"'.format(byx_libexecdir),
-  '-DDATADIR="@0@"'.format(byx_datadir),
-  '-DLOCALEDIR="@0@"'.format(byx_localedir),
-  '-DRUNDIR="@0@"'.format(byx_rundir),
-  '-DVARDIR="@0@"'.format(byx_vardir),
+  '-DBYX_CONFDIR="@0@"'.format(byx_confdir),
+  '-DBYX_BINDIR="@0@"'.format(byx_bindir),
+  '-DBYX_SBINDIR="@0@"'.format(byx_sbindir),
+  '-DBYX_LIBDIR="@0@"'.format(byx_libdir),
+  '-DBYX_PLUGINDIR="@0@"'.format(byx_plugindir),
+  '-DBYX_LIBEXECDIR="@0@"'.format(byx_libexecdir),
+  '-DBYX_DATADIR="@0@"'.format(byx_datadir),
+  '-DBYX_LOCALEDIR="@0@"'.format(byx_localedir),
+  '-DBYX_RUNDIR="@0@"'.format(byx_rundir),
+  '-DBYX_VARDIR="@0@"'.format(byx_vardir),
 ]
 
 ldflags = [
@@ -18,10 +17,11 @@ ldflags = [
 
 sources = files(
   'main.c',
+  'main-utils.c',
   'util/byx-glib-keyfile.c',
+  'config/byx-config.c',
   'config/byx-run-data.c',
   'config/byx-persist-data.c',
-  'config/byx-config-manager.c',
 )
 
 deps = [

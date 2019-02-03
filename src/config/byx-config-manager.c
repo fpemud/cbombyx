@@ -8,25 +8,25 @@
 
 #include "byx-config-manager.h"
 
-#define BYX_SYSTEM_CONFIG_DIR                    LIBDIR "/conf.d"
-#define BYX_SYSTEM_CONNECTION_CONFIG_DIR         LIBDIR "/connection.d"
-#define BYX_SYSTEM_SERVICE_CONFIG_DIR            LIBDIR "/service.d"
+#define BYX_BUILTIN_CONFIG_DIR                   BYX_DATADIR "/conf.d"
+#define BYX_BUILTIN_CONNECTION_CONFIG_DIR        BYX_DATADIR "/connection.d"
+#define BYX_BUILTIN_SERVICE_CONFIG_DIR           BYX_DATADIR "/service.d"
 
-#define BYX_CONFIG_MAIN_FILE                     CONFDIR "/bombyx.conf"
-#define BYX_CONFIG_DIR                           CONFDIR "/conf.d"
-#define BYX_CONNECTION_CONFIG_DIR                CONFDIR "/connection.d"
-#define BYX_SERVICE_CONFIG_DIR                   CONFDIR "/service.d"
+#define BYX_CONFIG_DIR                           BYX_CONFDIR
+#define BYX_CONFIG_MAIN_FILE                     BYX_CONFDIR "/bombyx.conf"
+#define BYX_CONNECTION_CONFIG_DIR                BYX_CONFDIR "/connection.d"
+#define BYX_SERVICE_CONFIG_DIR                   BYX_CONFDIR "/service.d"
 
-#define BYX_PID_FILE                             RUNDIR "/bombyx.pid"
+#define BYX_RUN_DATA_DIR                         BYX_RUNDIR
+#define BYX_PID_FILE                             BYX_RUNDIR "/bombyx.pid"
+#define BYX_RUN_DATA_FILE                        BYX_RUNDIR "/bombyx-intern.conf"
+#define BYX_CONNECTION_RUN_DATA_DIR              BYX_RUNDIR "/connection.d"
+#define BYX_SERVICE_RUN_DATA_DIR                 BYX_RUNDIR "/service.d"
 
-#define BYX_RUN_DATA_FILE                        RUNDIR "/bombyx-intern.conf"
-#define BYX_RUN_DATA_DIR                         RUNDIR
-#define BYX_CONNECTION_RUN_DATA_DIR              RUNDIR "/connection.d"
-#define BYX_SERVICE_RUN_DATA_DIR                 RUNDIR "/service.d"
-
-#define BYX_PERSIST_DATA_FILE                    VARDIR "/bombyx-intern.conf"
-#define BYX_CONNECTION_PERSIST_DATA_DIR          VARDIR "/connection.d"
-#define BYX_SERVICE_PERSIST_DATA_DIR             VARDIR "/service.d"
+#define BYX_PERSIST_DATA_DIR                     BYX_VARDIR
+#define BYX_PERSIST_DATA_FILE                    BYX_VARDIR "/bombyx-intern.conf"
+#define BYX_CONNECTION_PERSIST_DATA_DIR          BYX_VARDIR "/connection.d"
+#define BYX_SERVICE_PERSIST_DATA_DIR             BYX_VARDIR "/service.d"
 
 #define KEYFILE_LIST_SEPARATOR ','
 
@@ -35,12 +35,12 @@ struct _ByxConfigManagerClass {
 };
 
 typedef struct {
-	char *system_config_dir;
-	char *system_connection_config_dir;
-	char *system_service_config_dir;
+	char *builtin_config_dir;
+	char *builtin_connection_config_dir;
+	char *builtin_service_config_dir;
 
-	char *config_main_file;
 	char *config_dir;
+	char *config_main_file;
 	char *connection_config_dir;
 	char *service_config_dir;
 
@@ -97,7 +97,7 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
 
     priv = byx_config_manager_get_instance_private (_singleton_instance);
 
-    priv->run_data = byx_run_data_new(!g_file_test (RUNDIR, G_FILE_TEST_IS_DIR));
+    priv->run_data = byx_run_data_new(!g_file_test (BYX_RUNDIR, G_FILE_TEST_IS_DIR));
 
     byx_cmd_line_options_parse(priv->cmd_line_options, argc, argv);
 
@@ -106,14 +106,14 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
     global_opt.pidfile = global_opt.pidfile ?: g_strdup(BYX_PID_FILE);
 #endif
 
-    return singleton_instance;
+    return _singleton_instance;
 }
 
 ByxConfigManager *byx_config_manager_get (void)
 {
     assert (_singleton_instance != NULL);
 
-    return singleton_instance;
+    return _singleton_instance;
 }
 
 /*****************************************************************************/
@@ -127,9 +127,9 @@ static void byx_config_manager_classinit (ByxConfigManagerClass *config_manager_
 
 static void byx_config_manager_init (ByxConfigManager *self)
 {
-    self->system_config_dir = BYX_SYSTEM_CONFIG_DIR;
-	self->system_connection_config_dir = BYX_SYSTEM_CONNECTION_CONFIG_DIR;
-	self->system_service_config_dir = BYX_SYSTEM_SERVICE_CONFIG_DIR;
+    self->builtin_config_dir = BYX_BUILTIN_CONFIG_DIR;
+	self->builtin_connection_config_dir = BYX_BUILTIN_CONNECTION_CONFIG_DIR;
+	self->builtin_service_config_dir = BYX_BUILTIN_SERVICE_CONFIG_DIR;
 
 	self->config_main_file = BYX_CONFIG_MAIN_FILE;
 	self->config_dir = BYX_CONFIG_DIR;
@@ -413,7 +413,7 @@ _byx_cmd_line_options_copy (const ByxCmdLineOptions *cli, ByxCmdLineOptions *dst
 
     _byx_cmd_line_options_clear (dst);
     dst->config_dir = g_strdup (cli->config_dir);
-    dst->system_config_dir = g_strdup (cli->system_config_dir);
+    dst->builtin_config_dir = g_strdup (cli->builtin_config_dir);
     dst->config_main_file = g_strdup (cli->config_main_file);
     dst->run_data_file = g_strdup (cli->run_data_file);
     dst->persist_data_file = g_strdup (cli->persist_data_file);
@@ -839,7 +839,7 @@ _confs_to_description (GString *str, const GPtrArray *confs, const char *name)
 static GKeyFile *
 read_entire_config (const ByxCmdLineOptions *cli,
                     const char *config_dir,
-                    const char *system_config_dir,
+                    const char *builtin_config_dir,
                     char **out_config_main_file,
                     char **out_config_description,
                     GError **error)
@@ -853,20 +853,20 @@ read_entire_config (const ByxCmdLineOptions *cli,
     const char *run_config_dir = "";
 
     g_return_val_if_fail (config_dir, NULL);
-    g_return_val_if_fail (system_config_dir, NULL);
+    g_return_val_if_fail (builtin_config_dir, NULL);
     g_return_val_if_fail (!out_config_main_file || !*out_config_main_file, FALSE);
     g_return_val_if_fail (!out_config_description || !*out_config_description, NULL);
     g_return_val_if_fail (!error || !*error, FALSE);
 
     if (   (""RUN_DATA_DIR)[0] == '/'
-        && !byx_streq (RUN_DATA_DIR, system_config_dir)
+        && !byx_streq (RUN_DATA_DIR, builtin_config_dir)
         && !byx_streq (RUN_DATA_DIR, config_dir))
         run_config_dir = RUN_DATA_DIR;
 
     /* create a default configuration file. */
     keyfile = byx_config_create_keyfile ();
 
-    system_confs = _get_config_dir_files (system_config_dir);
+    system_confs = _get_config_dir_files (builtin_config_dir);
     confs = _get_config_dir_files (config_dir);
     run_confs = _get_config_dir_files (run_config_dir);
 
@@ -880,7 +880,7 @@ read_entire_config (const ByxCmdLineOptions *cli,
             continue;
         }
 
-        if (!read_config (keyfile, FALSE, system_config_dir, filename, error))
+        if (!read_config (keyfile, FALSE, builtin_config_dir, filename, error))
             return NULL;
         i++;
     }
@@ -1843,7 +1843,7 @@ void byx_config_manager_reload (ByxConfigManager *self)
      */
     keyfile = read_entire_config (&priv->cli,
                                   priv->config_dir,
-                                  priv->system_config_dir,
+                                  priv->builtin_config_dir,
                                   &config_main_file,
                                   &config_description,
                                   &error);
@@ -1944,8 +1944,8 @@ BYX_DEFINE_SINGLETON_REGISTER (ByxConfigManager);
 
 ByxConfigManager *byx_config_manager_get (void)
 {
-    assert (singleton_instance != NULL);
-    return singleton_instance;
+    assert (_singleton_instance != NULL);
+    return _singleton_instance;
 }
 
 /*****************************************************************************/
@@ -1972,11 +1972,11 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
     s = priv->cli.config_dir ?: ""BYX_CONFIG_DIR;
     priv->config_dir = g_strdup (s[0] == '/' ? s : "");
 
-    s = priv->cli.system_config_dir ?: ""BYX_SYSTEM_CONFIG_DIR;
+    s = priv->cli.builtin_config_dir ?: ""BYX_BUILTIN_CONFIG_DIR;
     if (   s[0] != '/'
         || byx_streq (s, priv->config_dir))
         s = "";
-    priv->system_config_dir = g_strdup (s);
+    priv->builtin_config_dir = g_strdup (s);
 
     if (priv->cli.run_data_file)
         priv->run_data_file = g_strdup (priv->cli.run_data_file);
@@ -1985,7 +1985,7 @@ init_sync (GInitable *initable, GCancellable *cancellable, GError **error)
 
     keyfile = read_entire_config (&priv->cli,
                                   priv->config_dir,
-                                  priv->system_config_dir,
+                                  priv->builtin_config_dir,
                                   &config_main_file,
                                   &config_description,
                                   error);
@@ -2032,7 +2032,132 @@ byx_config_new (const ByxCmdLineOptions *cli, char **atomic_section_prefixes, GE
 }
 
 
-#define RUN_DATA_DIR                         RUNDIR "/conf.d"
-#define PERSIST_DATA_DIR                     VARDIR "/bombyx-intern.conf"
-#define DEFAULT_STATE_FILE                   VARDIR "/bombyx.state"
+#define RUN_DATA_DIR                         BYX_RUNDIR "/conf.d"
+#define PERSIST_DATA_DIR                     BYX_VARDIR "/bombyx-intern.conf"
 
+
+
+
+
+
+static void _cmd_line_options_clear (ByxConfig *self)
+{
+	config->is_debug = FALSE;
+	g_clear_pointer (&config->connectivity_uri, g_free);
+	g_clear_pointer (&config->connectivity_response, g_free);
+	config->connectivity_interval = -1;
+	config->first_start = FALSE;
+}
+
+static void _cmd_line_options_add_to_entries (ByxConfig *self, GOptionContext *opt_ctx) {
+
+    GOptionEntry config_options[] = {
+        {
+            "debug", 'd', 0, G_OPTION_ARG_NONE,
+            &config->is_debug, N_("Don't become a daemon, and log to stderr"),
+            NULL,
+        },
+
+        /* These three are hidden for now, and should eventually just go away. */
+        { "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity_uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
+        { "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &config->connectivity_interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
+        { "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity_response, N_("The expected start of the response"), BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
+        { 0 },
+    };
+
+	GOptionEntry options2[] = {
+		{
+            "version",
+            'V',
+            0,
+            G_OPTION_ARG_NONE,
+            &config->show_version,
+            N_("Print NetworkManager version and exit"),
+            NULL,
+        },
+		{
+            "no-daemon",
+            'n',
+            G_OPTION_FLAG_REVERSE,
+            G_OPTION_ARG_NONE,
+            &config->become_daemon,
+            N_("Don't become a daemon"),
+            NULL,
+        },
+		{
+            "log-level",
+            0,
+            0,
+            G_OPTION_ARG_STRING,
+            &config->opt_log_level,
+            N_("Log level: one of [TRACE,DEBUG,INFO,WARN,ERR,OFF,KEEP]"),       /* FIXME: should be provided by logging module */
+            "INFO",
+        },
+		{
+            "log-domains",
+            0,
+            0,
+            G_OPTION_ARG_STRING,
+            &config->opt_log_domains,
+            N_("Log domains separated by ',': any combination of [%s]"),
+            "PLATFORM,RFKILL,WIFI"
+        },
+		{
+            "pid-file", 'p', 0, G_OPTION_ARG_FILENAME,
+            &config->pidfile,
+            N_("Specify the location of a PID file"),
+            BYX_PID_FILE,
+        },
+		{
+            NULL
+        },
+	};
+
+    g_option_context_add_main_entries (opt_ctx, config_options, NULL);
+    g_option_context_add_main_entries (opt_ctx, config_options2, NULL);
+}
+
+
+void byx_cmd_line_options_parse(ByxCmdLineOptions *self, int argc, char **argv[])
+{
+	for (i = 0; options[i].long_name; i++) {
+		NM_PRAGMA_WARNING_DISABLE("-Wformat-nonliteral")
+		if (!strcmp (options[i].long_name, "log-level")) {
+			opt_fmt_log_level = options[i].description;
+			opt_loc_log_level = &options[i].description;
+			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_levels_to_string ());
+		} else if (!strcmp (options[i].long_name, "log-domains")) {
+			opt_fmt_log_domains = options[i].description;
+			opt_loc_log_domains = &options[i].description;
+			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_domains_to_string ());
+		}
+		NM_PRAGMA_WARNING_REENABLE
+	}
+
+	/* Parse options */
+	opt_ctx = g_option_context_new (NULL);
+	g_option_context_set_translation_domain (opt_ctx, GETTEXT_PACKAGE);
+	g_option_context_set_ignore_unknown_options (opt_ctx, FALSE);
+	g_option_context_set_help_enabled (opt_ctx, TRUE);
+	g_option_context_add_main_entries (opt_ctx, options, NULL);
+	g_option_context_set_summary (opt_ctx, summary);
+
+	success = g_option_context_parse (opt_ctx, argc, argv, &error);
+	if (!success) {
+		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"),
+		         error->message);
+		g_clear_error (&error);
+	}
+	g_option_context_free (opt_ctx);
+
+	if (opt_loc_log_level) {
+		g_free ((char *) *opt_loc_log_level);
+		*opt_loc_log_level = opt_fmt_log_level;
+	}
+	if (opt_loc_log_domains) {
+		g_free ((char *) *opt_loc_log_domains);
+		*opt_loc_log_domains = opt_fmt_log_domains;
+	}
+}
+
+/*****************************************************************************/

@@ -21,6 +21,7 @@
 
 #include "byx-default.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -28,16 +29,13 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <locale.h>
-
 #include <glib/gstdio.h>
 #include <glib-unix.h>
 
+#include "config/byx-config-manager.h"
 #include "main-utils.h"
-#include "NetworkManagerUtils.h"
-#include "nm-config.h"
 
-static gboolean
-sighup_handler (gpointer user_data)
+static gboolean _sighup_handler (gpointer user_data)
 {
     byx_log_info (LOGD_CORE, "reload configuration (signal %s)...", strsignal (signal));
 
@@ -52,8 +50,7 @@ sighup_handler (gpointer user_data)
 	return G_SOURCE_CONTINUE;
 }
 
-static gboolean
-sigint_handler (gpointer user_data)
+static gboolean _sigint_handler (gpointer user_data)
 {
 	GMainLoop *main_loop = user_data;
 
@@ -63,8 +60,7 @@ sigint_handler (gpointer user_data)
 	return G_SOURCE_REMOVE;
 }
 
-static gboolean
-sigterm_handler (gpointer user_data)
+static gboolean _sigterm_handler (gpointer user_data)
 {
 	GMainLoop *main_loop = user_data;
 
@@ -86,11 +82,11 @@ void byx_main_utils_setup_signals (GMainLoop *main_loop)
 
 	signal (SIGPIPE, SIG_IGN);
 
-	g_unix_signal_add (SIGHUP, sighup_handler, GINT_TO_POINTER (SIGHUP));
-	g_unix_signal_add (SIGUSR1, sighup_handler, GINT_TO_POINTER (SIGUSR1));
-	g_unix_signal_add (SIGUSR2, sighup_handler, GINT_TO_POINTER (SIGUSR2));
-	g_unix_signal_add (SIGINT, sigint_handler, main_loop);
-	g_unix_signal_add (SIGTERM, sigterm_handler, main_loop);
+	g_unix_signal_add (SIGHUP, _sighup_handler, GINT_TO_POINTER (SIGHUP));
+	g_unix_signal_add (SIGUSR1, _sighup_handler, GINT_TO_POINTER (SIGUSR1));
+	g_unix_signal_add (SIGUSR2, _sighup_handler, GINT_TO_POINTER (SIGUSR2));
+	g_unix_signal_add (SIGINT, _sigint_handler, main_loop);
+	g_unix_signal_add (SIGTERM, _sigterm_handler, main_loop);
 }
 
 gboolean byx_main_utils_write_pidfile (const char *pidfile, GError **error)
@@ -125,7 +121,7 @@ void byx_main_utils_ensure_statedir ()
 	g_autofree char *parent = NULL;
 	int errsv;
 
-	parent = g_path_get_dirname (VARDIR);
+	parent = g_path_get_dirname (BYX_VARDIR);
 
 	/* Ensure parent state directories exists */
 	if (   parent
@@ -133,13 +129,13 @@ void byx_main_utils_ensure_statedir ()
 	    && parent[1] != '\0'
 	    && g_mkdir_with_parents (parent, 0755) != 0) {
 		errsv = errno;
-		fprintf (stderr, "Cannot create parents for '%s': %s", VARDIR, g_strerror (errsv));
+		fprintf (stderr, "Cannot create parents for '%s': %s", BYX_VARDIR, g_strerror (errsv));
 		exit (1);
 	}
 	/* Ensure state directory exists */
-	if (g_mkdir_with_parents (VARDIR, 0700) != 0) {
+	if (g_mkdir_with_parents (BYX_VARDIR, 0700) != 0) {
 		errsv = errno;
-		fprintf (stderr, "Cannot create '%s': %s", VARDIR, g_strerror (errsv));
+		fprintf (stderr, "Cannot create '%s': %s", BYX_VARDIR, g_strerror (errsv));
 		exit (1);
 	}
 }
@@ -149,9 +145,9 @@ void byx_main_utils_ensure_rundir ()
 	int errsv;
 
 	/* Setup runtime directory */
-	if (g_mkdir_with_parents (RUNDIR, 0755) != 0) {
+	if (g_mkdir_with_parents (BYX_RUNDIR, 0755) != 0) {
 		errsv = errno;
-		fprintf (stderr, _("Cannot create '%s': %s"), RUNDIR, g_strerror (errsv));
+		fprintf (stderr, _("Cannot create '%s': %s"), BYX_RUNDIR, g_strerror (errsv));
 		exit (1);
 	}
 }

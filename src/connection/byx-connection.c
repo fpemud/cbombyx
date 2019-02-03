@@ -13868,7 +13868,7 @@ byx_connection_spawn_iface_helper (ByxConnection *self)
 	argv = g_ptr_array_sized_new (10);
 	g_ptr_array_set_free_func (argv, g_free);
 
-	g_ptr_array_add (argv, g_strdup (LIBEXECDIR "/nm-iface-helper"));
+	g_ptr_array_add (argv, g_strdup (BYX_LIBEXECDIR "/nm-iface-helper"));
 	g_ptr_array_add (argv, g_strdup ("--ifname"));
 	g_ptr_array_add (argv, g_strdup (byx_connection_get_ip_iface (self)));
 	g_ptr_array_add (argv, g_strdup ("--uuid"));
