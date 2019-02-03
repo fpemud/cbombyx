@@ -1,4 +1,4 @@
-project('bombyx-daemon', 'c',
+project('bombyx', 'c',
           version: '1.13.1',
           license: 'GPL2+',
   default_options: [
@@ -18,7 +18,7 @@ byx_micro_version = byx_version.split('.')[2].to_int()
 byx_gir_version = '1.0'
 
 byx_prefix = get_option('prefix')
-byx_confdir = join_paths(byx_prefix, 'etc', byx_name)
+byx_confdir = join_paths('/etc', byx_name)
 byx_bindir = join_paths(byx_prefix, 'bin')
 byx_sbindir = join_paths(byx_prefix, 'sbin')
 byx_datadir = join_paths(byx_prefix, 'share')
@@ -235,10 +235,13 @@ output += 'System paths:\n'
 output += '  prefix: ' + byx_prefix + '\n'
 output += '  systemdunitdir: ' + systemd_system_unit_dir + '\n'
 output += '  confdir: ' + byx_confdir + '\n'
+output += '  bindir: ' + byx_bindir + '\n'
+output += '  sbindir: ' + byx_sbindir + '\n'
 output += '  libdir: ' + byx_libdir + '\n'
 output += '  plugindir: ' + byx_plugindir + '\n'
 output += '  libexecdir: ' + byx_libexecdir + '\n'
 output += '  datadir: ' + byx_datadir + '\n'
+output += '  localedir: ' + byx_localedir + '\n'
 output += '  rundir: ' + byx_rundir + '\n'
 output += '  vardir: ' + byx_vardir + '\n'
 output += '\n'
