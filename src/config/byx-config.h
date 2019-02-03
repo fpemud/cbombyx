@@ -8,7 +8,7 @@ typedef struct _ByxConfig ByxConfig;
 
 /*****************************************************************************/
 
-ByxConfig *byx_config_new (void);
+ByxConfig *byx_config_new (int argc, char *argv[]);
 
 void byx_config_free (ByxConfig *config);
 

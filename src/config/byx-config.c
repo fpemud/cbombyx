@@ -5,8 +5,6 @@
 #include "byx-config.h"
 
 struct _ByxConfig {
-	char *self_description;
-
 	gboolean show_version;
 	gboolean become_daemon;
 	char *log_level;
@@ -37,13 +35,55 @@ struct _ByxConfig {
 
 /*****************************************************************************/
 
-ByxConfig *byx_config_new (void)
+ByxConfig *byx_config_new (int argc, char *argv[])
 {
-	return NULL;
+	ByxConfig *config = g_try_new(ByxConfig, 1);
+	if (config == NULL) {
+		return NULL;
+	}
+
+	config->show_version = FALSE;
+	config->become_daemon = TRUE;
+	config->log_level = NULL;
+	config->log_domains = NULL;
+	config->pidfile = NULL;
+	config->is_debug = FALSE;
+
+	config->connectivity.enabled = FALSE;
+	config->connectivity.uri = NULL;
+	config->connectivity.response = NULL;
+	config->connectivity.interval = 0;
+
+	config->autoconnect_retries_default = 0;
+
+	config->no_auto_default.arr = NULL;
+	config->no_auto_default.specs = NULL;
+	config->no_auto_default.specs_config = NULL;
+
+	config->ignore_carrier = NULL;
+
+	config->keyfile = NULL;
+
+	return config;
 }
 
 void byx_config_free (ByxConfig *config)
 {
+	g_free (config->log_level);
+	g_free (config->log_domains);
+	g_free (config->pidfile);
+
+	g_free (&config->connectivity.uri);
+	g_free (&config->connectivity.response);
+
+	/* FIXME */
+	config->no_auto_default.arr = NULL;
+	config->no_auto_default.specs = NULL;
+	config->no_auto_default.specs_config = NULL;
+	config->ignore_carrier = NULL;
+	config->keyfile = NULL;
+
+	g_free(config);
 }
 
 /*****************************************************************************/
@@ -139,4 +179,117 @@ guint byx_config_get_debug_flags(ByxConfig *config)
     flags |= _parse_debug_string (debug, keys, G_N_ELEMENTS (keys));
 
     return flags;
+}
+
+/*****************************************************************************/
+
+static void _cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext *opt_ctx) {
+
+    GOptionEntry config_options[] = {
+        {
+            "debug", 'd', 0, G_OPTION_ARG_NONE,
+            &config->is_debug, N_("Don't become a daemon, and log to stderr"),
+            NULL,
+        },
+
+        /* These three are hidden for now, and should eventually just go away. */
+        { "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity.uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
+        { "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity.response, N_("The expected start of the response"), BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
+        { "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &config->connectivity.interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
+        { 0 },
+    };
+
+	GOptionEntry options2[] = {
+		{
+            "version",
+            'V',
+            0,
+            G_OPTION_ARG_NONE,
+            &config->show_version,
+            N_("Print NetworkManager version and exit"),
+            NULL,
+        },
+		{
+            "no-daemon",
+            'n',
+            G_OPTION_FLAG_REVERSE,
+            G_OPTION_ARG_NONE,
+            &config->become_daemon,
+            N_("Don't become a daemon"),
+            NULL,
+        },
+		{
+            "log-level",
+            0,
+            0,
+            G_OPTION_ARG_STRING,
+            &config->opt_log_level,
+            N_("Log level: one of [TRACE,DEBUG,INFO,WARN,ERR,OFF,KEEP]"),       /* FIXME: should be provided by logging module */
+            "INFO",
+        },
+		{
+            "log-domains",
+            0,
+            0,
+            G_OPTION_ARG_STRING,
+            &config->opt_log_domains,
+            N_("Log domains separated by ',': any combination of [%s]"),
+            "PLATFORM,RFKILL,WIFI"
+        },
+		{
+            "pid-file", 'p', 0, G_OPTION_ARG_FILENAME,
+            &config->pidfile,
+            N_("Specify the location of a PID file"),
+            BYX_PID_FILE,
+        },
+		{
+            NULL
+        },
+	};
+
+    g_option_context_add_main_entries (opt_ctx, config_options, NULL);
+    g_option_context_add_main_entries (opt_ctx, config_options2, NULL);
+}
+
+
+void byx_cmd_line_options_parse(ByxCmdLineOptions *config, int argc, char **argv[])
+{
+	for (i = 0; options[i].long_name; i++) {
+		NM_PRAGMA_WARNING_DISABLE("-Wformat-nonliteral")
+		if (!strcmp (options[i].long_name, "log-level")) {
+			opt_fmt_log_level = options[i].description;
+			opt_loc_log_level = &options[i].description;
+			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_levels_to_string ());
+		} else if (!strcmp (options[i].long_name, "log-domains")) {
+			opt_fmt_log_domains = options[i].description;
+			opt_loc_log_domains = &options[i].description;
+			options[i].description = g_strdup_printf (options[i].description, byx_logging_all_domains_to_string ());
+		}
+		NM_PRAGMA_WARNING_REENABLE
+	}
+
+	/* Parse options */
+	opt_ctx = g_option_context_new (NULL);
+	g_option_context_set_translation_domain (opt_ctx, GETTEXT_PACKAGE);
+	g_option_context_set_ignore_unknown_options (opt_ctx, FALSE);
+	g_option_context_set_help_enabled (opt_ctx, TRUE);
+	g_option_context_add_main_entries (opt_ctx, options, NULL);
+	g_option_context_set_summary (opt_ctx, summary);
+
+	success = g_option_context_parse (opt_ctx, argc, argv, &error);
+	if (!success) {
+		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"),
+		         error->message);
+		g_clear_error (&error);
+	}
+	g_option_context_free (opt_ctx);
+
+	if (opt_loc_log_level) {
+		g_free ((char *) *opt_loc_log_level);
+		*opt_loc_log_level = opt_fmt_log_level;
+	}
+	if (opt_loc_log_domains) {
+		g_free ((char *) *opt_loc_log_domains);
+		*opt_loc_log_domains = opt_fmt_log_domains;
+	}
 }

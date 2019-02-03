@@ -22,6 +22,7 @@ sources = files(
   'config/byx-config.c',
   'config/byx-run-data.c',
   'config/byx-persist-data.c',
+  'config/byx-config-manager.c',
 )
 
 deps = [
