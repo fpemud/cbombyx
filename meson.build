@@ -18,26 +18,18 @@ byx_micro_version = byx_version.split('.')[2].to_int()
 byx_gir_version = '1.0'
 
 byx_prefix = get_option('prefix')
-byx_bindir = join_paths(byx_prefix, get_option('bindir'))
-byx_datadir = join_paths(byx_prefix, get_option('datadir'))
-byx_includedir = join_paths(byx_prefix, get_option('includedir'))
-byx_libdir = join_paths(byx_prefix, get_option('libdir'))
-byx_libexecdir = join_paths(byx_prefix, get_option('libexecdir'))
-byx_localedir = join_paths(byx_prefix, get_option('localedir'))
-byx_localstatedir = join_paths(byx_prefix, get_option('localstatedir'))
-byx_mandir = join_paths(byx_prefix, get_option('mandir'))
-byx_runstatedir = join_paths(byx_localstatedir, 'run')
-byx_sbindir = join_paths(byx_prefix, get_option('sbindir'))
-byx_sysconfdir = join_paths(byx_prefix, get_option('sysconfdir'))
-
-byx_pkgsbindir = join_paths(byx_sbindir, byx_name)
-byx_pkgconfdir = join_paths(byx_sysconfdir, byx_name)
-byx_pkgdatadir = join_paths(byx_datadir, byx_name)
-byx_pkgincludedir = join_paths(byx_includedir, byx_name)
-byx_pkglibdir = join_paths(byx_prefix, 'lib', byx_name)
-byx_pkgrundir = join_paths(byx_runstatedir, byx_name)
-byx_pkgstatedir = join_paths(byx_localstatedir, byx_name)
-byx_plugindir = join_paths(byx_libdir, byx_name, byx_version)
+byx_confdir = join_paths(byx_prefix, 'etc', byx_name)
+byx_bindir = join_paths(byx_prefix, 'bin')
+byx_sbindir = join_paths(byx_prefix, 'sbin')
+byx_datadir = join_paths(byx_prefix, 'share')
+byx_includedir = join_paths(byx_prefix, 'include')
+byx_libdir = join_paths(byx_prefix, 'lib', byx_name)
+byx_plugindir = join_paths(byx_libdir, byx_version)
+byx_libexecdir = join_paths(byx_prefix, 'libexec', byx_name)
+byx_localedir = join_paths(byx_prefix, 'share', 'locale')
+byx_mandir = join_paths(byx_prefix, 'share', 'man')
+byx_rundir = join_paths('/run', byx_name)
+byx_vardir = join_paths('/var', 'lib', byx_name)
 
 byx_debug = get_option('buildtype').contains('debug')
 
@@ -105,6 +97,8 @@ uuid_dep = dependency('uuid')
 libudev_dep = dependency('libudev', version: '>= 175')
 
 dbus_dep = dependency('dbus-1', version: '>= 1.1')
+dbus_conf_dir = join_paths(dbus_dep.get_pkgconfig_variable('sysconfdir'), 'dbus-1', 'system.d')     # dbus sucks
+dbus_ifaces_dir = dbus_dep.get_pkgconfig_variable('interfaces_dir')
 
 libndp_dep = dependency('libndp')
 
@@ -121,10 +115,7 @@ glib_dep = declare_dependency(
 install_service = get_option('install_service')
 if install_service
   systemd_dep = dependency('systemd')
-  systemd_system_unit_dir = get_option('systemd_system_unit_dir')
-  if systemd_system_unit_dir == ''
-    systemd_system_unit_dir = systemd_dep.get_pkgconfig_variable('systemdsystemunitdir')
-  endif
+  systemd_system_unit_dir = systemd_dep.get_pkgconfig_variable('systemdsystemunitdir')
 endif
 
 logging_backend = get_option('logging_backend')
@@ -151,16 +142,6 @@ if crypto == 'nss'
   crypto_dep = dependency('nss')
 else
   crypto_dep = dependency('gnutls', version: '>= 2.12')
-endif
-
-dbus_conf_dir = get_option('dbus_conf_dir')
-if dbus_conf_dir == ''
-  dbus_conf_dir = join_paths(dbus_dep.get_pkgconfig_variable('sysconfdir'), 'dbus-1', 'system.d')
-endif
-
-dbus_ifaces_dir = get_option('dbus_ifaces_dir')
-if dbus_ifaces_dir == ''
-  dbus_ifaces_dir = dbus_dep.get_pkgconfig_variable('interfaces_dir')
 endif
 
 # iptables path
@@ -252,15 +233,14 @@ endif
 output = '\n'
 output += 'System paths:\n'
 output += '  prefix: ' + byx_prefix + '\n'
-output += '  exec_prefix: ' + byx_prefix + '\n'
 output += '  systemdunitdir: ' + systemd_system_unit_dir + '\n'
-output += '  binary: ' + byx_pkgsbindir + '\n'
-output += '  confdir: ' + byx_pkgconfdir + '\n'
-output += '  libdir: ' + byx_pkglibdir + '\n'
-output += '  datadir: ' + byx_pkgdatadir + '\n'
-output += '  statedir: ' + byx_pkgstatedir + '\n'
-output += '  rundir: ' + byx_pkgrundir + '\n'
+output += '  confdir: ' + byx_confdir + '\n'
+output += '  libdir: ' + byx_libdir + '\n'
 output += '  plugindir: ' + byx_plugindir + '\n'
+output += '  libexecdir: ' + byx_libexecdir + '\n'
+output += '  datadir: ' + byx_datadir + '\n'
+output += '  rundir: ' + byx_rundir + '\n'
+output += '  vardir: ' + byx_vardir + '\n'
 output += '\n'
 output += 'Platform:\n'
 output += '  suspend/resume: ' + suspend_resume + '\n'

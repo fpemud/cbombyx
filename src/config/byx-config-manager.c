@@ -2,29 +2,31 @@
 
 #include "byx-default.h"
 
+#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "byx-config-manager.h"
 
-#define BYX_SYSTEM_CONFIG_DIR                    NMLIBDIR "/conf.d"
-#define BYX_SYSTEM_CONNECTION_CONFIG_DIR         NMLIBDIR "/connection.d"
-#define BYX_SYSTEM_SERVICE_CONFIG_DIR            NMLIBDIR "/service.d"
+#define BYX_SYSTEM_CONFIG_DIR                    LIBDIR "/conf.d"
+#define BYX_SYSTEM_CONNECTION_CONFIG_DIR         LIBDIR "/connection.d"
+#define BYX_SYSTEM_SERVICE_CONFIG_DIR            LIBDIR "/service.d"
 
-#define BYX_CONFIG_MAIN_FILE                     NMCONFDIR "/bombyx.conf"
-#define BYX_CONFIG_DIR                           NMCONFDIR "/conf.d"
-#define BYX_CONNECTION_CONFIG_DIR                NMCONFDIR "/connection.d"
-#define BYX_SERVICE_CONFIG_DIR                   NMCONFDIR "/service.d"
+#define BYX_CONFIG_MAIN_FILE                     CONFDIR "/bombyx.conf"
+#define BYX_CONFIG_DIR                           CONFDIR "/conf.d"
+#define BYX_CONNECTION_CONFIG_DIR                CONFDIR "/connection.d"
+#define BYX_SERVICE_CONFIG_DIR                   CONFDIR "/service.d"
 
-#define BYX_PID_FILE                             NMRUNDIR "/bombyx.pid"
+#define BYX_PID_FILE                             RUNDIR "/bombyx.pid"
 
-#define BYX_RUN_DATA_FILE                        NMRUNDIR "/bombyx-intern.conf"
-#define BYX_CONNECTION_RUN_DATA_DIR              NMRUNDIR "/connection.d"
-#define BYX_SERVICE_RUN_DATA_DIR                 NMRUNDIR "/service.d"
+#define BYX_RUN_DATA_FILE                        RUNDIR "/bombyx-intern.conf"
+#define BYX_RUN_DATA_DIR                         RUNDIR
+#define BYX_CONNECTION_RUN_DATA_DIR              RUNDIR "/connection.d"
+#define BYX_SERVICE_RUN_DATA_DIR                 RUNDIR "/service.d"
 
-#define BYX_PERSIST_DATA_FILE                    NMSTATEDIR "/bombyx-intern.conf"
-#define BYX_CONNECTION_PERSIST_DATA_DIR          NMSTATEDIR "/connection.d"
-#define BYX_SERVICE_PERSIST_DATA_DIR             NMSTATEDIR "/service.d"
+#define BYX_PERSIST_DATA_FILE                    VARDIR "/bombyx-intern.conf"
+#define BYX_CONNECTION_PERSIST_DATA_DIR          VARDIR "/connection.d"
+#define BYX_SERVICE_PERSIST_DATA_DIR             VARDIR "/service.d"
 
 #define KEYFILE_LIST_SEPARATOR ','
 
@@ -79,24 +81,24 @@ G_DEFINE_TYPE_WITH_PRIVATE (ByxConfigManager, byx_config_manager, G_TYPE_OBJECT)
 
 #define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfigManager, BYX_IS_CONFIG_MANAGER)
 
-BYX_DEFINE_SINGLETON_GETTER (ByxConfigManager, byx_config_manager_get, BYX_TYPE_CONFIG_MANAGER);
-
 /*****************************************************************************/
+
+static ByxConfigManager *_singleton_instance = NULL;
 
 ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error)
 {
-    ByxConfigManagerPrivate *priv;
+    ByxConfigManagerPrivate *priv = NULL;
     GError *local;
 
-    assert (singleton_instance == NULL);
+    assert (_singleton_instance == NULL);
 
-    singleton_instance = g_object_new();
-    if (singleton_instance == NULL) {
-        return NULL;
-    }
+    _singleton_instance = g_object_new (BYX_TYPE_CONFIG_MANAGER, NULL);
+    assert (_singleton_instance != NULL);
 
-    priv = byx_config_manager_get_instance_private ((ByxConfigManager *) singleton_instance);
-    priv->first_start = !g_file_test (NMRUNDIR, G_FILE_TEST_IS_DIR),
+    priv = byx_config_manager_get_instance_private (_singleton_instance);
+
+    priv->run_data = byx_run_data_new(!g_file_test (RUNDIR, G_FILE_TEST_IS_DIR));
+
     byx_cmd_line_options_parse(priv->cmd_line_options, argc, argv);
 
 /* FIXME */
@@ -104,11 +106,12 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
     global_opt.pidfile = global_opt.pidfile ?: g_strdup(BYX_PID_FILE);
 #endif
 
-    byx_singleton_instance_register ();
-    
-    /* usually, you would not see this logging line because when creating the
-        * ByxConfigManager instance, the logging is not yet set up to print debug message. */
-    byx_log_dbg (LOGD_CORE, "setup %s singleton (%p)", "ByxConfigManager", singleton_instance);
+    return singleton_instance;
+}
+
+ByxConfigManager *byx_config_manager_get (void)
+{
+    assert (_singleton_instance != NULL);
 
     return singleton_instance;
 }
@@ -2029,7 +2032,7 @@ byx_config_new (const ByxCmdLineOptions *cli, char **atomic_section_prefixes, GE
 }
 
 
-#define RUN_DATA_DIR                         NMRUNDIR "/conf.d"
-#define PERSIST_DATA_DIR                     NMSTATEDIR "/bombyx-intern.conf"
-#define DEFAULT_STATE_FILE                   NMSTATEDIR "/bombyx.state"
+#define RUN_DATA_DIR                         RUNDIR "/conf.d"
+#define PERSIST_DATA_DIR                     VARDIR "/bombyx-intern.conf"
+#define DEFAULT_STATE_FILE                   VARDIR "/bombyx.state"
 

@@ -2,7 +2,7 @@ data_conf = configuration_data()
 data_conf.set('bindir', byx_bindir)
 data_conf.set('libexecdir', byx_libexecdir)
 data_conf.set('sbindir', byx_sbindir)
-data_conf.set('sysconfdir', byx_sysconfdir)
+data_conf.set('confdir', byx_confdir)
 data_conf.set('DISTRO_NETWORK_SERVICE', ((distro == 'redhat') ? 'network.service' : ''))
 
 configure_file(

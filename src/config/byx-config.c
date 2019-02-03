@@ -1,10 +1,6 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-struct _ByxConfigClass {
-    GObjectClass parent;
-};
-
-typedef struct {
+struct _ByxConfig {
 	char *self_description;
 
 	gboolean show_version;
@@ -32,40 +28,8 @@ typedef struct {
 
 	GSList *ignore_carrier;
 
-    /*
-     * It is true, if NM is started the first time -- contrary to a restart
-     * during the same boot up. That is determined by the content of the
-     * /var/run/NetworManager state directory. */
-    bool first_start;
-
     GKeyFile *keyfile;
-} ByxConfigPrivate;
-
-G_DEFINE_TYPE_WITH_PRIVATE (ByxConfig, byx_config, G_TYPE_OBJECT)
-
-#define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfig, BYX_IS_CONFIG)
-
-/*****************************************************************************/
-
-static void byx_config_classinit (ByxConfigClass *self_class)
-{
-    GObjectClass *object_class = G_OBJECT_CLASS (config_class);
-
-    object_class->byx_config_finalize = byx_config_finalize;
-}
-
-static void byx_config_init (ByxConfig *self)
-{
-}
-
-static void byx_config_finalize (GObject *gobject)
-{
-    ByxConfigPrivate *priv = byx_config_get_instance_private ((ByxConfig *) gobject);
-
-	/* TODO */
-
-    G_OBJECT_CLASS (byx_config_parent_class)->finalize (gobject);
-}
+};
 
 /*****************************************************************************/
 

@@ -125,7 +125,7 @@ void byx_main_utils_ensure_statedir ()
 	g_autofree char *parent = NULL;
 	int errsv;
 
-	parent = g_path_get_dirname (NMSTATEDIR);
+	parent = g_path_get_dirname (VARDIR);
 
 	/* Ensure parent state directories exists */
 	if (   parent
@@ -133,13 +133,13 @@ void byx_main_utils_ensure_statedir ()
 	    && parent[1] != '\0'
 	    && g_mkdir_with_parents (parent, 0755) != 0) {
 		errsv = errno;
-		fprintf (stderr, "Cannot create parents for '%s': %s", NMSTATEDIR, g_strerror (errsv));
+		fprintf (stderr, "Cannot create parents for '%s': %s", VARDIR, g_strerror (errsv));
 		exit (1);
 	}
 	/* Ensure state directory exists */
-	if (g_mkdir_with_parents (NMSTATEDIR, 0700) != 0) {
+	if (g_mkdir_with_parents (VARDIR, 0700) != 0) {
 		errsv = errno;
-		fprintf (stderr, "Cannot create '%s': %s", NMSTATEDIR, g_strerror (errsv));
+		fprintf (stderr, "Cannot create '%s': %s", VARDIR, g_strerror (errsv));
 		exit (1);
 	}
 }
@@ -149,9 +149,9 @@ void byx_main_utils_ensure_rundir ()
 	int errsv;
 
 	/* Setup runtime directory */
-	if (g_mkdir_with_parents (NMRUNDIR, 0755) != 0) {
+	if (g_mkdir_with_parents (RUNDIR, 0755) != 0) {
 		errsv = errno;
-		fprintf (stderr, _("Cannot create '%s': %s"), NMRUNDIR, g_strerror (errsv));
+		fprintf (stderr, _("Cannot create '%s': %s"), RUNDIR, g_strerror (errsv));
 		exit (1);
 	}
 }
