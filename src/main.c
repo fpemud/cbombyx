@@ -139,20 +139,9 @@ int main (int argc, char *argv[])
 
     _init_nm_debug (config);
 
-    if (byx_config_get_become_daemon(config) && !byx_config_get_is_debug(config)) {
-        if (daemon (0, 0) < 0) {
-            int saved_errno;
-
-            saved_errno = errno;
-            fprintf (stderr, _("Could not daemonize: %s [error %u]\n"),
-                     g_strerror (saved_errno),
-                     saved_errno);
-            goto done;
-        }
-        if (!byx_main_utils_write_pidfile (byx_config_get_pidfile(config), &error)) {
-    		fprintf (stderr, error->message);        /* FIXME */
-            goto done;
-        }
+    if (!byx_main_utils_write_pidfile (byx_config_get_pidfile(config), &error)) {
+        fprintf (stderr, error->message);        /* FIXME */
+        goto done;
     }
 
     /* Set up unix signal handling - before creating threads, but after daemonizing! */

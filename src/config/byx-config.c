@@ -6,7 +6,6 @@
 
 struct _ByxConfig {
 	gboolean show_version;
-	gboolean become_daemon;
 	char *log_level;
 	char *log_domains;
 	char *pidfile;
@@ -43,7 +42,6 @@ ByxConfig *byx_config_new (int argc, char *argv[])
 	}
 
 	config->show_version = FALSE;
-	config->become_daemon = TRUE;
 	config->log_level = NULL;
 	config->log_domains = NULL;
 	config->pidfile = NULL;
@@ -91,11 +89,6 @@ void byx_config_free (ByxConfig *config)
 gboolean byx_config_get_show_version (ByxConfig *config)
 {
     return config->show_version;
-}
-
-gboolean byx_config_get_become_daemon (ByxConfig *config)
-{
-    return config->become_daemon;
 }
 
 const char *byx_config_get_log_level (ByxConfig *config)
@@ -207,15 +200,6 @@ static void _cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext 
             G_OPTION_ARG_NONE,
             &config->show_version,
             N_("Print NetworkManager version and exit"),
-            NULL,
-        },
-		{
-            "no-daemon",
-            'n',
-            G_OPTION_FLAG_REVERSE,
-            G_OPTION_ARG_NONE,
-            &config->become_daemon,
-            N_("Don't become a daemon"),
             NULL,
         },
 		{

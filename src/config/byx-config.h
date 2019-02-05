@@ -14,8 +14,6 @@ void byx_config_free (ByxConfig *config);
 
 gboolean byx_config_get_show_version (ByxConfig *config);
 
-gboolean byx_config_get_become_daemon (ByxConfig *config);
-
 const char *byx_config_get_log_level (ByxConfig *config);
 
 const char *byx_config_get_log_domains (ByxConfig *config);
