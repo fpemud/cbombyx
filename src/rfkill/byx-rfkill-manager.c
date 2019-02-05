@@ -18,7 +18,7 @@
  * Copyright (C) 2009 - 2013 Red Hat, Inc.
  */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include "nm-rfkill-manager.h"
 

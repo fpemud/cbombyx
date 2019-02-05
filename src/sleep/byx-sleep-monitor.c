@@ -17,7 +17,7 @@
  * Author: Matthias Clasen <mclasen@redhat.com>
  */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include "nm-sleep-monitor.h"
 

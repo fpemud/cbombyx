@@ -20,7 +20,7 @@
  * Copyright (C) 2005 - 2008 Novell, Inc.
  */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include <getopt.h>
 #include <errno.h>

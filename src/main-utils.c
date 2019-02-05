@@ -19,7 +19,7 @@
  * Copyright (C) 2005 - 2008 Novell, Inc.
  */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include <assert.h>
 #include <stdio.h>

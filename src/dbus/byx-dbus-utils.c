@@ -18,7 +18,7 @@
  * Copyright 2018 Red Hat, Inc.
  */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include "nm-dbus-utils.h"
 

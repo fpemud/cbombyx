@@ -20,7 +20,7 @@
  * Copyright (C) 2006 - 2008 Novell, Inc.
  */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include "byx-service-manager.h"
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include "byx-config.h"
 
@@ -194,8 +194,8 @@ static void _cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext 
 
         /* These three are hidden for now, and should eventually just go away. */
         { "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity.uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
-        { "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity.response, N_("The expected start of the response"), BYX_CONFIG_DEFAULT_CONNECTIVITY_RESPONSE },
-        { "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &config->connectivity.interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_CONFIG_DEFAULT_CONNECTIVITY_INTERVAL) },
+        { "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity.response, N_("The expected start of the response"), BYX_DEFAULT_CONNECTIVITY_RESPONSE },
+        { "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &config->connectivity.interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_DEFAULT_CONNECTIVITY_INTERVAL) },
         { 0 },
     };
 

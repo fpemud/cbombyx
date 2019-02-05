@@ -1,32 +1,12 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-#include "byx-default.h"
+#include "byx-common.h"
 
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "byx-config-manager.h"
-
-#define BYX_BUILTIN_CONFIG_DIR                   BYX_DATADIR "/conf.d"
-#define BYX_BUILTIN_CONNECTION_CONFIG_DIR        BYX_DATADIR "/connection.d"
-#define BYX_BUILTIN_SERVICE_CONFIG_DIR           BYX_DATADIR "/service.d"
-
-#define BYX_CONFIG_DIR                           BYX_CONFDIR
-#define BYX_CONFIG_MAIN_FILE                     BYX_CONFDIR "/bombyx.conf"
-#define BYX_CONNECTION_CONFIG_DIR                BYX_CONFDIR "/connection.d"
-#define BYX_SERVICE_CONFIG_DIR                   BYX_CONFDIR "/service.d"
-
-#define BYX_RUN_DATA_DIR                         BYX_RUNDIR
-#define BYX_PID_FILE                             BYX_RUNDIR "/bombyx.pid"
-#define BYX_RUN_DATA_FILE                        BYX_RUNDIR "/bombyx-intern.conf"
-#define BYX_CONNECTION_RUN_DATA_DIR              BYX_RUNDIR "/connection.d"
-#define BYX_SERVICE_RUN_DATA_DIR                 BYX_RUNDIR "/service.d"
-
-#define BYX_PERSIST_DATA_DIR                     BYX_VARDIR
-#define BYX_PERSIST_DATA_FILE                    BYX_VARDIR "/bombyx-intern.conf"
-#define BYX_CONNECTION_PERSIST_DATA_DIR          BYX_VARDIR "/connection.d"
-#define BYX_SERVICE_PERSIST_DATA_DIR             BYX_VARDIR "/service.d"
 
 #define KEYFILE_LIST_SEPARATOR ','
 
@@ -85,7 +65,6 @@ static ByxConfigManager *_singleton_instance = NULL;
 ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error)
 {
     ByxConfigManagerPrivate *priv = NULL;
-    GError *local;
 
     assert (_singleton_instance == NULL);
 
@@ -112,14 +91,13 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
 	priv->service_persist_data_dir = BYX_SERVICE_PERSIST_DATA_DIR;
 
     priv->config = byx_config_new(argc, argv);
+    assert (priv->config != NULL);                              /* FIXME */
 
     priv->run_data = byx_run_data_new(!g_file_test (BYX_RUNDIR, G_FILE_TEST_IS_DIR));
-    priv->persist_data = byx_persist_data_new();
+    assert (priv->run_data != NULL);                            /* FIXME */
 
-/* FIXME */
-#if 0
-    global_opt.pidfile = global_opt.pidfile ?: g_strdup(BYX_PID_FILE);
-#endif
+    priv->persist_data = byx_persist_data_new();
+    assert (priv->persist_data != NULL);                        /* FIXME */
 
     return _singleton_instance;
 }
