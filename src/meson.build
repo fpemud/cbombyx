@@ -18,6 +18,7 @@ ldflags = [
 sources = files(
   'main.c',
   'main-utils.c',
+  'util/util-stdio.c',
   'util/util-glib-keyfile.c',
   'config/byx-config.c',
   'config/byx-run-data.c',

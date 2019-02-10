@@ -31,7 +31,7 @@ ByxConnectionRunData *byx_connection_run_data_new (const char *connection_uuid, 
         goto failure;
     }
 
-    if (util_sprintf_buf (data->filename, "%s/%s", BYX_CONNECTION_RUN_DATA_DIR, connection_uuid) == NULL) {
+    if (util_snprintf (data->filename, 1024, "%s/%s", BYX_CONNECTION_RUN_DATA_DIR, connection_uuid) == NULL) {
         _LOGT ("failed to sprintf");
         goto failure;
     }

@@ -4,6 +4,10 @@
 #define __UTIL_STDIO_H__
 
 
+char *util_snprintf(char *str, size_t size, const char *format, ...);
+
+
+
 #define util_sprintf_buf(buf, format, ...) \
 	({ \
 		int _buf_len; \

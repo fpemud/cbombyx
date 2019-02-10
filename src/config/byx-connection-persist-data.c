@@ -32,7 +32,7 @@ ByxConnectionPersistData *byx_connection_persist_data_new (const char *connectio
         goto failure;
     }
 
-    if (util_sprintf_buf (data->filename, "%s/%s", BYX_CONNECTION_PERSIST_DATA_DIR, connection_uuid) == NULL) {
+    if (util_snprintf (data->filename, 1024, "%s/%s", BYX_CONNECTION_PERSIST_DATA_DIR, connection_uuid) == NULL) {
         _LOGT ("failed to sprintf");
         goto failure;
     }
