@@ -60,3 +60,9 @@ void byx_connection_run_data_free (ByxConnectionRunData *data)
     }
     g_free (data);
 }
+
+GKeyFile *byx_connection_run_data_get_keyfile(ByxConnectionRunData *data)
+{
+    assert (data != NULL);
+    return data->keyfile;
+}

@@ -61,3 +61,9 @@ void byx_connection_persist_data_free (ByxConnectionPersistData *data)
     }
     g_free (data);
 }
+
+GKeyFile *byx_connection_persist_data_get_keyfile(ByxConnectionPersistData *data)
+{
+    assert (data != NULL);
+    return data->keyfile;
+}
