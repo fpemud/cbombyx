@@ -3,10 +3,9 @@
 #ifndef __BYX_PERSIST_DATA__
 #define __BYX_PERSIST_DATA__
 
+G_BEGIN_DECLS
 
 typedef struct _ByxPersistData ByxPersistData;
-
-/*****************************************************************************/
 
 ByxPersistData *byx_persist_data_new(void);
 void byx_persist_data_free(ByxPersistData *data);
@@ -22,6 +21,6 @@ void byx_persist_data_set_connectivity_check_switch (ByxPersistData *data, gbool
 
 gboolean byx_persist_data_save(ByxPersistData *data, GError **error);
 
-/*****************************************************************************/
+G_END_DECLS
 
 #endif /* __BYX_PERSIST_DATA__ */

@@ -11,6 +11,8 @@
 #include "byx-service-run-data.h"
 #include "byx-service-persist-data.h"
 
+G_BEGIN_DECLS
+
 #define BYX_TYPE_CONFIG_MANAGER            (byx_config_manager_get_type ())
 #define BYX_CONFIG_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), BYX_TYPE_CONFIG_MANAGER, ByxConfigManager))
 #define BYX_CONFIG_MANAGER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  BYX_TYPE_CONFIG_MANAGER, ByxConfigManagerClass))
@@ -45,5 +47,7 @@ ByxServiceRunData *byx_config_manager_get_service_run_data (ByxConfigManager *se
 ByxServicePersistData *byx_config_manager_get_service_persist_data (ByxConfigManager *self, const char *service_uuid);
 
 void byx_config_manager_cleanup_persist_data(ByxConfigManager *self);
+
+G_END_DECLS
 
 #endif /* __BYX_CONFIG_MANAGER_H__ */

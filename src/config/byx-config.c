@@ -264,7 +264,9 @@ static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[
 	/* _("NetworkManager monitors all network connections and automatically\nchooses the best connection to use.  It also allows the user to\nspecify wireless access points which wireless cards in the computer\nshould associate with."))) */
 
 	GOptionContext *opt_ctx;
+#if 0
 	int i;
+#endif
 
 #if 0
 	for (i = 0; options[i].long_name; i++) {
@@ -280,6 +282,7 @@ static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[
 		}
 		NM_PRAGMA_WARNING_REENABLE
 	}
+#endif
 
 	/* Parse options */
 	opt_ctx = g_option_context_new (NULL);
@@ -289,6 +292,7 @@ static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[
 	g_option_context_add_main_entries (opt_ctx, options, NULL);
 	g_option_context_set_summary (opt_ctx, summary);
 
+#if 0
 	success = g_option_context_parse (opt_ctx, argc, argv, &error);
 	if (!success) {
 		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"),

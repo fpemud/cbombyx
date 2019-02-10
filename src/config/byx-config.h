@@ -3,10 +3,9 @@
 #ifndef __BYX_CONFIG__
 #define __BYX_CONFIG__
 
+G_BEGIN_DECLS
 
 typedef struct _ByxConfig ByxConfig;
-
-/*****************************************************************************/
 
 ByxConfig *byx_config_new (int argc, char *argv[]);
 
@@ -31,6 +30,6 @@ enum {
 
 guint byx_config_get_debug_flags(ByxConfig *config);
 
-
+G_END_DECLS
 
 #endif /* __BYX_CONFIG__ */
