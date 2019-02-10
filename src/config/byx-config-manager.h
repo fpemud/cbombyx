@@ -38,8 +38,8 @@ ByxConfig *byx_config_manager_get_config(ByxConfigManager *self);
 ByxRunData *byx_config_manager_get_run_data (ByxConfigManager *self);
 ByxPersistData *byx_config_manager_get_persist_data (ByxConfigManager *self);
 
-ByxConnectionRunData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid);
-ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid);
+ByxConnectionRunData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid, GError **error);
+ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid, GError **error);
 
 ByxServiceRunData *byx_config_manager_get_service_run_data (ByxConfigManager *self, const char *service_uuid);
 ByxServicePersistData *byx_config_manager_get_service_persist_data (ByxConfigManager *self, const char *service_uuid);

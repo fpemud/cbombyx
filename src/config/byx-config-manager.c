@@ -15,23 +15,6 @@ struct _ByxConfigManagerClass {
 };
 
 typedef struct {
-	char *builtin_config_dir;
-	char *builtin_connection_config_dir;
-	char *builtin_service_config_dir;
-
-	char *config_dir;
-	char *config_main_file;
-	char *connection_config_dir;
-	char *service_config_dir;
-
-	char *run_data_file;
-	char *connection_run_data_dir;
-	char *service_run_data_dir;
-
-	char *persist_data_file;
-	char *connection_persist_data_dir;
-	char *service_persist_data_dir;
-
     ByxConfig *config;
 
     ByxRunData *run_data;
@@ -72,23 +55,6 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
     assert (_singleton_instance != NULL);
 
     priv = byx_config_manager_get_instance_private (_singleton_instance);
-
-    priv->builtin_config_dir = BYX_BUILTIN_CONFIG_DIR;
-	priv->builtin_connection_config_dir = BYX_BUILTIN_CONNECTION_CONFIG_DIR;
-	priv->builtin_service_config_dir = BYX_BUILTIN_SERVICE_CONFIG_DIR;
-
-	priv->config_main_file = BYX_CONFIG_MAIN_FILE;
-	priv->config_dir = BYX_CONFIG_DIR;
-	priv->connection_config_dir = BYX_CONNECTION_CONFIG_DIR;
-	priv->service_config_dir = BYX_SERVICE_CONFIG_DIR;
-
-	priv->run_data_file = BYX_RUN_DATA_FILE;
-	priv->connection_run_data_dir = BYX_CONNECTION_RUN_DATA_DIR;
-	priv->service_run_data_dir = BYX_SERVICE_RUN_DATA_DIR;
-
-	priv->persist_data_file = BYX_PERSIST_DATA_FILE;
-	priv->connection_persist_data_dir = BYX_CONNECTION_PERSIST_DATA_DIR;
-	priv->service_persist_data_dir = BYX_SERVICE_PERSIST_DATA_DIR;
 
     priv->config = byx_config_new(argc, argv);
     assert (priv->config != NULL);                              /* FIXME */
@@ -166,14 +132,14 @@ ByxConnectionRunData *byx_config_manager_get_connection_run_data (ByxConfigManag
     ByxConnectionRunData *data = NULL;
     GError *local = NULL;
 
-    assert (uuid != NULL);
+    assert (connection_uuid != NULL);
 
-    data = g_hash_table_lookup(priv->connection_run_data, uuid);
+    data = g_hash_table_lookup(priv->connection_run_data, connection_uuid);
     if (data != NULL) {
         return data;
     }
 
-    new_uuid = strdup(uuid);
+    new_uuid = strdup(connection_uuid);
     if (new_uuid == NULL) {
         _LOGT ("failed to allocate memory");
         goto failure;
@@ -185,7 +151,7 @@ ByxConnectionRunData *byx_config_manager_get_connection_run_data (ByxConfigManag
         goto failure;
     }
 
-    if (util_sprintf_buf (data->filename, "%s/%s", priv->connection_run_data_dir, uuid) == NULL) {
+    if (util_sprintf_buf (data->filename, "%s/%s", BYX_CONNECTION_RUN_DATA_DIR, connection_uuid) == NULL) {
         _LOGT ("failed to sprintf");
         goto failure;
     }
@@ -193,7 +159,7 @@ ByxConnectionRunData *byx_config_manager_get_connection_run_data (ByxConfigManag
     data->keyfile = g_key_file_new ();                            /* FIXME: return NULL? */
     g_key_file_set_list_separator (data->keyfile, KEYFILE_LIST_SEPARATOR);
 
-    if (access (path, F_OK) == 0) {
+    if (access (data->filename, F_OK) == 0) {
         if (!g_key_file_load_from_file (data->keyfile, data->filename, G_KEY_FILE_KEEP_COMMENTS, &local)) {
             _LOGT ("failed reading connection run data \"%s\"", data->filename);
             goto failure;
@@ -210,25 +176,25 @@ failure:
     if (data != NULL)
         byx_connection_run_data_free (data);
     if (local != NULL)
-        g_propagate_error (&error, local);
+        g_propagate_error (error, local);
     return NULL;
 }
 
-ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid)
+ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid, GError **error)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
     char *new_uuid = NULL;
     ByxConnectionPersistData *data = NULL;
     GError *local = NULL;
 
-    assert (uuid != NULL);
+    assert (connection_uuid != NULL);
 
-    data = g_hash_table_lookup(priv->connection_persist_data, uuid);
+    data = g_hash_table_lookup(priv->connection_persist_data, connection_uuid);
     if (data != NULL) {
         return data;
     }
 
-    new_uuid = strdup(uuid);
+    new_uuid = strdup(connection_uuid);
     if (new_uuid == NULL) {
         _LOGT ("failed to allocate memory");
         goto failure;
@@ -240,7 +206,7 @@ ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxCon
         goto failure;
     }
 
-    if (util_sprintf_buf (data->filename, "%s/%s", priv->connection_persist_data_dir, uuid) == NULL) {
+    if (util_sprintf_buf (data->filename, "%s/%s", BYX_CONNECTION_PERSIST_DATA_DIR, connection_uuid) == NULL) {
         _LOGT ("failed to sprintf");
         goto failure;
     }
@@ -248,7 +214,7 @@ ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxCon
     data->keyfile = g_key_file_new ();                            /* FIXME: return NULL? */
     g_key_file_set_list_separator (data->keyfile, KEYFILE_LIST_SEPARATOR);
 
-    if (access (path, F_OK) == 0) {
+    if (access (data->filename, F_OK) == 0) {
         if (!g_key_file_load_from_file (data->keyfile, data->filename, G_KEY_FILE_KEEP_COMMENTS, &local)) {
             _LOGT ("failed reading connection persist data \"%s\"", data->filename);
             goto failure;
@@ -265,7 +231,7 @@ failure:
     if (data != NULL)
         byx_connection_persist_data_free (data);
     if (local != NULL)
-        g_propagate_error (&error, local);
+        g_propagate_error (error, local);
     return NULL;
 }
 
