@@ -19,8 +19,8 @@
  * (C) Copyright 2015 Red Hat, Inc.
  */
 
-#ifndef __BYX_DEFAULT_H__
-#define __BYX_DEFAULT_H__
+#ifndef __BYX_COMMON_H__
+#define __BYX_COMMON_H__
 
 /*****************************************************************************/
 
@@ -137,20 +137,6 @@
  * parts. Note that the failed assertion still prints the file and line where the
  * assertion fails. That shall suffice. */
 
-static inline void
-_nm_g_return_if_fail_warning (const char *log_domain,
-                              const char *file,
-                              int line)
-{
-	char file_buf[256 + 15];
-
-	g_snprintf (file_buf, sizeof (file_buf), "((%s:%d))", file, line);
-	g_return_if_fail_warning (log_domain, file_buf, "<dropped>");
-}
-
-#define g_return_if_fail_warning(log_domain, pretty_function, expression) \
-	_nm_g_return_if_fail_warning (log_domain, __FILE__, __LINE__)
-
 #undef g_return_val_if_reached
 #define g_return_val_if_reached(val) \
     G_STMT_START { \
@@ -187,4 +173,4 @@ _nm_g_return_if_fail_warning (const char *log_domain,
 
 /*****************************************************************************/
 
-#endif /* __BYX_DEFAULT_H__ */
+#endif /* __BYX_COMMON_H__ */

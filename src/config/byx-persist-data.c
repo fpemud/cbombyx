@@ -3,7 +3,7 @@
 #include "byx-common.h"
 
 #include <assert.h>
-#include "util/byx-glib-keyfile.h"
+#include "util/util-glib-keyfile.h"
 #include "byx-persist-data.h"
 
 /*****************************************************************************/
@@ -68,7 +68,7 @@ gboolean byx_persist_data_get_global_switch(ByxPersistData *data)
 {
 	_assert_persist_data_valid(data);
 
-	return byx_keyfile_get_boolean (data->keyfile, "main", "NetworkEnabled", TRUE);
+	return util_keyfile_get_boolean (data->keyfile, "main", "NetworkEnabled", TRUE);
 }
 
 void byx_persist_data_set_global_switch(ByxPersistData *data, gboolean value)
@@ -82,7 +82,7 @@ gboolean byx_persist_data_get_network_type_switch(ByxPersistData *data, ByxNetwo
 {
 	_assert_persist_data_valid(data);
 
-	return byx_keyfile_get_boolean (data->keyfile, "main", _network_type_to_key_string(network_type), TRUE);
+	return util_keyfile_get_boolean (data->keyfile, "main", _network_type_to_key_string(network_type), TRUE);
 }
 
 void byx_persist_data_set_network_type_switch(ByxPersistData *data, ByxNetworkType network_type, gboolean value)

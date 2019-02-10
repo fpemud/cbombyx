@@ -1014,33 +1014,6 @@ nm_decode_version (guint version, guint *major, guint *minor, guint *micro)
 			: "(null)"); \
 	})
 
-#define byx_sprintf_buf(buf, format, ...) \
-	({ \
-		int _buf_len; \
-		\
-		/* ensure that the buffer is statically allocated */ \
-		assert (sizeof(buf) / sizeof((buf)[0]) == sizeof(buf)); \
-		assert (sizeof(buf) != sizeof(char *)); \
-		\
-		_buf_len = g_snprintf (buf, sizeof(buf), ""format"", ##__VA_ARGS__); \
-		assert (_buf_len < sizeof(buf)); \
-		\
-		_buf; \
-	})
-
-#define nm_sprintf_bufa(n_elements, format, ...) \
-	({ \
-		char *_buf; \
-		int _buf_len; \
-		typeof (n_elements) _n_elements = (n_elements); \
-		\
-		_buf = g_alloca (_n_elements); \
-		_buf_len = g_snprintf (_buf, _n_elements, \
-		                       ""format"", ##__VA_ARGS__); \
-		nm_assert (_buf_len < _n_elements); \
-		_buf; \
-	})
-
 /* aims to alloca() a buffer and fill it with printf(format, name).
  * Note that format must not contain any format specifier except
  * "%s".

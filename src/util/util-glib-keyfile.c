@@ -4,9 +4,9 @@
 
 #include <assert.h>
 
-#include "byx-glib-keyfile.h"
+#include "util-glib-keyfile.h"
 
-gboolean byx_keyfile_get_boolean (GKeyFile *keyfile, const gchar *group_name, const gchar *key, gboolean default_value)
+gboolean util_keyfile_get_boolean (GKeyFile *keyfile, const gchar *group_name, const gchar *key, gboolean default_value)
 {
     gboolean ret = FALSE;
     g_autoptr(GError) local = NULL;

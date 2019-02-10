@@ -8,4 +8,7 @@ typedef struct {
     gchar *filename;
 } ByxConnectionRunData;
 
+ByxConnectionRunData *byx_connection_run_data_new(void);
+void byx_connection_run_data_free(ByxConnectionRunData *data);
+
 #endif /* __BYX_CONNECTION_RUN_DATA__ */

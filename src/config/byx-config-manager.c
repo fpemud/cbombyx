@@ -111,11 +111,13 @@ ByxConfigManager *byx_config_manager_get (void)
 
 /*****************************************************************************/
 
-static void byx_config_manager_classinit (ByxConfigManagerClass *config_manager_class)
+static void byx_config_manager_finalize (GObject *gobject);
+
+static void byx_config_manager_class_init (ByxConfigManagerClass *config_manager_class)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (config_manager_class);
 
-    object_class->byx_config_manager_finalize = byx_config_manager_finalize;
+    object_class->finalize = byx_config_manager_finalize;
 }
 
 static void byx_config_manager_init (ByxConfigManager *self)
@@ -126,14 +128,9 @@ static void byx_config_manager_finalize (GObject *gobject)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private ((ByxConfigManager *) gobject);
 
-    g_free (priv->log_level);
-    g_free (priv->log_domains);
-    g_strfreev (priv->atomic_section_prefixes);
-
-    _byx_cmd_line_options_clear (&priv->cli);
-
-    g_clear_object (&priv->config_data);
-    g_clear_object (&priv->config_data_orig);
+    g_clear_object (&priv->persist_data);
+    g_clear_object (&priv->run_data);
+    g_clear_object (&priv->config);
 
     G_OBJECT_CLASS (byx_config_parent_class)->finalize (gobject);
 }
@@ -162,73 +159,114 @@ ByxPersistData *byx_config_manager_get_persist_data (ByxConfigManager *self)
 
 /*****************************************************************************/
 
-static ByxConfigData *_byx_config_manager_get_connection_data (ByxConfigManager *self, const char *uuid, gboolean run_data_or_persist_data)
+ByxConnectionRunData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid, GError **error)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
-    GHashTable *htable;
-    char *datadir;
-    char *dataname;
-    ByxConfigData *data;
-    char *new_uuid;
-    GError *local;
+    char *new_uuid = NULL;
+    ByxConnectionRunData *data = NULL;
+    GError *local = NULL;
 
     assert (uuid != NULL);
 
-    if (run_data_or_persist_data) {
-        htable = priv->connection_run_data;
-        datadir = BYX_CONNECTION_RUN_DATA_DIR;
-        dataname = "run data";
-    } else {
-        htable = priv->connection_persist_data;
-        datadir = BYX_CONNECTION_PERSIST_DATA_DIR;
-        dataname = "persist data";
-    }
-
-    data = g_hash_table_lookup(htable, uuid);
+    data = g_hash_table_lookup(priv->connection_run_data, uuid);
     if (data != NULL) {
         return data;
-    }
-
-    data = g_malloc(sizeof(*data));
-    if (data == NULL) {
-        return NULL;
-    }
-
-    byx_sprintf_buf (data->filename, "%s/%s", datadir, uuid);
-
-    data->keyfile = g_key_file_new ();                            /* FIXME: return NULL? */
-    g_key_file_set_list_separator (data->keyfile, KEYFILE_LIST_SEPARATOR);
-
-    if (access (path, F_OK) == 0) {
-        local = NULL;
-        if (!g_key_file_load_from_file (keyfile, data->filename, G_KEY_FILE_KEEP_COMMENTS, local)) {
-            _LOGT ("failed reading connection %s \"%s\"", dataname, data->filename);
-            _byx_config_data_free(data);
-            g_propagate_error (error, local);
-            return NULL;
-        }
     }
 
     new_uuid = strdup(uuid);
     if (new_uuid == NULL) {
         _LOGT ("failed to allocate memory");
-        _byx_config_data_free(data);
-        return NULL;
+        goto failure;
     }
 
-    g_hash_table_insert (htable, new_uuid, data);
+    data = byx_connection_run_data_new();
+    if (data == NULL) {
+        _LOGT ("failed to allocate memory");
+        goto failure;
+    }
+
+    if (util_sprintf_buf (data->filename, "%s/%s", priv->connection_run_data_dir, uuid) == NULL) {
+        _LOGT ("failed to sprintf");
+        goto failure;
+    }
+
+    data->keyfile = g_key_file_new ();                            /* FIXME: return NULL? */
+    g_key_file_set_list_separator (data->keyfile, KEYFILE_LIST_SEPARATOR);
+
+    if (access (path, F_OK) == 0) {
+        if (!g_key_file_load_from_file (data->keyfile, data->filename, G_KEY_FILE_KEEP_COMMENTS, &local)) {
+            _LOGT ("failed reading connection run data \"%s\"", data->filename);
+            goto failure;
+        }
+    }
+
+    g_hash_table_insert (priv->connection_run_data, new_uuid, data);
 
     return data;
+
+failure:
+    if (new_uuid != NULL)
+        free (new_uuid);
+    if (data != NULL)
+        byx_connection_run_data_free (data);
+    if (local != NULL)
+        g_propagate_error (&error, local);
+    return NULL;
 }
 
-ByxConfigData *byx_config_manager_get_connection_run_data (ByxConfigManager *self, const char *connection_uuid)
+ByxConnectionPersistData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid)
 {
-    return _byx_config_manager_get_connection_data(self, connection_uuid, TRUE);
-}
+    ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);
+    char *new_uuid = NULL;
+    ByxConnectionPersistData *data = NULL;
+    GError *local = NULL;
 
-ByxConfigData *byx_config_manager_get_connection_persist_data (ByxConfigManager *self, const char *connection_uuid)
-{
-    return _byx_config_manager_get_connection_data(self, connection_uuid, FALSE);
+    assert (uuid != NULL);
+
+    data = g_hash_table_lookup(priv->connection_persist_data, uuid);
+    if (data != NULL) {
+        return data;
+    }
+
+    new_uuid = strdup(uuid);
+    if (new_uuid == NULL) {
+        _LOGT ("failed to allocate memory");
+        goto failure;
+    }
+
+    data = byx_connection_persist_data_new();
+    if (data == NULL) {
+        _LOGT ("failed to allocate memory");
+        goto failure;
+    }
+
+    if (util_sprintf_buf (data->filename, "%s/%s", priv->connection_persist_data_dir, uuid) == NULL) {
+        _LOGT ("failed to sprintf");
+        goto failure;
+    }
+
+    data->keyfile = g_key_file_new ();                            /* FIXME: return NULL? */
+    g_key_file_set_list_separator (data->keyfile, KEYFILE_LIST_SEPARATOR);
+
+    if (access (path, F_OK) == 0) {
+        if (!g_key_file_load_from_file (data->keyfile, data->filename, G_KEY_FILE_KEEP_COMMENTS, &local)) {
+            _LOGT ("failed reading connection persist data \"%s\"", data->filename);
+            goto failure;
+        }
+    }
+
+    g_hash_table_insert (priv->connection_persist_data, new_uuid, data);
+
+    return data;
+
+failure:
+    if (new_uuid != NULL)
+        free (new_uuid);
+    if (data != NULL)
+        byx_connection_persist_data_free (data);
+    if (local != NULL)
+        g_propagate_error (&error, local);
+    return NULL;
 }
 
 /*****************************************************************************/

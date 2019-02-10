@@ -22,6 +22,7 @@ ByxConnectionManager *byx_connection_manager_get(void);
 /*****************************************************************************/
 
 gboolean byx_connection_manager_start (ByxConnectionManager *self, GError **error);
+
 void byx_connection_manager_stop (ByxConnectionManager *self);
 
 /*****************************************************************************/

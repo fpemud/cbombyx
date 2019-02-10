@@ -1452,7 +1452,7 @@ byx_config_connection_data_get (int ifindex)
 
     g_return_val_if_fail (ifindex > 0, NULL);
 
-    byx_sprintf_buf (path, "%s/%d", BYX_CONNECTION_RUN_DATA_DIR, ifindex);
+    util_sprintf_buf (path, "%s/%d", BYX_CONNECTION_RUN_DATA_DIR, ifindex);
 
     kf = byx_config_create_keyfile ();
     if (!g_key_file_load_from_file (kf, path, G_KEY_FILE_NONE, NULL))

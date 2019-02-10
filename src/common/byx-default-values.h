@@ -23,7 +23,8 @@
 #define BYX_CONNECTION_PERSIST_DATA_DIR          BYX_VARDIR "/connection.d"
 #define BYX_SERVICE_PERSIST_DATA_DIR             BYX_VARDIR "/service.d"
 
-#define BYX_DEFAULT_CONNECTIVITY_INTERVAL        300
-#define BYX_DEFAULT_CONNECTIVITY_RESPONSE        "NetworkManager is online" /* NOT LOCALIZED */
+#define BYX_CONNECTIVITY_URL                     "http://example.com"
+#define BYX_CONNECTIVITY_INTERVAL                300                        /* unit: seconds */
+#define BYX_CONNECTIVITY_RESPONSE                "NetworkManager is online" /* NOT LOCALIZED */
 
 #endif /* __BYX_DEFAULT_VALUES_H__ */

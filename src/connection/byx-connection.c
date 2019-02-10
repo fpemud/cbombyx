@@ -8802,9 +8802,9 @@ _commit_mtu (ByxConnection *self, const NMIP4Config *config)
 
 	_LOGT (LOGD_DEVICE, "mtu: device-mtu: %u%s, ipv6-mtu: %u%s, ifindex: %d",
 	       (guint) mtu_desired,
-	       mtu_desired == mtu_desired_orig ? "" : byx_sprintf_buf (sbuf1, " (was %u)", (guint) mtu_desired_orig),
+	       mtu_desired == mtu_desired_orig ? "" : util_sprintf_buf (sbuf1, " (was %u)", (guint) mtu_desired_orig),
 	       (guint) ip6_mtu,
-	       ip6_mtu == ip6_mtu_orig ? "" : byx_sprintf_buf (sbuf2, " (was %u)", (guint) ip6_mtu_orig),
+	       ip6_mtu == ip6_mtu_orig ? "" : util_sprintf_buf (sbuf2, " (was %u)", (guint) ip6_mtu_orig),
 	       ifindex);
 
 #define _IP6_MTU_SYS() \
@@ -8842,7 +8842,7 @@ _commit_mtu (ByxConnection *self, const NMIP4Config *config)
 
 		if (ip6_mtu && ip6_mtu != _IP6_MTU_SYS ()) {
 			if (!byx_connection_ipv6_sysctl_set (self, "mtu",
-			                                byx_sprintf_buf (sbuf, "%u", (unsigned) ip6_mtu))) {
+			                                util_sprintf_buf (sbuf, "%u", (unsigned) ip6_mtu))) {
 				int errsv = errno;
 
 				_NMLOG (anticipated_failure && errsv == EINVAL ? LOGL_DEBUG : LOGL_WARN,
@@ -13810,7 +13810,7 @@ byx_connection_cleanup (ByxConnection *self, ByxConnectionStateReason reason, Cl
 				char sbuf[64];
 
 				byx_connection_ipv6_sysctl_set (self, "mtu",
-				                           byx_sprintf_buf (sbuf, "%u", (unsigned) priv->ip6_mtu_initial));
+				                           util_sprintf_buf (sbuf, "%u", (unsigned) priv->ip6_mtu_initial));
 			}
 		}
 		priv->mtu_initial = 0;

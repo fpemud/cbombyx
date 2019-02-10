@@ -3,7 +3,7 @@
 #include "byx-common.h"
 
 #include <assert.h>
-#include "util/byx-glib-keyfile.h"
+#include "util/util-glib-keyfile.h"
 #include "byx-run-data.h"
 
 /*****************************************************************************/

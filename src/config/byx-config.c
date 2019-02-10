@@ -34,6 +34,8 @@ struct _ByxConfig {
 
 /*****************************************************************************/
 
+static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[]);
+
 ByxConfig *byx_config_new (int argc, char *argv[])
 {
 	ByxConfig *config = g_try_new(ByxConfig, 1);
@@ -61,6 +63,8 @@ ByxConfig *byx_config_new (int argc, char *argv[])
 	config->ignore_carrier = NULL;
 
 	config->keyfile = NULL;
+
+	_byx_cmd_line_options_parse(config, argc, argv);
 
 	return config;
 }
@@ -176,23 +180,45 @@ guint byx_config_get_debug_flags(ByxConfig *config)
 
 /*****************************************************************************/
 
-static void _cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext *opt_ctx) {
-
-    GOptionEntry config_options[] = {
+static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[])
+{
+    GOptionEntry options[] = {
         {
-            "debug", 'd', 0, G_OPTION_ARG_NONE,
-            &config->is_debug, N_("Don't become a daemon, and log to stderr"),
+            "debug",
+			'd',
+			0,
+			G_OPTION_ARG_NONE,
+            &config->is_debug,
+			N_("Don't become a daemon, and log to stderr"),
             NULL,
         },
-
-        /* These three are hidden for now, and should eventually just go away. */
-        { "connectivity-uri", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity.uri, N_("An http(s) address for checking internet connectivity"), "http://example.com" },
-        { "connectivity-response", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &config->connectivity.response, N_("The expected start of the response"), BYX_DEFAULT_CONNECTIVITY_RESPONSE },
-        { "connectivity-interval", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_INT, &config->connectivity.interval, N_("The interval between connectivity checks (in seconds)"), G_STRINGIFY (BYX_DEFAULT_CONNECTIVITY_INTERVAL) },
-        { 0 },
-    };
-
-	GOptionEntry options2[] = {
+        {
+			"connectivity-uri",
+			0,
+			0,
+			G_OPTION_ARG_STRING,
+			&config->connectivity.uri,
+			N_("An http(s) address for checking internet connectivity"),
+			BYX_CONNECTIVITY_URL,
+		},
+        {
+			"connectivity-response",
+			0,
+			0,
+			G_OPTION_ARG_STRING,
+			&config->connectivity.response,
+			N_("The expected start of the response"),
+			BYX_CONNECTIVITY_RESPONSE
+		},
+        {
+			"connectivity-interval",
+			0,
+			0,
+			G_OPTION_ARG_INT,
+			&config->connectivity.interval,
+			N_("The interval between connectivity checks (in seconds)"),
+			G_STRINGIFY (BYX_CONNECTIVITY_INTERVAL)
+		},
 		{
             "version",
             'V',
@@ -207,7 +233,7 @@ static void _cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext 
             0,
             0,
             G_OPTION_ARG_STRING,
-            &config->opt_log_level,
+            &config->log_level,
             N_("Log level: one of [TRACE,DEBUG,INFO,WARN,ERR,OFF,KEEP]"),       /* FIXME: should be provided by logging module */
             "INFO",
         },
@@ -216,12 +242,15 @@ static void _cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext 
             0,
             0,
             G_OPTION_ARG_STRING,
-            &config->opt_log_domains,
+            &config->log_domains,
             N_("Log domains separated by ',': any combination of [%s]"),
-            "PLATFORM,RFKILL,WIFI"
+            "PLATFORM,RFKILL,WIFI",
         },
 		{
-            "pid-file", 'p', 0, G_OPTION_ARG_FILENAME,
+            "pid-file",
+			'p',
+			0,
+			G_OPTION_ARG_FILENAME,
             &config->pidfile,
             N_("Specify the location of a PID file"),
             BYX_PID_FILE,
@@ -231,13 +260,13 @@ static void _cmd_line_options_add_to_entries (ByxConfig *config, GOptionContext 
         },
 	};
 
-    g_option_context_add_main_entries (opt_ctx, config_options, NULL);
-    g_option_context_add_main_entries (opt_ctx, config_options2, NULL);
-}
+	char *summary = _("abc");
+	/* _("NetworkManager monitors all network connections and automatically\nchooses the best connection to use.  It also allows the user to\nspecify wireless access points which wireless cards in the computer\nshould associate with."))) */
 
+	GOptionContext *opt_ctx;
+	int i;
 
-void byx_cmd_line_options_parse(ByxCmdLineOptions *config, int argc, char **argv[])
-{
+#if 0
 	for (i = 0; options[i].long_name; i++) {
 		NM_PRAGMA_WARNING_DISABLE("-Wformat-nonliteral")
 		if (!strcmp (options[i].long_name, "log-level")) {
@@ -276,4 +305,5 @@ void byx_cmd_line_options_parse(ByxCmdLineOptions *config, int argc, char **argv
 		g_free ((char *) *opt_loc_log_domains);
 		*opt_loc_log_domains = opt_fmt_log_domains;
 	}
+#endif
 }

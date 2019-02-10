@@ -8,4 +8,7 @@ typedef struct {
     gchar *filename;
 } ByxConnectionPersistData;
 
+ByxConnectionPersistData *byx_connection_persist_data_new(void);
+void byx_connection_persist_data_free(ByxConnectionPersistData *data);
+
 #endif /* __BYX_CONNECTION_PERSIST_DATA__ */
