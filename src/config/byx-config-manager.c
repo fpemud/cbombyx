@@ -39,8 +39,6 @@ struct _ByxConfigManager {
 
 G_DEFINE_TYPE_WITH_PRIVATE (ByxConfigManager, byx_config_manager, G_TYPE_OBJECT)
 
-#define BYX_CONFIG_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxConfigManager, BYX_IS_CONFIG_MANAGER)
-
 /*****************************************************************************/
 
 static ByxConfigManager *_singleton_instance = NULL;
@@ -77,20 +75,20 @@ ByxConfigManager *byx_config_manager_get (void)
 
 /*****************************************************************************/
 
-static void byx_config_manager_finalize (GObject *gobject);
+static void byx_config_manager_dispose (GObject *gobject);
 
 static void byx_config_manager_class_init (ByxConfigManagerClass *config_manager_class)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (config_manager_class);
 
-    object_class->finalize = byx_config_manager_finalize;
+    object_class->dispose = byx_config_manager_dispose;
 }
 
 static void byx_config_manager_init (ByxConfigManager *self)
 {
 }
 
-static void byx_config_manager_finalize (GObject *gobject)
+static void byx_config_manager_dispose (GObject *gobject)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private ((ByxConfigManager *) gobject);
 
@@ -98,7 +96,7 @@ static void byx_config_manager_finalize (GObject *gobject)
     g_clear_object (&priv->run_data);
     g_clear_object (&priv->config);
 
-    G_OBJECT_CLASS (byx_config_parent_class)->finalize (gobject);
+    G_OBJECT_CLASS (byx_config_manager_parent_class)->dispose (gobject);
 }
 
 /*****************************************************************************/

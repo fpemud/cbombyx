@@ -55,8 +55,6 @@ struct _ByxRfkillManagerClass {
 
 G_DEFINE_TYPE (ByxRfkillManager, byx_rfkill_manager, G_TYPE_OBJECT)
 
-#define BYX_RFKILL_MANAGER_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxRfkillManager, BYX_IS_RFKILL_MANAGER)
-
 /*****************************************************************************/
 
 typedef struct {

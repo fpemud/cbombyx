@@ -78,8 +78,6 @@ struct _ByxDBusManagerClass {
 
 G_DEFINE_TYPE(ByxDBusManager, BYX_DBUS_MANAGER, G_TYPE_OBJECT)
 
-#define BYX_DBUS_MANAGER_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxDBusManager, BYX_IS_DBUS_MANAGER)
-
 /*****************************************************************************/
 
 #define _NMLOG_DOMAIN      LOGD_CORE

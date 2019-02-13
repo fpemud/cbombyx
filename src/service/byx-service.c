@@ -155,8 +155,6 @@ struct _NMVpnConnectionClass {
 
 G_DEFINE_TYPE (ByxService, nm_vpn_connection, NM_TYPE_ACTIVE_CONNECTION)
 
-#define NM_VPN_CONNECTION_GET_PRIVATE(self) _BYX_GET_PRIVATE(self, ByxService, NM_IS_VPN_CONNECTION)
-
 /*****************************************************************************/
 
 static const ByxDBusInterfaceInfoExtended interface_info_vpn_connection;

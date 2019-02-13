@@ -55,8 +55,6 @@ struct _ByxServiceManagerClass {
 
 G_DEFINE_TYPE (ByxServiceManager, byx_service_manager, G_TYPE_OBJECT)
 
-#define BYX_SERVICE_MANAGER_GET_PRIVATE(self) _BYX_GET_PRIVATE (self, ByxServiceManager, BYX_IS_SERVICE_MANAGER)
-
 /*****************************************************************************/
 
 static void

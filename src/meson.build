@@ -24,12 +24,16 @@ sources = files(
   'config/byx-run-data.c',
   'config/byx-persist-data.c',
   'config/byx-config-manager.c',
+  'plugin/byx-plugin-manager.c',
+  'device/byx-device-manager.c',
+  'connection/byx-connection-manager.c',
 )
 
 deps = [
   libudev_dep,
   liblogind_dep,
   glib_dep,
+  dependency('libpeas-1.0'),
 ]
 
 if enable_concheck
