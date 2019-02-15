@@ -24,6 +24,8 @@ ByxDBusManager *byx_dbus_manager_get (void);
 
 gboolean byx_dbus_manager_start (ByxDBusManager *self, GError **error);
 
+void byx_dbus_manager_stop (ByxDBusManager *self);
+
 #if 0
 
 #define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_NEW           "private-connection-new"
@@ -32,7 +34,6 @@ gboolean byx_dbus_manager_start (ByxDBusManager *self, GError **error);
 
 
 
-void byx_dbus_manager_stop (ByxDBusManager *self);
 
 gboolean byx_dbus_manager_is_stopping (ByxDBusManager *self);
 

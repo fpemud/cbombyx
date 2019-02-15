@@ -22,15 +22,9 @@
 
 #include "byx-common.h"
 
-#include "byx-service-manager.h"
-
 #include <string.h>
-
-#include "nm-vpn-plugin-info.h"
-#include "byx-service.h"
-#include "nm-setting-vpn.h"
-#include "nm-vpn-dbus-interface.h"
-#include "nm-core-internal.h"
+#include "util/util-gobject-singleton.h"
+#include "byx-service-manager.h"
 
 typedef struct {
 	GSList *plugins;
@@ -54,6 +48,8 @@ struct _ByxServiceManagerClass {
 };
 
 G_DEFINE_TYPE (ByxServiceManager, byx_service_manager, G_TYPE_OBJECT)
+
+BYX_DEFINE_SINGLETON_GETTER (ByxServiceManager, byx_service_manager_get, BYX_TYPE_SERVICE_MANAGER)
 
 /*****************************************************************************/
 
@@ -211,8 +207,6 @@ vpn_dir_changed (GFileMonitor *monitor,
 }
 
 /*****************************************************************************/
-
-BYX_DEFINE_SINGLETON_GETTER (ByxServiceManager, byx_service_manager_get, BYX_TYPE_SERVICE_MANAGER);
 
 static void
 byx_service_manager_init (ByxServiceManager *self)

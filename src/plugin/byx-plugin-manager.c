@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <string.h>
 #include <libpeas/peas.h>
+#include "util/util-gobject-singleton.h"
 #include "byx-plugin-manager.h"
 
 struct _ByxPluginManagerClass {
@@ -22,19 +23,7 @@ struct _ByxPluginManager {
 
 G_DEFINE_TYPE (ByxPluginManager, byx_plugin_manager, G_TYPE_OBJECT)
 
-/*****************************************************************************/
-
-static ByxPluginManager *_singleton_instance = NULL;
-
-ByxPluginManager *byx_plugin_manager_get (void)
-{
-    if (_singleton_instance == NULL) {
-        _singleton_instance = g_object_new (BYX_TYPE_PLUGIN_MANAGER, NULL);
-        assert (_singleton_instance != NULL);
-    }
-
-    return _singleton_instance;
-}
+BYX_DEFINE_SINGLETON_GETTER (ByxPluginManager, byx_plugin_manager_get, BYX_TYPE_PLUGIN_MANAGER)
 
 /*****************************************************************************/
 

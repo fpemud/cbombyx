@@ -4,7 +4,7 @@
 
 #include <assert.h>
 #include <string.h>
-#include "byx-connection.h"
+#include "util/util-gobject-singleton.h"
 #include "byx-connection-manager.h"
 
 struct _ByxConnectionManagerClass {
@@ -22,19 +22,7 @@ struct _ByxConnectionManager {
 
 G_DEFINE_TYPE_WITH_PRIVATE (ByxConnectionManager, byx_connection_manager, G_TYPE_OBJECT)
 
-/*****************************************************************************/
-
-static ByxConnectionManager *_singleton_instance = NULL;
-
-ByxConnectionManager *byx_connection_manager_get (void)
-{
-    if (_singleton_instance == NULL) {
-        _singleton_instance = g_object_new (BYX_TYPE_CONNECTION_MANAGER, NULL);
-        assert (_singleton_instance != NULL);
-    }
-
-    return _singleton_instance;
-}
+BYX_DEFINE_SINGLETON_GETTER (ByxConnectionManager, byx_connection_manager_get, BYX_TYPE_CONNECTION_MANAGER)
 
 /*****************************************************************************/
 
@@ -65,6 +53,16 @@ static void byx_connection_manager_dispose (GObject *object)
 }
 
 /*****************************************************************************/
+
+gboolean byx_connection_manager_start (ByxConnectionManager *self, GError **error)
+{
+	return FALSE;	
+}
+
+void byx_connection_manager_stop (ByxConnectionManager *self)
+{
+
+}
 
 GSList *byx_connection_manager_get_activatable_connections (ByxConnectionManager *manager,
                                                            gboolean sort)

@@ -107,8 +107,6 @@ ByxConfig *byx_config_manager_get_config(ByxConfigManager *self)
     return priv->config;
 }
 
-/*****************************************************************************/
-
 ByxRunData *byx_config_manager_get_run_data (ByxConfigManager *self)
 {
     ByxConfigManagerPrivate *priv = byx_config_manager_get_instance_private(self);

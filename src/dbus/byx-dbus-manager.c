@@ -7,14 +7,8 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <string.h>
-
-#include "c-list/src/c-list.h"
-#include "nm-dbus-interface.h"
-#include "nm-core-internal.h"
-#include "nm-dbus-compat.h"
-#include "nm-dbus-object.h"
-#include "BombyxUtils.h"
-#include "nm-dbus-manager.h"
+#include "util/util-gobject-singleton.h"
+#include "byx-dbus-manager.h"
 
 /* The base path for our GDBusObjectManagerServers.  They do not contain
  * "Bombyx" because GDBusObjectManagerServer requires that all
@@ -78,12 +72,7 @@ struct _ByxDBusManagerClass {
 
 G_DEFINE_TYPE(ByxDBusManager, BYX_DBUS_MANAGER, G_TYPE_OBJECT)
 
-/*****************************************************************************/
-
-#define _NMLOG_DOMAIN      LOGD_CORE
-#define _NMLOG(level, ...) __NMLOG_DEFAULT (level, _NMLOG_DOMAIN, "bus-manager", __VA_ARGS__)
-
-BYX_DEFINE_SINGLETON_GETTER (ByxDBusManager, byx_dbus_manager_get, BYX_TYPE_DBUS_MANAGER);
+BYX_DEFINE_SINGLETON_GETTER (ByxDBusManager, byx_dbus_manager_get, BYX_TYPE_DBUS_MANAGER)
 
 /*****************************************************************************/
 

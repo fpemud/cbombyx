@@ -27,6 +27,7 @@ sources = files(
   'plugin/byx-plugin-manager.c',
   'device/byx-device-manager.c',
   'connection/byx-connection-manager.c',
+  'dbus/byx-dbus-manager.c',
 )
 
 deps = [
