@@ -45,7 +45,7 @@ static gboolean _sighup_handler (gpointer user_data)
      *
      * Hence, a ByxConfigManager singleton instance must always be
      * available. */
-    byx_config_manager_reload (byx_config_manager_get ());
+    byx_config_manager_reload ();
 
 	return G_SOURCE_CONTINUE;
 }

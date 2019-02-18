@@ -27,13 +27,11 @@ GType byx_config_manager_get_type (void);
 
 ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error);
 
+ByxConfigManager *byx_config_manager_reload (void);
+
 ByxConfigManager *byx_config_manager_get (void);
 
 /*****************************************************************************/
-
-gboolean byx_config_manager_add_cmd_line_options (ByxConfigManager *self, int argc, char *argv[], GError **error);
-
-void byx_config_manager_reload (ByxConfigManager *self);
 
 ByxConfig *byx_config_manager_get_config(ByxConfigManager *self);
 

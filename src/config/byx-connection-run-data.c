@@ -2,7 +2,12 @@
 
 #include "byx-common.h"
 
+#include <assert.h>
+#include "util/util-stdio.h"
+#include "util/util-glib-keyfile.h"
 #include "byx-connection-run-data.h"
+
+#define KEYFILE_LIST_SEPARATOR ','
 
 struct _ByxConnectionRunData {
     GKeyFile *keyfile;
@@ -16,7 +21,7 @@ ByxConnectionRunData *byx_connection_run_data_new (const char *connection_uuid, 
 
     assert (connection_uuid != NULL);
 
-    data = g_try_new0(ByxConnectionRunData);
+    data = g_try_new0(ByxConnectionRunData, 1);
     if (data == NULL) {
         goto failure;
     }

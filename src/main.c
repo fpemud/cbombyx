@@ -36,7 +36,7 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 
-#include "util/byx-platform.h"
+#include "util/util-ip-link.h"
 #include "config/byx-config-manager.h"
 #include "device/byx-device-manager.h"
 #include "connection/byx-connection-manager.h"
@@ -107,8 +107,8 @@ int main (int argc, char *argv[])
     textdomain (GETTEXT_PACKAGE);
 
     /* Setup config manager */
-    config_manager = byx_config_manager_get();
-    if (!byx_config_manager_add_cmd_line_options(config_manager, argc, argv, &error)) {
+    config_manager = byx_config_manager_setup(argc, argv, &error);
+    if (config_manager == NULL) {
 		fprintf (stderr, error->message);        /* FIXME */
         goto done;
     }
@@ -197,7 +197,7 @@ int main (int argc, char *argv[])
      * physical interfaces.
      */
     byx_log_dbg (LOGD_CORE, "setting up local loopback");
-    if (!byx_platform_link_set_up (1, &error)) {
+    if (!util_ip_link_set_up (1, &error)) {
         fprintf (stderr, error->message);        /* FIXME */
         goto done;
     }

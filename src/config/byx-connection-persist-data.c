@@ -2,8 +2,12 @@
 
 #include "byx-common.h"
 
+#include <assert.h>
+
 #include "util/util-stdio.h"
 #include "byx-connection-persist-data.h"
+
+#define KEYFILE_LIST_SEPARATOR ','
 
 struct _ByxConnectionPersistData {
     GKeyFile *keyfile;
@@ -17,7 +21,7 @@ ByxConnectionPersistData *byx_connection_persist_data_new (const char *connectio
 
     assert (connection_uuid != NULL);
 
-    data = g_try_new0(ByxConnectionPersistData);
+    data = g_try_new0(ByxConnectionPersistData, 1);
     if (data == NULL) {
         goto failure;
     }

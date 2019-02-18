@@ -66,6 +66,13 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
     return _singleton_instance;
 }
 
+ByxConfigManager *byx_config_manager_reload (void)
+{
+    assert (_singleton_instance != NULL);
+
+    return _singleton_instance;
+}
+
 ByxConfigManager *byx_config_manager_get (void)
 {
     assert (_singleton_instance != NULL);

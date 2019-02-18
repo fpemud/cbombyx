@@ -22,19 +22,15 @@ ByxDBusManager *byx_dbus_manager_get (void);
 
 /*****************************************************************************/
 
+#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_NEW           "private-connection-new"
+#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_DISCONNECTED  "private-connection-disconnected"
+
 gboolean byx_dbus_manager_start (ByxDBusManager *self, GError **error);
 
 void byx_dbus_manager_stop (ByxDBusManager *self);
 
+
 #if 0
-
-#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_NEW           "private-connection-new"
-#define BYX_DBUS_MANAGER_PRIVATE_CONNECTION_DISCONNECTED  "private-connection-disconnected"
-
-
-
-
-
 gboolean byx_dbus_manager_is_stopping (ByxDBusManager *self);
 
 GDBusConnection *byx_dbus_manager_get_connection (ByxDBusManager *self);
