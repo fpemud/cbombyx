@@ -18,7 +18,7 @@ byx_micro_version = byx_version.split('.')[2].to_int()
 byx_gir_version = '1.0'
 
 byx_prefix = get_option('prefix')
-byx_confdir = join_paths('/etc', byx_name)
+byx_confdir = join_paths(get_option('sysconfdir'), byx_name)
 byx_bindir = join_paths(byx_prefix, 'bin')
 byx_sbindir = join_paths(byx_prefix, 'sbin')
 byx_datadir = join_paths(byx_prefix, 'share')
