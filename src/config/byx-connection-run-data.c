@@ -60,7 +60,7 @@ failure:
 void byx_connection_run_data_free (ByxConnectionRunData *data)
 {
     if (data != NULL) {
-        util_key_file_free (data->keyfile);
+        util_keyfile_free (data->keyfile);
         g_free (data->filename);
     }
     g_free (data);

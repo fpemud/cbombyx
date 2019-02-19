@@ -2,6 +2,7 @@
 
 #include "byx-common.h"
 
+#include "util/util-glib-keyfile.h"
 #include "byx-config.h"
 
 struct _ByxConfig {
@@ -40,13 +41,13 @@ ByxConfig *byx_config_new (int argc, char *argv[], GError **error)
 {
 	ByxConfig *config = g_try_new(ByxConfig, 1);
 	if (config == NULL) {
-		return NULL;
+		goto failure;
 	}
 
 	config->show_version = FALSE;
 	config->log_level = NULL;
 	config->log_domains = NULL;
-	config->pidfile = NULL;
+	config->pidfile = BYX_PID_FILE;
 	config->is_debug = FALSE;
 
 	config->connectivity.enabled = FALSE;
@@ -62,15 +63,26 @@ ByxConfig *byx_config_new (int argc, char *argv[], GError **error)
 
 	config->ignore_carrier = NULL;
 
-	config->keyfile = NULL;
+	config->keyfile = util_keyfile_load_from_file (BYX_CONFIG_MAIN_FILE, error);
+	if (config->keyfile == NULL) {
+		goto failure;
+	}
 
 	_byx_cmd_line_options_parse(config, argc, argv);
 
 	return config;
+
+failure:
+	byx_config_free (config);
+	return NULL;
 }
 
 void byx_config_free (ByxConfig *config)
 {
+	if (config == NULL) {
+		return;
+	}
+
 	g_free (config->log_level);
 	g_free (config->log_domains);
 	g_free (config->pidfile);

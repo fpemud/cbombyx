@@ -13,7 +13,7 @@ struct _ByxDeviceManagerClass {
 };
 
 typedef struct {
-
+    int dummy;
 } ByxDeviceManagerPrivate;
 
 struct _ByxDeviceManager {

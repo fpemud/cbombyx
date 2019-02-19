@@ -61,7 +61,7 @@ failure:
 void byx_connection_persist_data_free (ByxConnectionPersistData *data)
 {
     if (data != NULL) {
-        util_key_file_free (data->keyfile);
+        util_keyfile_free (data->keyfile);
         g_free (data->filename);
     }
     g_free (data);

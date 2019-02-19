@@ -29,7 +29,7 @@ enum {
 static guint signals[LAST_SIGNAL];
 
 typedef struct {
-
+	int dummy;
 } ByxDBusManagerPrivate;
 
 struct _ByxDBusManager {
