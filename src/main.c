@@ -110,7 +110,7 @@ int main (int argc, char *argv[])
     /* Setup config manager */
     config_manager = byx_config_manager_setup(argc, argv, &error);
     if (config_manager == NULL) {
-		fprintf (stderr, error->message);        /* FIXME */
+		fprintf (stderr, "%s\n", error->message);        /* FIXME */
         goto done;
     }
 
@@ -141,7 +141,7 @@ int main (int argc, char *argv[])
     _init_nm_debug (config);
 
     if (!byx_main_utils_write_pidfile (byx_config_get_pidfile(config), &error)) {
-        fprintf (stderr, error->message);        /* FIXME */
+        fprintf (stderr, "%s\n", error->message);        /* FIXME */
         goto done;
     }
 
@@ -199,7 +199,7 @@ int main (int argc, char *argv[])
      */
     byx_log_dbg (LOGD_CORE, "setting up local loopback");
     if (!util_ip_link_set_up (1, &error)) {
-        fprintf (stderr, error->message);        /* FIXME */
+        fprintf (stderr, "%s\n", error->message);        /* FIXME */
         goto done;
     }
 

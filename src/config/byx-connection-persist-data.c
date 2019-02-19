@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "util/util-stdio.h"
+#include "util/util-glib-keyfile.h"
 #include "byx-connection-persist-data.h"
 
 #define KEYFILE_LIST_SEPARATOR ','

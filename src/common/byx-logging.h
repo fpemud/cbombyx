@@ -97,7 +97,7 @@ static inline gboolean byx_logging_enabled (ByxLogLevel level, NMLogDomain domai
 const char *byx_logging_all_levels_to_string (void);
 const char *byx_logging_all_domains_to_string (void);
 
-gboolean inline byx_logging_setup (const char  *level,
+static inline gboolean byx_logging_setup (const char  *level,
                            const char  *domains,
                            char       **bad_domains,
                            GError     **error)
