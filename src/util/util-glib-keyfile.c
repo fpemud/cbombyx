@@ -8,6 +8,7 @@
 
 #define KEYFILE_LIST_SEPARATOR ','
 
+/* creates empty GKeyFile if the target file does not exist */
 GKeyFile *util_keyfile_load_from_file (const char *filename, GError **error)
 {
     GKeyFile *keyfile = NULL;
@@ -28,6 +29,7 @@ GKeyFile *util_keyfile_load_from_file (const char *filename, GError **error)
     return keyfile;
 }
 
+/* creates empty GKeyFile if the target file does not exist */
 GKeyFile *util_keyfile_load_from_directory_and_file (const char *directory, const char *filename, GError **error)
 {
     char full_filename[1024];
@@ -46,18 +48,21 @@ GKeyFile *util_keyfile_load_from_directory_and_file (const char *directory, cons
     return keyfile;
 }
 
+/* return default value if the key does not exist */
 gboolean util_keyfile_get_boolean (GKeyFile *key_file, const gchar *group_name, const gchar *key, gboolean default_value)
 {
     gboolean ret = FALSE;
     g_autoptr(GError) local = NULL;
 
 	ret = g_key_file_get_boolean (key_file, group_name, key, &local);
-    if (!ret && local)
+    if (!ret && local) {
         return default_value;
+    }
 
     return ret;
 }
 
+/* do nothing when key_file == NULL */
 void util_keyfile_free (GKeyFile *key_file)
 {
     if (key_file == NULL)
