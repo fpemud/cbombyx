@@ -170,7 +170,8 @@ void byx_main_utils_ensure_no_running_pidfile (const char *pidfile)
 	const char *process_name;
 	const char *prgname = g_get_prgname ();
 
-	g_return_if_fail (prgname);
+	assert (pidfile != NULL);
+	assert (prgname != NULL);
 
 	if (!pidfile || !*pidfile)
 		return;

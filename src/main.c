@@ -78,8 +78,6 @@ int main (int argc, char *argv[])
     g_autoptr(GError) error = NULL;
     gboolean success = FALSE;
 
-
-
     char *bad_domains = NULL;
     guint sd_id = 0;
  
@@ -105,6 +103,9 @@ int main (int argc, char *argv[])
     /* Ensure gettext() gets the right environment (bgo #666516) */
     setlocale (LC_ALL, "");
     textdomain (GETTEXT_PACKAGE);
+
+    /* FIXME: for g_get_prgname, NetworkManager does not need it? */
+    g_set_prgname ("bombyx");
 
     /* Setup config manager */
     config_manager = byx_config_manager_setup(argc, argv, &error);

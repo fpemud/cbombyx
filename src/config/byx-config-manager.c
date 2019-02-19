@@ -25,11 +25,6 @@ typedef struct {
 
     GHashTable *service_run_data;
     GHashTable *service_persist_data;
-
-#if 1
-    char **atomic_section_prefixes;
-#endif
-
 } ByxConfigManagerPrivate;
 
 struct _ByxConfigManager {
@@ -46,16 +41,18 @@ static ByxConfigManager *_singleton_instance = NULL;
 ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error)
 {
     ByxConfigManagerPrivate *priv = NULL;
+    GError *local = NULL;
 
     assert (_singleton_instance == NULL);
 
     _singleton_instance = g_object_new (BYX_TYPE_CONFIG_MANAGER, NULL);
     assert (_singleton_instance != NULL);
-
     priv = byx_config_manager_get_instance_private (_singleton_instance);
 
-    priv->config = byx_config_new(argc, argv);
-    assert (priv->config != NULL);                              /* FIXME */
+    priv->config = byx_config_new(argc, argv, &local);
+    if (priv->config == NULL) {
+        goto failure;
+    }
 
     priv->run_data = byx_run_data_new(!g_file_test (BYX_RUNDIR, G_FILE_TEST_IS_DIR));
     assert (priv->run_data != NULL);                            /* FIXME */
@@ -64,6 +61,13 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
     assert (priv->persist_data != NULL);                        /* FIXME */
 
     return _singleton_instance;
+
+failure:
+    assert (FALSE);
+    if (_singleton_instance != NULL)
+        g_clear_object (&_singleton_instance);
+    g_propagate_error(error, local);
+    return NULL;
 }
 
 ByxConfigManager *byx_config_manager_reload (void)

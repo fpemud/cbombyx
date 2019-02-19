@@ -36,7 +36,7 @@ struct _ByxConfig {
 
 static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[]);
 
-ByxConfig *byx_config_new (int argc, char *argv[])
+ByxConfig *byx_config_new (int argc, char *argv[], GError **error)
 {
 	ByxConfig *config = g_try_new(ByxConfig, 1);
 	if (config == NULL) {

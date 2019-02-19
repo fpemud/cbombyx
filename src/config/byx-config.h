@@ -7,7 +7,7 @@ G_BEGIN_DECLS
 
 typedef struct _ByxConfig ByxConfig;
 
-ByxConfig *byx_config_new (int argc, char *argv[]);
+ByxConfig *byx_config_new (int argc, char *argv[], GError **error);
 
 void byx_config_free (ByxConfig *config);
 
