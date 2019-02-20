@@ -41,7 +41,6 @@ static ByxConfigManager *_singleton_instance = NULL;
 ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **error)
 {
     ByxConfigManagerPrivate *priv = NULL;
-    GError *local = NULL;
 
     assert (_singleton_instance == NULL);
 
@@ -49,7 +48,7 @@ ByxConfigManager *byx_config_manager_setup (int argc, char *argv[], GError **err
     assert (_singleton_instance != NULL);
     priv = byx_config_manager_get_instance_private (_singleton_instance);
 
-    priv->config = byx_config_new(argc, argv, &local);
+    priv->config = byx_config_new(argc, argv, error);
     if (priv->config == NULL) {
         goto failure;
     }
@@ -66,7 +65,6 @@ failure:
     assert (FALSE);
     if (_singleton_instance != NULL)
         g_clear_object (&_singleton_instance);
-    g_propagate_error(error, local);
     return NULL;
 }
 

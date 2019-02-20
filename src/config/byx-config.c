@@ -35,7 +35,7 @@ struct _ByxConfig {
 
 /*****************************************************************************/
 
-static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[]);
+static gboolean _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[], GError **error);
 
 ByxConfig *byx_config_new (int argc, char *argv[], GError **error)
 {
@@ -68,7 +68,9 @@ ByxConfig *byx_config_new (int argc, char *argv[], GError **error)
 		goto failure;
 	}
 
-	_byx_cmd_line_options_parse(config, argc, argv);
+	if (!_byx_cmd_line_options_parse(config, argc, argv, error)) {
+		goto failure;
+	}
 
 	return config;
 
@@ -192,7 +194,7 @@ guint byx_config_get_debug_flags(ByxConfig *config)
 
 /*****************************************************************************/
 
-static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[])
+static gboolean _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[], GError **error)
 {
     GOptionEntry options[] = {
         {
@@ -237,7 +239,7 @@ static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[
             0,
             G_OPTION_ARG_NONE,
             &config->show_version,
-            N_("Print NetworkManager version and exit"),
+            N_("Print bombyx version and exit"),
             NULL,
         },
 		{
@@ -275,7 +277,7 @@ static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[
 	char *summary = _("abc");
 	/* _("NetworkManager monitors all network connections and automatically\nchooses the best connection to use.  It also allows the user to\nspecify wireless access points which wireless cards in the computer\nshould associate with."))) */
 
-	GOptionContext *opt_ctx;
+	g_autoptr(GOptionContext) opt_ctx = NULL;
 #if 0
 	int i;
 #endif
@@ -303,16 +305,12 @@ static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[
 	g_option_context_set_help_enabled (opt_ctx, TRUE);
 	g_option_context_add_main_entries (opt_ctx, options, NULL);
 	g_option_context_set_summary (opt_ctx, summary);
+	if (!g_option_context_parse (opt_ctx, &argc, &argv, error)) {
+		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"), (*error)->message);
+		return FALSE;
+	}
 
 #if 0
-	success = g_option_context_parse (opt_ctx, argc, argv, &error);
-	if (!success) {
-		fprintf (stderr, _("%s.  Please use --help to see a list of valid options.\n"),
-		         error->message);
-		g_clear_error (&error);
-	}
-	g_option_context_free (opt_ctx);
-
 	if (opt_loc_log_level) {
 		g_free ((char *) *opt_loc_log_level);
 		*opt_loc_log_level = opt_fmt_log_level;
@@ -322,4 +320,6 @@ static void _byx_cmd_line_options_parse(ByxConfig *config, int argc, char *argv[
 		*opt_loc_log_domains = opt_fmt_log_domains;
 	}
 #endif
+
+	return TRUE;
 }
