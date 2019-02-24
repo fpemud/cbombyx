@@ -116,7 +116,7 @@ gboolean byx_main_utils_write_pidfile (const char *pidfile, GError **error)
 	return success;
 }
 
-void byx_main_utils_ensure_statedir ()
+void byx_main_utils_ensure_vardir ()
 {
 	g_autofree char *parent = NULL;
 	int errsv;

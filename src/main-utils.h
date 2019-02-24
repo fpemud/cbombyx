@@ -25,7 +25,7 @@ void     byx_main_utils_ensure_root (void);
 
 void     byx_main_utils_setup_signals (GMainLoop *main_loop);
 
-void     byx_main_utils_ensure_statedir (void);
+void     byx_main_utils_ensure_vardir (void);
 
 void     byx_main_utils_ensure_rundir (void);
 

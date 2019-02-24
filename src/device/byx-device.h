@@ -15,6 +15,10 @@ typedef struct _ByxDeviceClass ByxDeviceClass;
 
 GType byx_device_get_type (void);
 
+/*****************************************************************************/
+
+#define BYX_DEVICE_CARRIER_CHANGED     "device-carrier-changed"
+
 void *byx_device_get_name(ByxDevice *self);
 
 gboolean byx_device_is_ready(ByxDevice *self);

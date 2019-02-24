@@ -28,6 +28,7 @@ sources = files(
   'config/byx-connection-persist-data.c',
   'config/byx-config-manager.c',
   'plugin/byx-plugin-manager.c',
+  'device/byx-device.c',
   'device/byx-device-manager.c',
   'connection/byx-connection-manager.c',
   'dbus/byx-dbus-manager.c',

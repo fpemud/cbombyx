@@ -123,8 +123,8 @@ int main (int argc, char *argv[])
 
     byx_main_utils_ensure_root ();
     byx_main_utils_ensure_no_running_pidfile (byx_config_get_pidfile(config));
-    byx_main_utils_ensure_statedir ();
     byx_main_utils_ensure_rundir ();
+    byx_main_utils_ensure_vardir ();
 
     if (!byx_logging_setup (byx_config_get_log_level(config),
                             byx_config_get_log_domains(config),        

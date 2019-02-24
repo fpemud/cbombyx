@@ -19,13 +19,15 @@
 
 /*****************************************************************************/
 
+struct _ByxDBusManagerClass {
+	GObjectClass parent;
+};
+
 enum {
 	PRIVATE_CONNECTION_NEW,
 	PRIVATE_CONNECTION_DISCONNECTED,
-
 	LAST_SIGNAL
 };
-
 static guint signals[LAST_SIGNAL];
 
 typedef struct {
@@ -35,10 +37,6 @@ typedef struct {
 struct _ByxDBusManager {
 	GObject parent;
 	ByxDBusManagerPrivate _priv;
-};
-
-struct _ByxDBusManagerClass {
-	GObjectClass parent;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(ByxDBusManager, byx_dbus_manager, G_TYPE_OBJECT)

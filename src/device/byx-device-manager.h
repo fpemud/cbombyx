@@ -21,6 +21,9 @@ ByxDeviceManager *byx_device_manager_get (void);
 
 /*****************************************************************************/
 
+#define BYX_DEVICE_MANAGER_DEVICE_APPEAR     "device-appear"
+#define BYX_DEVICE_MANAGER_DEVICE_DISAPPEAR  "device-disappear"
+
 gboolean byx_device_manager_start (ByxDeviceManager *self, GError **error);
 
 GSList *byx_device_manager_get_devices (ByxDeviceManager *self, gboolean sort);
