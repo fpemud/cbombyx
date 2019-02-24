@@ -36,7 +36,7 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 
-#include "util/util-ip-link.h"
+#include "util/util-network-device.h"
 #include "config/byx-config-manager.h"
 #include "device/byx-device-manager.h"
 #include "connection/byx-connection-manager.h"
@@ -198,7 +198,7 @@ int main (int argc, char *argv[])
      * physical interfaces.
      */
     byx_log_dbg (LOGD_CORE, "setting up local loopback");
-    if (!util_ip_link_set_up (1, &error)) {
+    if (!util_network_device_set_up (1, &error)) {
         fprintf (stderr, "%s\n", error->message);        /* FIXME */
         goto done;
     }

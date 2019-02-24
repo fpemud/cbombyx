@@ -3,6 +3,8 @@
 #ifndef __UTIL_GOBJECT_SINGLETON_H__
 #define __UTIL_GOBJECT_SINGLETON_H__
 
+#include <glib.h>
+
 #define BYX_DEFINE_SINGLETON_GETTER(TYPE, GETTER, GTYPE, ...) \
     static TYPE *__singleton_instance__ = NULL; \
     \

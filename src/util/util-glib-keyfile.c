@@ -1,8 +1,7 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 
-#include "byx-common.h"
-
 #include <assert.h>
+#include <unistd.h>
 #include "util-stdio.h"
 #include "util-glib-keyfile.h"
 

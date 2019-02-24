@@ -12,7 +12,7 @@ struct _ByxDeviceClass {
 };
 
 enum {
-	DEVICE_CARRIER_CHANGED,
+	CARRIER_CHANGED,
 	LAST_SIGNAL
 };
 static guint signals[LAST_SIGNAL];
@@ -38,11 +38,11 @@ static void byx_device_class_init (ByxDeviceClass *device_class)
 
     object_class->dispose = byx_device_dispose;
 
-	signals[DEVICE_CARRIER_CHANGED] = g_signal_new (BYX_DEVICE_CARRIER_CHANGED,
-	                                                G_OBJECT_CLASS_TYPE (object_class),
-	                                                G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
-	                                                0, NULL, NULL, NULL,
-	                                                G_TYPE_NONE, 2, BYX_TYPE_DEVICE, G_TYPE_BOOLEAN);
+	signals[CARRIER_CHANGED] = g_signal_new (BYX_DEVICE_CARRIER_CHANGED,
+	                                         G_OBJECT_CLASS_TYPE (object_class),
+	                                         G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
+	                                         0, NULL, NULL, NULL,
+	                                         G_TYPE_NONE, 2, BYX_TYPE_DEVICE, G_TYPE_BOOLEAN);
 }
 
 static void byx_device_init (ByxDevice *self)
